@@ -1,0 +1,20 @@
+# instruments.yaml — code-review-contract
+# Autoridade mecânica: quem produz evidência que este owner aceita.
+# Sem entrada aqui = NOT_VERIFIED/missing-producer (CONTRACTS §4.5).
+accepts:
+  # code-review-runtime é quem corre os testes que exercitam o contrato.
+  - producer: code-review-runtime
+    instrument: test-runner
+    for-checks:
+      - contract.timeout-declared
+      - contract.retry-idempotent
+      - contract.failure-modes-declared
+      - contract.input-not-trusted
+      - contract.cancellation-honoured
+  # análise estática do próprio owner: importações em contramão, schema-compat.
+  - producer: code-review-contract
+    instrument: static-analysis
+    for-checks:
+      - contract.layer-direction
+      - contract.schema-compat
+      - contract.side-effects-bounded

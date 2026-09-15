@@ -1,0 +1,21 @@
+# instruments.yaml — code-review-runtime
+# Este owner é o producer canónico da maior parte dos checks executáveis do
+# plugin (corre o pipeline). Aceita evidência dele próprio + do stack.
+accepts:
+  - producer: code-review-runtime
+    instrument: test-runner
+    for-checks:
+      - runtime.tests-pass
+      - runtime.tests-have-oracles
+      - runtime.concurrency-safe
+      - runtime.cancellation-cleaned
+  - producer: code-review-runtime
+    instrument: build-runner
+    for-checks:
+      - runtime.build-passes
+      - runtime.types-check
+      - runtime.bundle-within-budget
+  - producer: code-review-runtime
+    instrument: static-analysis
+    for-checks:
+      - runtime.no-silent-panics

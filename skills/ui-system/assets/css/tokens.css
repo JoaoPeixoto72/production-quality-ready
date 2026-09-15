@@ -1,0 +1,100 @@
+@layer ui.tokens {
+  :root {
+    /* ============================================================
+       1. PRIMITIVOS & CONSTANTES FÍSICAS (Invariantes)
+       ============================================================ */
+    --white: oklch(100% 0 0);
+    --black: oklch(0% 0 0);
+    --snow: oklch(0.991 0 0);
+    --obsidian: oklch(0.14 0.005 285);
+
+    /* Escala de espaçamento (Base 0.25rem / 4px) */
+    --spacing: 0.25rem;
+    --space-0-5: calc(var(--spacing) * 0.5); /* 2px */
+    --space-1: calc(var(--spacing) * 1);     /* 4px */
+    --space-1-5: calc(var(--spacing) * 1.5); /* 6px */
+    --space-2: calc(var(--spacing) * 2);     /* 8px */
+    --space-2-5: calc(var(--spacing) * 2.5); /* 10px */
+    --space-3: calc(var(--spacing) * 3);     /* 12px */
+    --space-4: calc(var(--spacing) * 4);     /* 16px */
+    --space-5: calc(var(--spacing) * 5);     /* 20px */
+    --space-6: calc(var(--spacing) * 6);     /* 24px */
+    --space-8: calc(var(--spacing) * 8);     /* 32px */
+    --space-10: calc(var(--spacing) * 10);   /* 40px */
+    --space-12: calc(var(--spacing) * 12);   /* 48px */
+    --space-16: calc(var(--spacing) * 16);   /* 64px */
+    --space-20: calc(var(--spacing) * 20);   /* 80px */
+    --space-24: calc(var(--spacing) * 24);   /* 96px */
+
+    /* Escala de Arredondamento */
+    --radius-sm: 0.375rem;  /* 6px */
+    --radius-md: 0.5rem;    /* 8px - Padrão de controlos e cartões */
+    --radius-lg: 0.75rem;   /* 12px - Diálogos e painéis grandes */
+    --radius-xl: 1rem;      /* 16px */
+    --radius-full: 9999px;
+
+    /* Escala de densidade de controlos */
+    --density-scale: 1.0;
+
+    /* Física tátil mecânica */
+    --ease-tactile: cubic-bezier(0, 0, 0.2, 1);
+    --duration-tactile: 150ms;
+    --active-scale: 0.97;
+
+    --border-width: 1px;
+    --disabled-opacity: 0.5;
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+
+    --cursor-interactive: pointer;
+    --cursor-disabled: not-allowed;
+
+    /* ============================================================
+       Escala de empilhamento (uma só, e é esta)
+       ============================================================
+       Estes números estavam soltos pelo `core.css`, e um número solto num
+       sistema de camadas é o que faz um popup abrir por trás do que o abriu.
+       A ordem não é decorativa: um popup ancorado (select, menu, popover)
+       abre *de dentro* de um diálogo, e por isso tem de ficar **acima** da
+       superfície dele — nunca ao mesmo nível. A dica vai por cima de tudo,
+       porque pode nascer de dentro de qualquer um deles.
+
+       Quem empilha é o `*-positioner`, e nunca o `*-popup`. Medido no
+       WebView2 (ver `docs/FACTOS-VERIFICADOS.md`), por duas razões
+       independentes: um popup é `position: static`, e num elemento não
+       posicionado o `z-index` é ignorado; e mesmo posicionado ficaria preso,
+       porque o positioner é `position: fixed` — que no Blink é um contexto de
+       empilhamento próprio, ao nível `auto`. */
+    --z-raised: 10;
+    --z-panel: 20;
+    --z-header-panel: 30;
+    --z-navbar: 40;
+    --z-backdrop: 50;
+    --z-dialog: 55;
+    --z-anchored: 60;
+    --z-tooltip: 70;
+
+    /* Tipografia (Tokens semânticos e fallbacks de sistema/locais) */
+    --ui-font-sans: "Instrument Sans Variable", "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --ui-font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+    --ui-font-serif: "Newsreader Variable", "Newsreader", Georgia, serif;
+
+    --font-feature-display: "ss02" 1, "ss05" 1;
+    --font-feature-numeric: "tnum" 1;
+
+    /* Escala tipográfica rigorosa */
+    --ui-text-2xs: 0.6875rem; /* 11px */
+    --ui-text-xs: 0.75rem;    /* 12px */
+    --ui-text-sm: 0.875rem;   /* 14px */
+    --ui-text-base: 1rem;     /* 16px */
+    --ui-text-lg: 1.125rem;   /* 18px */
+    --ui-text-xl: 1.25rem;    /* 20px */
+    --ui-text-2xl: 1.5rem;    /* 24px */
+    --ui-text-3xl: 1.875rem;  /* 30px */
+    --ui-text-4xl: 2.25rem;   /* 36px */
+
+    --ui-leading-tight: 1.25;
+    --ui-leading-normal: 1.5;
+    --ui-leading-relaxed: 1.625;
+  }
+}

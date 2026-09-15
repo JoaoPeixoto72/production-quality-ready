@@ -1,0 +1,53 @@
+# Exemplo mínimo de ficheiro de evidência conforme CONTRACTS.md v1.3.0.
+#
+# Local: <repo-root>/.audit/<owner>/<producer>--<check-id>.evidence.yaml
+# Este ficheiro é exemplo — não é auditado.
+
+# ---- caso 1: owner corre o seu próprio instrumento (comum) ----
+check:            build-passes
+owner:            code-review-runtime
+producer:         code-review-runtime
+instrument:       cargo-build
+rule:             pack de gates do projecto
+evidence-schema:  1.3.0
+methods:
+  - command-output
+evidence:
+  - path: /tmp/build.log
+    excerpt: "Finished `release` profile [optimized] target(s) in 47.2s"
+    kind: command-output
+    hash: sha256:abc123...
+result:           PASS
+confidence:       OBSERVED
+
+---
+# ---- caso 2: instrumento externo (ui-system produz para design-pro) ----
+check:            a11y-critical-flows
+owner:            design-pro
+producer:         ui-system
+instrument:       audit_ui.py
+rule:             WCAG 2.2 SC 1.4.3
+rule-version:     wcag-2.2-AA
+evidence-schema:  1.3.0
+methods:
+  - static-analysis
+  - ok-lch-delta
+evidence:
+  - path: src/ui/components/Button.tsx:15
+    excerpt: "background: var(--content2); color: var(--muted-foreground);"
+    kind: source
+  - path: /tmp/audit-ui.report.json
+    excerpt: "delta=0.28 < 0.30 (foreground/primary)"
+    kind: command-output
+    hash: sha256:def456...
+result:           FAIL
+severity:         HIGH
+confidence:       INFERRED
+root-cause:       design-pro::button-contrast-below-aa
+title:            Button primary contrast below AA
+impact:           Users with low vision cannot read primary buttons.
+fix:              Increase --primary L to 0.65 or reduce --primary-foreground L to 0.15.
+context:
+  scope: src/ui/components/**
+  captured-at: 2026-09-14T10:50:00Z
+  captured-by-version: ui-system@1.0.0

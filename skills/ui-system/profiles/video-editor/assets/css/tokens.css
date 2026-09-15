@@ -1,0 +1,99 @@
+@layer ui.tokens {
+  :root[data-theme="studio"],
+  [data-theme="studio"] {
+    color-scheme: dark;
+    --density-scale: 1.15;
+    --ui-font-sans:
+      "Instrument Sans Variable", "Instrument Sans", ui-sans-serif,
+      system-ui, sans-serif;
+    --ui-font-mono:
+      "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+    --font-feature-display: "ss02" 1, "ss05" 1;
+    --background: oklch(12% 0.005 285.823);
+    --foreground: oklch(99.11% 0 0);
+    --surface: oklch(0.2103 0.0059 285.89);
+    --surface-foreground: var(--foreground);
+    --surface-secondary: oklch(0.257 0.0037 286.14);
+    --surface-tertiary: oklch(0.2721 0.0024 247.91);
+    --overlay: oklch(0.2103 0.0059 285.89);
+    --overlay-foreground: var(--foreground);
+    --muted: oklch(70.5% 0.015 286.067);
+    --default: oklch(27.4% 0.006 286.033);
+    --default-foreground: var(--foreground);
+    /* O token canonico e' o `--primary`: e' com ele que o `core.css`
+       desenha, e o tema generico faz `--accent: var(--primary)`. Mexer no
+       `--accent` cortava esse elo e deixava o `--primary` por trocar. */
+    --primary: oklch(0.72 0.15 62);
+    --primary-foreground: oklch(0.2103 0.0059 285.89);
+    --success: oklch(0.7329 0.1935 150.81);
+    --success-foreground: oklch(0.2103 0.0059 285.89);
+    --warning: oklch(0.8203 0.1388 76.34);
+    --warning-foreground: oklch(0.2103 0.0059 285.89);
+    --danger: oklch(0.58 0.20 24.63);
+    --danger-foreground: var(--foreground);
+    --border: oklch(28% 0.006 286.033);
+    /* **O nome que o `core.css` lê é o `--divider`; este é o que ninguém lê.**
+       Fica como alias para não haver dois números a divergir — e o valor mora
+       no `studio.css` deste perfil, que é onde uma linha desta escala ganha:
+       este ficheiro vive na camada `ui.tokens`, e o tema genérico, que também
+       declara o `--divider`, vive na `ui.theme`, que vem depois. */
+    --separator: var(--divider);
+    --focus: var(--accent);
+    --link: var(--foreground);
+    --backdrop: color-mix(in oklab, var(--black) 60%, transparent);
+    --field-background: var(--surface);
+    --field-foreground: var(--foreground);
+    --field-placeholder: var(--muted);
+    --field-border: var(--border);
+    --canvas-void: oklch(0% 0 0);
+    --timeline-surface: var(--surface-secondary);
+    --timeline-grid: color-mix(in oklab, var(--foreground) 8%, transparent);
+    --playhead: var(--danger);
+    --waveform: color-mix(in oklab, var(--accent) 60%, var(--surface));
+    --surface-shadow: none;
+    --overlay-shadow: 0 0 1px 0 color-mix(in oklab, var(--white) 30%, transparent) inset;
+    --field-shadow: none;
+  }
+
+  :root[data-theme="studio"][data-color-scheme="light"],
+  [data-theme="studio"][data-color-scheme="light"],
+  [data-theme="studio"].light {
+    color-scheme: light;
+    --background: oklch(0.9702 0 0);
+    --foreground: oklch(0.2103 0.0059 285.89);
+    --surface: var(--white);
+    --surface-foreground: var(--foreground);
+    --surface-secondary: oklch(0.9524 0.0013 286.37);
+    --surface-tertiary: oklch(0.9373 0.0013 286.37);
+    --overlay: var(--white);
+    --overlay-foreground: var(--foreground);
+    --muted: oklch(0.5517 0.0138 285.94);
+    --default: oklch(94% 0.001 286.375);
+    --default-foreground: var(--foreground);
+    --primary: oklch(0.55 0.16 62);
+    --primary-foreground: var(--white);
+    --success: oklch(0.50 0.18 150.81);
+    --success-foreground: var(--white);
+    --warning: oklch(0.60 0.16 72.33);
+    --warning-foreground: var(--white);
+    --danger: oklch(0.55 0.22 25.74);
+    --danger-foreground: var(--white);
+    --primary-hover: color-mix(in oklab, var(--primary) 85%, var(--black) 15%);
+    --success-hover: color-mix(in oklab, var(--success) 85%, var(--black) 15%);
+    --warning-hover: color-mix(in oklab, var(--warning) 85%, var(--black) 15%);
+    --danger-hover: color-mix(in oklab, var(--danger) 85%, var(--black) 15%);
+    --border: oklch(90% 0.004 286.32);
+    --separator: var(--divider);
+    --field-background: var(--white);
+    --field-foreground: var(--foreground);
+    --backdrop: color-mix(in oklab, var(--black) 50%, transparent);
+    --surface-shadow:
+      0 2px 4px 0 color-mix(in oklab, var(--black) 4%, transparent),
+      0 1px 2px 0 color-mix(in oklab, var(--black) 6%, transparent),
+      0 0 1px 0 color-mix(in oklab, var(--black) 6%, transparent);
+    --overlay-shadow:
+      0 2px 8px 0 color-mix(in oklab, var(--black) 6%, transparent),
+      0 -6px 12px 0 color-mix(in oklab, var(--black) 3%, transparent),
+      0 14px 28px 0 color-mix(in oklab, var(--black) 8%, transparent);
+  }
+}

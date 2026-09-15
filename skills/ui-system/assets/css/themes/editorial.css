@@ -1,0 +1,52 @@
+@layer ui.theme {
+  /* ============================================================
+     TEMA EDITORIAL — Tipografia expressiva, estética editorial,
+     bordas demarcadas e leitura de longa duração (OKLCH).
+     ============================================================ */
+
+  [data-theme="editorial"],
+  [data-theme="editorial"][data-color-scheme="light"] {
+    color-scheme: light;
+
+    --background: oklch(0.985 0.008 85); /* Tom papel quente */
+    --foreground: oklch(0.12 0.010 85);  /* Tinta preta pura */
+
+    --surface: oklch(1.0 0 0);
+    --surface-secondary: oklch(0.96 0.010 85);
+    --overlay: oklch(1.0 0 0);
+
+    --content1: oklch(1.0 0 0);
+    --content2: oklch(0.96 0.010 85);
+    --content3: oklch(0.93 0.012 85);
+    --content4: oklch(0.89 0.015 85);
+
+    --border: oklch(0.82 0.010 85);
+    --divider: oklch(0.88 0.008 85);
+    --muted: oklch(0.46 0.015 85);
+    --focus: oklch(0.40 0.15 35);
+
+    --primary: oklch(0.25 0.04 35);       /* Vinho/Bordeaux editorial */
+    --primary-foreground: oklch(0.985 0.008 85);
+    --primary-hover: oklch(0.35 0.06 35);
+
+    --secondary: oklch(0.93 0.012 85);
+    --secondary-foreground: oklch(0.15 0.010 85);
+    --secondary-hover: oklch(0.89 0.015 85);
+
+    --success: oklch(0.48 0.14 145);
+    --success-foreground: oklch(1.0 0 0);
+    --success-hover: oklch(0.42 0.14 145);
+
+    --warning: oklch(0.55 0.15 65);
+    --warning-foreground: oklch(1.0 0 0);
+    --warning-hover: oklch(0.48 0.15 65);
+
+    --danger: oklch(0.50 0.20 25);
+    --danger-foreground: oklch(1.0 0 0);
+    --danger-hover: color-mix(in oklab, var(--danger) 85%, var(--black) 15%);
+
+    --accent: var(--primary);
+    --accent-foreground: var(--primary-foreground);
+    --backdrop: oklch(0% 0 0 / 0.4);
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "production-quality-ready",
+  "owner": {
+    "name": "JoaoPeixoto72"
+  },
+  "metadata": {
+    "description": "Production quality audit and readiness plugin marketplace",
+    "version": "1.4.0"
+  },
+  "plugins": [
+    {
+      "name": "production-quality-ready",
+      "description": "Sistema de qualidade e auditoria composto por owners independentes para elevar aplicações de 'funciona' para 'pode ser vendida', com evidência verificável e gates declarativos.",
+      "version": "1.4.0",
+      "source": "./"
+    }
+  ]
+}

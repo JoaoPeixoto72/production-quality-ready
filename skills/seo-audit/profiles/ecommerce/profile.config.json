@@ -1,0 +1,10 @@
+{
+  "profile": { "name": "ecommerce", "kind": "ecommerce" },
+  "thresholds": {
+    "titleMin": 30,
+    "titleMax": 65,
+    "descriptionMin": 80,
+    "descriptionMax": 170,
+    "targetPassScore": 90
+  }
+}

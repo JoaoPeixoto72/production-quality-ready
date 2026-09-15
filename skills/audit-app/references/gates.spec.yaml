@@ -1,0 +1,39 @@
+# Especificação declarativa dos 3 gates padrão (CONTRACTS.md §7.3).
+# Este ficheiro é a fonte que o audit-app consome para aplicar gates.
+# Um pack de gates de projecto pode ACRESCENTAR mais gates; não pode
+# remover ou alterar estes.
+
+gates:
+
+  - name: release-candidate
+    description: |
+      Compila, testes correram, sem BLOCKER. Um FAIL LOW num check
+      não-crítico não impede um candidato.
+    requires:
+      - no-open: [BLOCKER]
+      - coverage-complete: [code-review-runtime, verify]
+
+  - name: production-ready
+    description: |
+      Todos os owners com cobertura completa, sem BLOCKER/CRITICAL, e as
+      áreas com integridade não-negociável (segurança, release) 100% PASS.
+    requires:
+      - no-open: [BLOCKER, CRITICAL]
+      - coverage-complete: "<todos-owners-aplicaveis>"
+      - all-pass-in-owner: [security-audit, release-audit]
+
+  - name: sellable
+    description: |
+      Production-ready e apto a vender: activação, licença, suporte,
+      caminhos de erro todos verificados.
+    requires:
+      - gate: production-ready
+      - all-pass-in-owner: [commercial-readiness]
+
+# Predicados suportados na v1.3.0 (CONTRACTS §7.1):
+#   no-open: [severidades...]           # nenhum FAIL com essa severidade
+#   all-pass-in-owner: [owners...]      # todos os checks emitidos = PASS
+#   coverage-complete: [owners...]      # todos os canónicos resolvidos
+#   coverage-complete: "<todos-owners-aplicaveis>"   # macro
+#   conditional: { when: <cond>, require: [predicados...] }
+#   gate: <name>                        # composição: outro gate tem de fechar

@@ -1,0 +1,103 @@
+@layer ui.theme {
+  /* ============================================================
+     TEMA NEUTRAL — Agnóstico, sóbrio, ideal para SaaS corporativo
+     e utilitários neutros (Zinc/Slate OKLCH).
+     ============================================================ */
+
+  /* Modo Claro Padrão */
+  :root,
+  [data-theme="neutral"],
+  [data-theme="neutral"][data-color-scheme="light"],
+  :root:not([data-theme]) {
+    color-scheme: light;
+
+    --background: oklch(0.99 0 0);
+    --foreground: oklch(0.18 0.005 285);
+
+    --surface: oklch(1.0 0 0);
+    --surface-secondary: oklch(0.965 0.003 285);
+    --overlay: oklch(1.0 0 0);
+
+    --content1: oklch(1.0 0 0);
+    --content2: oklch(0.965 0.003 285);
+    --content3: oklch(0.935 0.005 285);
+    --content4: oklch(0.900 0.008 285);
+
+    --border: oklch(0.88 0.004 285);
+    --divider: oklch(0.92 0.002 285);
+    --muted: oklch(0.52 0.010 285);
+    --focus: oklch(0.48 0.20 260);
+
+    --primary: oklch(0.22 0.008 285);
+    --primary-foreground: oklch(0.99 0 0);
+    --primary-hover: oklch(0.32 0.010 285);
+
+    --secondary: oklch(0.92 0.005 285);
+    --secondary-foreground: oklch(0.20 0.008 285);
+    --secondary-hover: oklch(0.88 0.006 285);
+
+    --success: oklch(0.48 0.16 145);
+    --success-foreground: oklch(1.0 0 0);
+    --success-hover: oklch(0.42 0.16 145);
+
+    --warning: oklch(0.55 0.16 68);
+    --warning-foreground: oklch(1.0 0 0);
+    --warning-hover: oklch(0.48 0.16 68);
+
+    --danger: oklch(0.52 0.22 25);
+    --danger-foreground: oklch(1.0 0 0);
+    --danger-hover: oklch(0.45 0.22 25);
+
+    --accent: var(--primary);
+    --accent-foreground: var(--primary-foreground);
+    --backdrop: oklch(0% 0 0 / 0.4);
+  }
+
+  /* Modo Escuro Neutral */
+  [data-theme="neutral"][data-color-scheme="dark"],
+  :root[data-theme="neutral"].dark,
+  :root:not([data-theme]).dark {
+    color-scheme: dark;
+
+    --background: oklch(0.14 0.005 285);
+    --foreground: oklch(0.98 0 0);
+
+    --surface: oklch(0.18 0.007 285);
+    --surface-secondary: oklch(0.22 0.008 285);
+    --overlay: oklch(0.20 0.007 285);
+
+    --content1: oklch(0.18 0.007 285);
+    --content2: oklch(0.23 0.009 285);
+    --content3: oklch(0.28 0.011 285);
+    --content4: oklch(0.34 0.013 285);
+
+    --border: oklch(0.27 0.006 285);
+    --divider: oklch(0.23 0.005 285);
+    --muted: oklch(0.65 0.008 285);
+    --focus: oklch(0.60 0.20 260);
+
+    --primary: oklch(0.95 0.002 285);
+    --primary-foreground: oklch(0.14 0.005 285);
+    --primary-hover: oklch(0.88 0.004 285);
+
+    --secondary: oklch(0.24 0.008 285);
+    --secondary-foreground: oklch(0.95 0.002 285);
+    --secondary-hover: oklch(0.30 0.010 285);
+
+    --success: oklch(0.58 0.18 145);
+    --success-foreground: oklch(1.0 0 0);
+    --success-hover: oklch(0.64 0.18 145);
+
+    --warning: oklch(0.72 0.16 68);
+    --warning-foreground: oklch(0.15 0.01 285);
+    --warning-hover: oklch(0.78 0.16 68);
+
+    --danger: oklch(0.58 0.22 25);
+    --danger-foreground: oklch(1.0 0 0);
+    --danger-hover: oklch(0.64 0.22 25);
+
+    --accent: var(--primary);
+    --accent-foreground: var(--primary-foreground);
+    --backdrop: oklch(0% 0 0 / 0.6);
+  }
+}

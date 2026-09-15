@@ -1,0 +1,11 @@
+@layer ui.reset, ui.tokens, ui.core, ui.theme;
+
+@import "./tokens.css" layer(ui.tokens);
+@import "./core.css" layer(ui.core);
+@import "./tailwind-bridge.css";
+
+/* Catálogo Quádruplo de Temas Intercambiáveis */
+@import "./themes/neutral.css" layer(ui.theme);
+@import "./themes/heroui.css" layer(ui.theme);
+@import "./themes/studio.css" layer(ui.theme);
+@import "./themes/editorial.css" layer(ui.theme);

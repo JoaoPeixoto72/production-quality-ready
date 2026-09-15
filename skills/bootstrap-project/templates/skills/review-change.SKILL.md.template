@@ -1,0 +1,27 @@
+---
+name: review-change
+description: Review a change in {{PROJECT_NAME}} before calling it done. Local adapter for production-quality-ready's review-change — enumerates this project's invariants and cites the plugin's owners (design-pro, code-review, security-audit) instead of restating rules. Use after writing or changing code, before `close-work`. Do NOT use to audit the whole app (audit-app, plugin). Do NOT use to open a work session — that's `start-work`.
+contract: {{CONTRACT_PATH}}
+extends: "production-quality-ready::review-change@1.x"
+version: 1.0.0
+allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+---
+
+# review-change in {{PROJECT_NAME}}
+
+Local adapter. Universal contract lives in
+`production-quality-ready/skills/review-change/SKILL.md`; adapter contract in
+`production-quality-ready/adapter-contracts/review-change.md`.
+
+## This project's invariants
+
+{{PROJECT_INVARIANTS}}
+
+## Proof command
+
+```bash
+{{BUILD_COMMAND}}
+{{TEST_COMMAND}}
+```
+
+Counts live in `docs/VERIFICAR.md` — never here.

@@ -1,0 +1,7 @@
+# instruments.yaml — commercial-readiness
+# owner-produced-only na v1.0.0. Fase 3+ adiciona instrumentos externos se e
+# quando outros owners os precisarem.
+accepts:
+  - producer: commercial-readiness
+    instrument: "*"
+    for-checks: ["*"]

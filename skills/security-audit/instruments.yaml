@@ -1,0 +1,28 @@
+# instruments.yaml — security-audit
+# Régua ASVS 5.0. Cada check tem producer canónico; sem ele = missing-producer.
+accepts:
+  - producer: security-audit
+    instrument: threat-model-check
+    for-checks:
+      - sec.threat-model-declared
+      - sec.auth-strength
+      - sec.capabilities-min
+      - sec.csp-strict
+  - producer: code-review-runtime
+    instrument: test-runner
+    for-checks:
+      - sec.input-validated
+      - sec.errors-no-leak
+      - sec.file-uploads-safe
+  - producer: security-audit
+    instrument: dep-scanner
+    for-checks:
+      - sec.deps-no-cve
+  - producer: security-audit
+    instrument: secret-scanner
+    for-checks:
+      - sec.secrets-not-committed
+  - producer: reliability-audit
+    instrument: crash-harness
+    for-checks:
+      - sec.data-at-rest

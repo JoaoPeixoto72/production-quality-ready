@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SeoAuditConfig",
+  "type": "object",
+  "required": ["version"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string" },
+    "profilePath": { "type": "string" },
+    "targetUrl": { "type": "string" },
+    "buildDir": { "type": "string" },
+    "sitemapMax": { "type": "integer", "minimum": 1 },
+    "psiKey": { "type": "string" },
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "titleMin": { "type": "integer" },
+        "titleMax": { "type": "integer" },
+        "descriptionMin": { "type": "integer" },
+        "descriptionMax": { "type": "integer" },
+        "lcpGoodMs": { "type": "number" },
+        "inpGoodMs": { "type": "number" },
+        "clsGood": { "type": "number" },
+        "targetPassScore": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

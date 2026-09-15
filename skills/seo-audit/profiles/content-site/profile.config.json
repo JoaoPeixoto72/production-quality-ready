@@ -1,0 +1,10 @@
+{
+  "profile": { "name": "content-site", "kind": "content" },
+  "thresholds": {
+    "titleMin": 35,
+    "titleMax": 65,
+    "descriptionMin": 80,
+    "descriptionMax": 170,
+    "targetPassScore": 92
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "version": 3,
+  "profile": "default",
+  "platform": "web",
+  "offline": false,
+  "framework": "react",
+  "uiPackage": "@project/ui",
+  "uiSource": "src/ui",
+  "tokensSource": "src/ui/tokens",
+  "cssSource": "src/ui/css",
+  "basePrimitive": {
+    "package": "@base-ui/react",
+    "policy": "private",
+    "allowedInside": [
+      "src/ui",
+      "packages/ui",
+      "packages/ui-react/src"
+    ],
+    "forbiddenInsideApplications": true
+  },
+  "styling": {
+    "engine": "css",
+    "tokenFormat": "css-custom-properties",
+    "slotAttribute": "data-ui",
+    "variantAttribute": "data-variant",
+    "sizeAttribute": "data-size",
+    "themeAttribute": "data-theme",
+    "defaultTheme": "neutral",
+    "themes": [
+      "neutral",
+      "heroui",
+      "studio",
+      "editorial"
+    ],
+    "cssLayers": [
+      "ui.reset",
+      "ui.tokens",
+      "ui.core",
+      "ui.theme"
+    ],
+    "density": "normal",
+    "defaultColorScheme": "system",
+    "colorSchemes": [
+      "light",
+      "dark"
+    ],
+    "colorSchemeAttribute": "data-color-scheme",
+    "fonts": {
+      "sans": "Instrument Sans Variable",
+      "mono": "JetBrains Mono Variable",
+      "loading": "system-fallback",
+      "remoteLoading": "discouraged"
+    }
+  },
+  "quality": {
+    "requireKeyboardReview": true,
+    "requireFocusVisible": true,
+    "requireReducedMotion": true,
+    "requireResponsiveReview": true,
+    "requireLoadingEmptyErrorStates": true,
+    "forbidDirectExternalUiImports": true,
+    "forbidRawBrandColorsInApplications": true,
+    "forbidGenericFonts": true,
+    "requirePortalIsolation": true,
+    "forbidRemoteFontLoading": false
+  },
+  "migration": {
+    "strategy": "incremental",
+    "preserveBehaviorByDefault": true,
+    "allowCompatibilityAdapters": true,
+    "legacyUiAliases": [
+      "@/components/ui"
+    ]
+  }
+}

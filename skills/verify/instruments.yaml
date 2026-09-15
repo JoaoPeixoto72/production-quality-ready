@@ -1,0 +1,16 @@
+# instruments.yaml — verify
+# Contrato universal (requires-adapter: true). Producers canónicos:
+# drive-app-window (harness Windows) + adapter local do projecto.
+# Sem adapter local, NOT_VERIFIED/missing-adapter (CONTRACTS §4.5).
+accepts:
+  - producer: drive-app-window
+    instrument: gui.ps1
+    for-checks:
+      - verify.action-executed
+      - verify.screenshot-captured
+  - producer: verify
+    instrument: adapter-local
+    for-checks:
+      - verify.app-launched
+      - verify.artifact-read
+      - verify.before-after-compared

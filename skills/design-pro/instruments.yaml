@@ -1,0 +1,27 @@
+# instruments.yaml — design-pro
+#
+# design-pro é dono da régua de UX / a11y / i18n. Aceita instrumentos externos
+# que produzam candidatos para os seus checks canónicos (CONTRACTS §7.4).
+
+accepts:
+  - producer: ui-system
+    instrument: audit_ui.py
+    for-checks:
+      - a11y-critical-flows
+    note: |
+      audit_ui.py produz candidatos por ΔL OKLCH sobre tokens.css.
+      NUNCA fecha verdicts de a11y sozinho — pixels renderizados
+      exigem screenshot + amostragem perceptual (instrumento próprio
+      do design-pro).
+
+  - producer: design-pro
+    instrument: screenshot-sample
+    for-checks: ["*"]
+
+  - producer: design-pro
+    instrument: keyboard-traversal
+    for-checks: ["*"]
+
+  - producer: design-pro
+    instrument: dom-inspection
+    for-checks: ["*"]

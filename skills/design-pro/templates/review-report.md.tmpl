@@ -1,0 +1,69 @@
+# UX Review — <scope name>
+
+<Reviewer note: 2–4 sentences.>
+
+**Scope:** <screen | flow | feature | app> — <name>
+**Platform:** <iOS | Android | Web | cross-platform>
+**Guides applied:** <the reference guides applied>
+**Not reviewed:** <categories deliberately excluded, one-line reason>
+
+## Summary
+
+<2–4 sentences: overall quality, biggest risk, biggest strength. If the user asked for brevity, 2 sentences.>
+
+## Findings
+
+### <reference-guide-name>
+
+| Item | Verdict | Evidence | Severity | Confidence |
+|---|---|---|---|---|
+| <checklist item> | Pass / Fail / N/A | <cite: screen / file:line / component / region> | Blocker / Major / Minor / Nit | Observed / Inferred / Unknown |
+| ... | ... | ... | ... | ... |
+
+<Repeat for each guide applied.>
+
+## Top fixes
+
+1. **<fix name>** — <the concrete change to make, not a restatement of the problem>. Affects: <screen / component / file>.
+2. **<fix name>** — ...
+3. **<fix name>** — ...
+<(3 to 5 total; the user's brevity request caps this at 3.)>
+
+## Verification (only if fixes were also implemented)
+
+- <specific check run, and its result>
+- <specific check run, and its result>
+
+## Notes for follow-up (optional)
+
+- <items marked Unknown, and what test would resolve them>
+- <out-of-scope surfaces the reviewer noticed but did not open>
+
+---
+
+## Severity scale
+
+- **`Blocker`** — complete accessibility blocker (no keyboard / screen-reader path to submit), legal non-compliance, untrusted prompt injection.
+- **`Major`** — severe friction, high chance of abandonment, missing form error recovery, touch targets under 24×24 CSS px on primary buttons.
+- **`Minor`** — noticeable usability flaw, suboptimal microcopy, layout shift, unorganized hierarchy. Also the ceiling for a deviation from a bare number that no standard backs (see Principle 2 in `../SKILL.md`).
+- **`Nit`** — aesthetic inconsistency, slightly off spacing, polish.
+
+`Blocker` requires `Observed` evidence — never infer one (`../agent/evidence-protocol.md`).
+
+## Long form, when a finding needs prose
+
+The table above is the default. Use this shape only for findings whose fix does not fit a cell:
+
+```markdown
+### [Severity] Finding title
+- **Domain**: Onboarding / Accessibility / Forms / ...
+- **Standard**: WCAG 2.2 SC 2.5.8, HIG, Material 3 — or omit the line entirely when no standard backs it
+- **Evidence**: `path/to/file:line` (quote the snippet or describe the visible state)
+- **Confidence**: Observed / Inferred / Unknown
+- **Problem & user impact**: why this costs the user something
+- **Recommended solution**:
+  ```diff
+  - current pattern
+  + recommended pattern
+  ```
+```

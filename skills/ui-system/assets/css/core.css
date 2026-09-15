@@ -1,0 +1,1593 @@
+@layer ui.reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  :where(body) {
+    margin: 0;
+    position: relative;
+    min-height: 100dvh;
+  }
+}
+
+@layer ui.core {
+  /* ============================================================
+     1. ISOLAMENTO DO STACKING CONTEXT & RESETS GLOBAIS
+     ============================================================ */
+  :root,
+  [data-ui="app-root"] {
+    isolation: isolate;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--ui-font-sans);
+    line-height: var(--ui-leading-normal);
+  }
+
+  /* ============================================================
+     2. GESTÃO DETERMINÍSTICA DE FOCO (WCAG 2.4.7 + 2.4.11)
+     ============================================================ */
+  :focus {
+    outline: none;
+  }
+
+  :focus-visible,
+  [data-focus-visible] {
+    outline: var(--focus-ring-width) solid var(--focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  @media (forced-colors: active) {
+    :focus-visible,
+    [data-focus-visible] {
+      outline: 2px solid Highlight;
+      outline-offset: 2px;
+    }
+  }
+
+  /* ============================================================
+     3. FÍSICA TÁTIL & ESTADOS INTERATIVOS
+     ============================================================ */
+  :where(button, [role="button"]):not(:disabled, [data-disabled]) {
+    cursor: var(--cursor-interactive);
+    user-select: none;
+  }
+
+  :where(button, [role="button"]):disabled,
+  :where(button, [role="button"])[data-disabled] {
+    cursor: var(--cursor-disabled);
+    opacity: var(--disabled-opacity);
+    pointer-events: none;
+  }
+
+  /* Estado ativo/pressionado com física mecânica tátil */
+  [data-ui="button"]:not(:disabled, [data-disabled]):active,
+  [data-ui="button"][data-pressed]:not(:disabled, [data-disabled]),
+  [data-pressable="true"]:not(:disabled, [data-disabled]):active {
+    transform: scale(var(--active-scale));
+    transition: transform var(--duration-tactile) var(--ease-tactile);
+  }
+
+  [data-ui="button-spinner"] {
+    display: inline-block;
+    margin-right: var(--space-2);
+  }
+
+  /* ============================================================
+     4. COMPATIBILIDADE MOBILE / IOS SAFARI (PORTAL & BACKDROP)
+     ============================================================ */
+  [data-ui="dialog-backdrop"],
+  [data-ui="popover-backdrop"] {
+    position: fixed;
+    inset: 0;
+    background: var(--backdrop);
+    backdrop-filter: blur(4px);
+    z-index: var(--z-backdrop);
+  }
+
+  /* Fallback necessário para iOS Safari onde fixed em sub-árvores falha */
+  @supports (-webkit-touch-callout: none) {
+    [data-ui="dialog-backdrop"] {
+      position: absolute;
+    }
+  }
+
+  [data-ui="dialog-viewport"] {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow-y: auto;
+    z-index: var(--z-dialog);
+    padding: var(--space-4);
+  }
+
+  /* ── Os positioners, e porque é que o empilhamento vive aqui ──────────
+     Estes quatro slots não existiam, e as quatro declarações de `z-index`
+     que havia estavam nos `*-popup` — onde não fazem nada. Duas razões, as
+     duas medidas (`docs/FACTOS-VERIFICADOS.md`):
+
+     1. um `*-popup` é `position: static`, e num elemento não posicionado o
+        `z-index` é ignorado. O `z-index: 50` que aqui estava nunca chegou a
+        valer nada;
+     2. e mesmo posicionado ficava preso: o `Positioner` do Base UI é
+        `position: fixed`, e no Blink isso é um contexto de empilhamento
+        próprio ao nível `auto` — por isso subir o popup a 9999 não o tirava
+        de trás de um diálogo. Quem sai do contexto é o positioner.
+
+     É por isso que o número vive aqui, e não uma linha abaixo. */
+  [data-ui="select-positioner"],
+  [data-ui="dropdown-positioner"],
+  [data-ui="popover-positioner"] {
+    z-index: var(--z-anchored);
+  }
+
+  [data-ui="tooltip-positioner"] {
+    z-index: var(--z-tooltip);
+  }
+
+  [data-ui="dialog-popup"] {
+    position: relative;
+    background: var(--surface, var(--background));
+    color: var(--foreground);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--overlay-shadow, none);
+    max-width: 100%;
+    outline: none;
+  }
+
+  [data-ui="dialog-popup"][data-size="sm"] { width: 24rem; }
+  [data-ui="dialog-popup"][data-size="md"] { width: 32rem; }
+  [data-ui="dialog-popup"][data-size="lg"] { width: 48rem; }
+
+  /* ============================================================
+     5. CONTROLOS DE FORMULÁRIO (INPUT, FIELD, SWITCH)
+     ============================================================ */
+  [data-ui="field"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1-5);
+  }
+
+  [data-ui="field-label"] {
+    font-size: var(--ui-text-sm);
+    font-weight: 500;
+    color: var(--foreground);
+  }
+
+  [data-ui="input"] {
+    height: 2.5rem;
+    padding: 0 var(--space-3);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--field-background, var(--surface));
+    color: var(--field-foreground, var(--foreground));
+    font-size: var(--ui-text-sm);
+    font-family: inherit;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  [data-ui="input"]:focus-visible {
+    border-color: var(--focus);
+  }
+
+  [data-ui="field-error"] {
+    font-size: var(--ui-text-xs);
+    color: var(--danger);
+  }
+
+  [data-ui="field-description"] {
+    font-size: var(--ui-text-xs);
+    color: var(--muted);
+  }
+
+  /* Select
+     O gatilho é um `<button>`, e não um `<select>`: a lista vive num portal,
+     e por isso é estilizável e fotografável — a lista de um `<select>` nativo
+     abre numa janela do sistema, que nem se desenha nem se captura. */
+  [data-ui="select-trigger"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 var(--space-3);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--field-background, var(--surface));
+    color: var(--field-foreground, var(--foreground));
+    font-size: var(--ui-text-sm);
+    font-family: inherit;
+    text-align: left;
+    cursor: var(--cursor-interactive);
+    transition:
+      border-color var(--duration-tactile) var(--ease-tactile),
+      background-color var(--duration-tactile) var(--ease-tactile);
+  }
+
+  /* O valor escolhido, numa linha só. Um gatilho é um controlo de uma linha
+     por convenção, e sem isto uma etiqueta comprida parte-se em duas e faz o
+     campo crescer — desalinhando-o do que estiver ao lado dele. Visto na
+     janela: o modelo do Whisper («Muito bom — o melhor pelo que ocupa») ao
+     lado da caixa do idioma. O `min-width: 0` é o que deixa um filho de flex
+     encolher abaixo do próprio conteúdo; sem ele o `ellipsis` nunca chega a
+     acontecer. */
+  [data-ui="select-value"] {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  [data-ui="select-trigger"]:disabled,
+  [data-ui="select-trigger"][data-disabled] {
+    opacity: var(--disabled-opacity);
+    cursor: var(--cursor-disabled);
+  }
+
+  /* A seta roda quando a lista abre: é como o botão diz que o que está por
+     baixo dele é dele, sem uma segunda etiqueta a explicá-lo. */
+  [data-ui="select-icon"] {
+    flex: none;
+    color: var(--muted);
+    transition: transform var(--duration-tactile) var(--ease-tactile);
+  }
+
+  [data-ui="select-trigger"][data-popup-open] [data-ui="select-icon"] {
+    transform: rotate(180deg);
+  }
+
+  [data-ui="select-popup"] {
+    min-width: 12rem;
+    max-height: 18rem;
+    overflow-y: auto;
+    padding: var(--space-1-5);
+    background-color: var(--overlay, var(--surface));
+    color: var(--overlay-foreground, var(--foreground));
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--overlay-shadow, none);
+    outline: none;
+  }
+
+  [data-ui="select-item"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-2-5);
+    border-radius: var(--radius-sm);
+    font-size: var(--ui-text-sm);
+    cursor: var(--cursor-interactive);
+    outline: none;
+    user-select: none;
+    transition: background-color var(--duration-tactile) var(--ease-tactile);
+  }
+
+  /* O realce é do teclado e do rato ao mesmo tempo — o Base UI põe
+     `data-highlighted` nos dois, e por isso não há aqui um `:hover` à parte
+     que discordasse dele. */
+  [data-ui="select-item"][data-highlighted] {
+    background-color: var(--content2);
+  }
+
+  [data-ui="select-item"][data-disabled] {
+    opacity: var(--disabled-opacity);
+    cursor: var(--cursor-disabled);
+  }
+
+  [data-ui="select-indicator"] {
+    flex: none;
+    color: var(--primary);
+  }
+
+  /* Switch */
+  [data-ui="switch"] {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    width: 2.25rem;
+    height: 1.25rem;
+    padding: 2px;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-full);
+    background-color: var(--default);
+    cursor: var(--cursor-interactive);
+    transition: background-color var(--duration-tactile) var(--ease-tactile);
+  }
+
+  [data-ui="switch"][data-checked] {
+    background-color: var(--primary);
+    border-color: var(--primary);
+  }
+
+  [data-ui="switch"]:disabled,
+  [data-ui="switch"][data-disabled] {
+    opacity: var(--disabled-opacity);
+    cursor: var(--cursor-disabled);
+  }
+
+  [data-ui="switch-thumb"] {
+    width: 1rem;
+    height: 1rem;
+    border-radius: var(--radius-full);
+    background-color: var(--foreground);
+    transition: transform var(--duration-tactile) var(--ease-tactile);
+  }
+
+  [data-ui="switch"][data-checked] [data-ui="switch-thumb"] {
+    transform: translateX(1rem);
+    background-color: var(--primary-foreground);
+  }
+
+  [data-ui="switch-label"] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: var(--cursor-interactive);
+  }
+
+  [data-ui="switch-text"] {
+    font-size: var(--ui-text-sm);
+  }
+
+  /* ============================================================
+     6. COMPONENTES EXPANDIDOS (PARIDADE HEROUI V3)
+     ============================================================ */
+
+  /* Separator / Divider */
+  [data-ui="separator"] {
+    background-color: var(--divider);
+    border: none;
+    flex-shrink: 0;
+  }
+  [data-ui="separator"][data-orientation="horizontal"] {
+    height: var(--border-width);
+    width: 100%;
+    margin: var(--space-3) 0;
+  }
+  [data-ui="separator"][data-orientation="vertical"] {
+    width: var(--border-width);
+    height: 100%;
+    margin: 0 var(--space-3);
+  }
+
+  /* Skeleton */
+  [data-ui="skeleton"] {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--content2);
+    border-radius: var(--radius-md);
+  }
+  [data-ui="skeleton"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--content4) 50%, transparent 50%),
+      transparent
+    );
+    animation: ui-shimmer 1.5s infinite;
+  }
+  [data-ui="skeleton-content"] {
+    visibility: hidden;
+  }
+  @keyframes ui-shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  /* Spacer */
+  [data-ui="spacer"] {
+    display: block;
+    user-select: none;
+  }
+  [data-ui="spacer"][data-orientation="horizontal"] {
+    width: var(--space-4);
+    height: 1px;
+  }
+  [data-ui="spacer"][data-orientation="vertical"] {
+    height: var(--space-4);
+    width: 1px;
+  }
+
+  /* ScrollShadow */
+  [data-ui="scroll-shadow"] {
+    overflow: auto;
+    position: relative;
+    scrollbar-width: thin;
+  }
+
+  /* Spinner */
+  [data-ui="spinner"] {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+  [data-ui="spinner-circle"] {
+    display: inline-block;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    animation: ui-spin 0.8s linear infinite;
+  }
+  [data-ui="spinner"][data-size="sm"] [data-ui="spinner-circle"] { width: 1rem; height: 1rem; border-width: 2px; }
+  [data-ui="spinner"][data-size="md"] [data-ui="spinner-circle"] { width: 1.5rem; height: 1.5rem; border-width: 2.5px; }
+  [data-ui="spinner"][data-size="lg"] [data-ui="spinner-circle"] { width: 2.25rem; height: 2.25rem; border-width: 3px; }
+  [data-ui="spinner-label"] {
+    font-size: var(--ui-text-xs);
+    color: var(--muted);
+  }
+  @keyframes ui-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Progress & CircularProgress */
+  [data-ui="progress"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    width: 100%;
+  }
+  [data-ui="progress-header"] {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--ui-text-xs);
+    color: var(--foreground);
+  }
+  [data-ui="progress-track"] {
+    position: relative;
+    height: 0.5rem;
+    background-color: var(--content2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+  [data-ui="progress-indicator"] {
+    position: absolute;
+    inset: 0;
+    background-color: var(--primary);
+    border-radius: var(--radius-full);
+    transition: transform 300ms ease;
+  }
+  [data-ui="progress"][data-color="secondary"] [data-ui="progress-indicator"] { background-color: var(--secondary); }
+  [data-ui="progress"][data-color="success"] [data-ui="progress-indicator"] { background-color: var(--success); }
+  [data-ui="progress"][data-color="warning"] [data-ui="progress-indicator"] { background-color: var(--warning); }
+  [data-ui="progress"][data-color="danger"] [data-ui="progress-indicator"] { background-color: var(--danger); }
+
+  /* Sem valor conhecido, o indicador deixa de medir e passa a dizer só «isto
+     anda»: um troço a atravessar a pista, em vez de a encher.
+
+     **Sem esta regra o `isIndeterminate` dava uma barra cheia e parada** — que é
+     exactamente a mentira oposta à que ele existe para evitar. Era um estado que
+     o componente emitia e que o sistema não desenhava: a mesma armadilha dos
+     positioners sem `data-ui`. */
+  [data-ui="progress"][data-indeterminate] [data-ui="progress-indicator"] {
+    right: auto;
+    width: 35%;
+    animation: ui-progress-slide 1.4s ease-in-out infinite;
+  }
+
+  @keyframes ui-progress-slide {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(340%);
+    }
+  }
+
+  [data-ui="circular-progress"] {
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+  }
+  [data-ui="circular-progress-svg"] {
+    transform: rotate(-90deg);
+  }
+  [data-ui="circular-progress-track"] {
+    fill: none;
+    stroke: var(--content2);
+  }
+  [data-ui="circular-progress-indicator"] {
+    fill: none;
+    stroke: var(--primary);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 300ms ease;
+  }
+  [data-ui="circular-progress-label"] {
+    position: absolute;
+    font-size: var(--ui-text-2xs);
+    font-weight: 600;
+  }
+  [data-ui="circular-progress"][data-size="sm"] { width: 2rem; height: 2rem; }
+  [data-ui="circular-progress"][data-size="md"] { width: 2.75rem; height: 2.75rem; }
+  [data-ui="circular-progress"][data-size="lg"] { width: 3.5rem; height: 3.5rem; }
+
+  [data-ui="progress-label"] {
+    font-size: var(--ui-text-sm);
+    color: var(--foreground);
+  }
+
+  /* Os números alinham em coluna: um valor que dança horizontalmente
+     enquanto muda lê-se como ruído, e estes mudam a toda a hora. */
+  [data-ui="progress-value"] {
+    font-size: var(--ui-text-sm);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Avatar & User */
+  [data-ui="avatar"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background-color: var(--content3);
+    color: var(--foreground);
+    font-weight: 600;
+    overflow: hidden;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  [data-ui="avatar"][data-size="sm"] { width: 2rem; height: 2rem; font-size: var(--ui-text-xs); }
+  [data-ui="avatar"][data-size="md"] { width: 2.5rem; height: 2.5rem; font-size: var(--ui-text-sm); }
+  [data-ui="avatar"][data-size="lg"] { width: 3.25rem; height: 3.25rem; font-size: var(--ui-text-base); }
+  [data-ui="avatar"][data-bordered] {
+    outline: var(--focus-ring-width) solid var(--primary);
+    outline-offset: var(--focus-ring-offset);
+  }
+  [data-ui="avatar-img"] {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  [data-ui="avatar-group"] {
+    display: inline-flex;
+    align-items: center;
+  }
+  [data-ui="avatar-group"] > [data-ui="avatar"] {
+    margin-left: calc(var(--space-2) * -1);
+    border: 2px solid var(--background);
+  }
+  [data-ui="avatar-group"] > [data-ui="avatar"]:first-child {
+    margin-left: 0;
+  }
+
+  [data-ui="user"] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  [data-ui="user-info"] {
+    display: flex;
+    flex-direction: column;
+    line-height: var(--ui-leading-tight);
+  }
+  [data-ui="user-name"] {
+    font-size: var(--ui-text-sm);
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  [data-ui="user-description"] {
+    font-size: var(--ui-text-xs);
+    color: var(--muted);
+  }
+
+  [data-ui="avatar-fallback"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: var(--content3);
+    color: var(--foreground);
+    font-size: var(--ui-text-sm);
+    font-weight: 600;
+  }
+
+  /* Chip */
+  [data-ui="chip"] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    padding: var(--space-1) var(--space-2-5);
+    border-radius: var(--radius-full);
+    font-size: var(--ui-text-xs);
+    font-weight: 500;
+    line-height: 1;
+    background-color: var(--content2);
+    color: var(--foreground);
+    border: var(--border-width) solid transparent;
+  }
+  /* O chip como interruptor: um `<button aria-pressed>`. **O estado vive no
+     `aria-pressed` e não numa classe**, porque é ali que ele tem de estar para
+     quem lê por som — e assim o CSS e o leitor de ecrã leem a mesma coisa. */
+  [data-ui="chip"][aria-pressed] {
+    border: var(--border-width) solid transparent;
+    cursor: var(--cursor-interactive);
+    font-family: inherit;
+  }
+
+  [data-ui="chip"][aria-pressed="true"] {
+    background-color: var(--primary);
+    color: var(--primary-foreground, var(--white));
+  }
+
+  [data-ui="chip"][data-variant="bordered"] {
+    border-color: var(--border);
+    background-color: transparent;
+  }
+  [data-ui="chip"][data-variant="dot"] [data-ui="chip-dot"] {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: var(--radius-full);
+    background-color: var(--primary);
+  }
+  [data-ui="chip-close-btn"] {
+    border: none;
+    background: transparent;
+    color: currentColor;
+    font-size: 0.625rem;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.7;
+  }
+  [data-ui="chip-close-btn"]:hover {
+    opacity: 1;
+  }
+
+  [data-ui="chip-content"] {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Kbd */
+  [data-ui="kbd"] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0.125rem var(--space-1-5);
+    background-color: var(--content2);
+    color: var(--foreground);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--ui-font-mono);
+    font-size: var(--ui-text-2xs);
+    box-shadow: 0 1px 0 0 var(--border);
+  }
+  [data-ui="kbd-abbr"] {
+    text-decoration: none;
+  }
+
+  [data-ui="kbd-content"] {
+    font-family: var(--ui-font-mono);
+  }
+
+  /* Snippet */
+  [data-ui="snippet"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--content1);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--ui-font-mono);
+    font-size: var(--ui-text-xs);
+  }
+  [data-ui="snippet-pre"] {
+    margin: 0;
+    overflow-x: auto;
+  }
+  [data-ui="snippet-copy-btn"] {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+  [data-ui="snippet-copy-btn"]:hover {
+    color: var(--foreground);
+  }
+
+  /* Number field
+     O `group` é a linha que junta o campo aos botões de somar e subtrair — que
+     são opcionais, e por omissão não estão lá. Sem eles, a linha é só o campo,
+     e por isso ele herda o desenho do `input`. */
+  [data-ui="number-field-group"] {
+    display: flex;
+    align-items: stretch;
+  }
+
+  [data-ui="number-field-input"] {
+    height: 2.5rem;
+    min-width: 0;
+    flex: 1;
+    padding: 0 var(--space-3);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--field-background, var(--surface));
+    color: var(--field-foreground, var(--foreground));
+    font-size: var(--ui-text-sm);
+    font-family: inherit;
+    text-align: inherit;
+  }
+
+  [data-ui="number-field-decrement"],
+  [data-ui="number-field-increment"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    border: var(--border-width) solid var(--border);
+    background: var(--content2);
+    color: var(--foreground);
+    cursor: var(--cursor-interactive);
+  }
+
+  [data-ui="number-field-decrement"] {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    border-right: none;
+  }
+
+  [data-ui="number-field-increment"] {
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    border-left: none;
+  }
+
+  /* Com botões, o campo perde os cantos que passam a ser deles. */
+  [data-ui="number-field-decrement"] + [data-ui="number-field-input"] {
+    border-radius: 0;
+  }
+
+  [data-ui="number-field-input"]:has(+ [data-ui="number-field-increment"]) {
+    border-radius: 0;
+  }
+
+  /* Color field
+     É o `<input type="color">` nativo — o único que abre o seletor do sistema.
+     O quadrado que o browser desenha não tem fundo nenhum por baixo, e sobre um
+     tema escuro aparece como um rectângulo branco cru: o `background` daqui é
+     o que o põe sobre a superfície certa. */
+  [data-ui="color-field"] {
+    width: 4rem;
+    height: 2.5rem;
+    padding: var(--space-1);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    cursor: var(--cursor-interactive);
+  }
+
+  /* O Chromium põe um embrulho com folga própria à volta da amostra, e uma
+     borda por cima dela. Sem estes dois, a folga não chega a aparecer. */
+  [data-ui="color-field"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  [data-ui="color-field"]::-webkit-color-swatch {
+    border: none;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Textarea */
+  [data-ui="textarea"] {
+    min-height: 5rem;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--field-background, var(--surface));
+    color: var(--field-foreground, var(--foreground));
+    font-size: var(--ui-text-sm);
+    font-family: inherit;
+    line-height: var(--ui-leading-normal);
+    resize: vertical;
+    transition: border-color 150ms ease;
+  }
+  [data-ui="textarea"]:focus-visible {
+    border-color: var(--focus);
+  }
+
+  /* Segmented control — uma escolha entre poucas, em pílulas na mesma linha.
+     O estado vive no `aria-checked`, como no chip: é ali que quem lê por som o
+     procura, e assim não há uma classe a dizer a mesma coisa noutro sítio. */
+  [data-ui="segmented"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  [data-ui="segmented-item"] {
+    padding: var(--space-1-5) var(--space-3);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--content2);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: var(--ui-text-sm);
+    cursor: var(--cursor-interactive);
+  }
+
+  [data-ui="segmented-item"][aria-checked="true"] {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--primary-foreground, var(--white));
+  }
+
+  [data-ui="segmented-item"]:disabled {
+    opacity: var(--disabled-opacity);
+    cursor: var(--cursor-disabled);
+  }
+
+  /* Radio cards — a mesma escolha do segmented, mas quando há uma frase para
+     ler ou uma amostra para olhar em vez de um nome que se explica sozinho. */
+  [data-ui="radio-cards"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  [data-ui="radio-card"] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--content1);
+    color: var(--foreground);
+    font-family: inherit;
+    text-align: left;
+    cursor: var(--cursor-interactive);
+  }
+
+  [data-ui="radio-card"][aria-checked="true"] {
+    border-color: var(--primary);
+  }
+
+  [data-ui="radio-card"]:disabled {
+    opacity: var(--disabled-opacity);
+    cursor: var(--cursor-disabled);
+  }
+
+  [data-ui="radio-card-title"] {
+    font-size: var(--ui-text-sm);
+    font-weight: 600;
+  }
+
+  [data-ui="radio-card-description"] {
+    font-size: var(--ui-text-xs);
+    color: var(--muted);
+  }
+
+  /* Checkbox & Radio */
+  [data-ui="checkbox-label"],
+  [data-ui="radio-label"] {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--space-2-5);
+    cursor: var(--cursor-interactive);
+    user-select: none;
+  }
+  [data-ui="checkbox"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: var(--content2);
+    color: var(--white);
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+  }
+  [data-ui="checkbox"][data-checked] {
+    background-color: var(--primary);
+    border-color: var(--primary);
+  }
+  [data-ui="checkbox-indicator"] {
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  [data-ui="radio"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-full);
+    background-color: var(--content2);
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+  }
+  [data-ui="radio"][data-checked] {
+    border-color: var(--primary);
+  }
+  [data-ui="radio-indicator"] {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: var(--radius-full);
+    background-color: var(--primary);
+  }
+  [data-ui="checkbox-text-wrapper"],
+  [data-ui="radio-text-wrapper"] {
+    display: flex;
+    flex-direction: column;
+    line-height: var(--ui-leading-tight);
+  }
+  [data-ui="checkbox-text"],
+  [data-ui="radio-text"] {
+    font-size: var(--ui-text-sm);
+    color: var(--foreground);
+  }
+  [data-ui="checkbox-description"],
+  [data-ui="radio-description"] {
+    font-size: var(--ui-text-xs);
+    color: var(--muted);
+  }
+  [data-ui="checkbox-group"],
+  [data-ui="radio-group"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  [data-ui="checkbox-group-items"],
+  [data-ui="radio-group-items"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  [data-ui="checkbox-group-label"],
+  [data-ui="radio-group-label"] {
+    font-size: var(--ui-text-sm);
+    font-weight: 500;
+    color: var(--foreground);
+  }
+
+  [data-ui="checkbox-group-description"],
+  [data-ui="radio-group-description"] {
+    font-size: var(--ui-text-xs);
+    color: var(--muted);
+  }
+
+  [data-ui="checkbox-group-error"] {
+    font-size: var(--ui-text-xs);
+    color: var(--danger);
+  }
+
+  /* Slider */
+  [data-ui="slider"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+  }
+  [data-ui="slider-header"] {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--ui-text-xs);
+    color: var(--foreground);
+  }
+  [data-ui="slider-control"] {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 1.5rem;
+    width: 100%;
+    touch-action: none;
+  }
+  [data-ui="slider-track"] {
+    position: relative;
+    height: 0.375rem;
+    width: 100%;
+    background-color: var(--content2);
+    border-radius: var(--radius-full);
+  }
+  [data-ui="slider-indicator"] {
+    position: absolute;
+    height: 100%;
+    background-color: var(--primary);
+    border-radius: var(--radius-full);
+  }
+  [data-ui="slider-thumb"] {
+    display: block;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: var(--radius-full);
+    background-color: var(--surface);
+    border: 2px solid var(--primary);
+    box-shadow: 0 1px 3px 0 color-mix(in oklab, var(--black) 15%, transparent 85%);
+  }
+  [data-ui="slider-thumb"]:active {
+    transform: scale(1.15);
+  }
+
+  [data-ui="slider-label"] {
+    font-size: var(--ui-text-sm);
+    color: var(--foreground);
+  }
+
+  [data-ui="slider-value"] {
+    font-size: var(--ui-text-sm);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Breadcrumbs */
+  [data-ui="breadcrumbs-list"] {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: var(--space-2);
+    font-size: var(--ui-text-sm);
+  }
+  [data-ui="breadcrumb-link"] {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 150ms ease;
+  }
+  [data-ui="breadcrumb-link"]:hover {
+    color: var(--foreground);
+  }
+  [data-ui="breadcrumb-current"] {
+    color: var(--foreground);
+    font-weight: 500;
+  }
+  [data-ui="breadcrumb-separator"] {
+    color: var(--muted);
+    user-select: none;
+  }
+
+  [data-ui="breadcrumbs"],
+  [data-ui="breadcrumb-item"] {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Pagination */
+  [data-ui="pagination"] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    user-select: none;
+  }
+  [data-ui="pagination-item"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-md);
+    border: var(--border-width) solid transparent;
+    background-color: var(--content2);
+    color: var(--foreground);
+    font-size: var(--ui-text-sm);
+    cursor: pointer;
+    transition: background-color 150ms ease;
+  }
+  [data-ui="pagination-item"]:hover:not(:disabled) {
+    background-color: var(--content3);
+  }
+  [data-ui="pagination-item"][aria-current="page"] {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 600;
+  }
+  [data-ui="pagination-item"]:disabled {
+    opacity: var(--disabled-opacity);
+    cursor: not-allowed;
+  }
+
+  /* Dropdown / Menu */
+  [data-ui="dropdown-menu"] {
+    min-width: 12rem;
+    padding: var(--space-1-5);
+    background-color: var(--surface);
+    color: var(--foreground);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--overlay-shadow, none);
+    outline: none;
+  }
+  [data-ui="dropdown-item"] {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-2-5);
+    border-radius: var(--radius-sm);
+    font-size: var(--ui-text-sm);
+    cursor: pointer;
+    outline: none;
+    user-select: none;
+    transition: background-color 150ms ease;
+  }
+  [data-ui="dropdown-item"]:hover,
+  [data-ui="dropdown-item"][data-highlighted] {
+    background-color: var(--content2);
+  }
+  [data-ui="dropdown-separator"] {
+    height: var(--border-width);
+    background-color: var(--divider);
+    margin: var(--space-1) 0;
+  }
+
+  /* Navbar */
+  [data-ui="navbar"] {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-navbar);
+    width: 100%;
+    background-color: color-mix(in oklab, var(--background) 85%, transparent 15%);
+    backdrop-filter: blur(8px);
+    border-bottom: var(--border-width) solid var(--border);
+  }
+  [data-ui="navbar-container"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+    height: 4rem;
+  }
+  [data-ui="navbar-brand"] {
+    font-weight: 700;
+    font-size: var(--ui-text-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  [data-ui="navbar-content"] {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  [data-ui="navbar-item"] {
+    font-size: var(--ui-text-sm);
+    color: var(--muted);
+    transition: color 150ms ease;
+  }
+  [data-ui="navbar-item"]:hover {
+    color: var(--foreground);
+  }
+
+  /* Link */
+  [data-ui="link"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--primary);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  [data-ui="link"][data-underline="hover"]:hover {
+    text-decoration: underline;
+  }
+  [data-ui="link"][data-underline="always"] {
+    text-decoration: underline;
+  }
+  [data-ui="link-external-icon"] {
+    font-size: 0.75em;
+  }
+
+  /* Accordion */
+  [data-ui="accordion"] {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius-lg);
+    border: var(--border-width) solid var(--border);
+    overflow: hidden;
+  }
+  [data-ui="accordion-item"] {
+    border-bottom: var(--border-width) solid var(--border);
+  }
+  [data-ui="accordion-item"]:last-child {
+    border-bottom: none;
+  }
+  [data-ui="accordion-header"] {
+    margin: 0;
+  }
+  [data-ui="accordion-trigger"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-4);
+    background: transparent;
+    border: none;
+    color: var(--foreground);
+    font-size: var(--ui-text-sm);
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+  [data-ui="accordion-trigger"]:hover {
+    background-color: var(--content1);
+  }
+  [data-ui="accordion-indicator"] {
+    transition: transform 200ms ease;
+  }
+  [data-ui="accordion-trigger"][data-state="open"] [data-ui="accordion-indicator"] {
+    transform: rotate(180deg);
+  }
+  [data-ui="accordion-panel"] {
+    padding: 0 var(--space-4) var(--space-4) var(--space-4);
+    font-size: var(--ui-text-sm);
+    color: var(--muted);
+  }
+
+  [data-ui="accordion-title-wrapper"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-0-5);
+    text-align: left;
+  }
+
+  [data-ui="accordion-title"] {
+    font-size: var(--ui-text-sm);
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  [data-ui="accordion-subtitle"] {
+    font-size: var(--ui-text-xs);
+    color: var(--muted);
+  }
+
+  [data-ui="accordion-content"] {
+    padding: 0 0 var(--space-3);
+    font-size: var(--ui-text-sm);
+  }
+
+  /* Drawer */
+  [data-ui="drawer-popup"] {
+    position: fixed;
+    z-index: var(--z-dialog);
+    background-color: var(--surface);
+    color: var(--foreground);
+    box-shadow: var(--overlay-shadow, none);
+    outline: none;
+    overflow-y: auto;
+    padding: var(--space-6);
+  }
+  [data-ui="drawer-popup"][data-placement="right"] {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24rem;
+    max-width: 100%;
+    border-left: var(--border-width) solid var(--border);
+  }
+  [data-ui="drawer-popup"][data-placement="left"] {
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 24rem;
+    max-width: 100%;
+    border-right: var(--border-width) solid var(--border);
+  }
+  [data-ui="drawer-popup"][data-placement="bottom"] {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 80vh;
+    border-top: var(--border-width) solid var(--border);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  [data-ui="drawer-header"] {
+    margin-bottom: var(--space-4);
+  }
+  [data-ui="drawer-title"] {
+    font-size: var(--ui-text-lg);
+    font-weight: 600;
+  }
+  [data-ui="drawer-description"] {
+    font-size: var(--ui-text-sm);
+    color: var(--muted);
+  }
+
+  /* Dialog — o corpo, a cabeça e o título. O `dialog-popup`, o
+     `dialog-backdrop` e o `dialog-viewport` estão na secção 4, com o resto
+     do que é portal. */
+  [data-ui="dialog-header"],
+  [data-ui="drawer-header"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-bottom: var(--space-3);
+  }
+
+  [data-ui="dialog-title"] {
+    margin: 0;
+    font-size: var(--ui-text-lg);
+    font-weight: 600;
+  }
+
+  [data-ui="dialog-description"],
+  [data-ui="dialog-body"],
+  [data-ui="drawer-body"] {
+    font-size: var(--ui-text-sm);
+    color: var(--muted);
+  }
+
+  /* A marca à esquerda do título, e o botão de fechar no canto. Os dois são
+     opcionais — sem `icon` e sem `closeLabel` não existem —, mas a cabeça tem
+     de saber pô-los em linha quando existem: com um deles, o cabeçalho deixa de
+     ser uma coluna de título+descrição e passa a ser uma linha. */
+  [data-ui="dialog-header"]:has([data-ui="dialog-icon"]),
+  [data-ui="dialog-header"]:has([data-ui="dialog-close"]) {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2-5);
+  }
+
+  [data-ui="dialog-icon"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    color: var(--primary);
+  }
+
+  [data-ui="dialog-title"]:not(:only-child) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  [data-ui="dialog-close"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    cursor: var(--cursor-interactive);
+  }
+
+  [data-ui="dialog-close"]:hover {
+    color: var(--foreground);
+  }
+
+  /* A linha dos botões de acção, encostada à direita. */
+  [data-ui="dialog-footer"] {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  /* Card */
+  [data-ui="card"] {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--content1);
+    color: var(--foreground);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  [data-ui="card-header"] {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-4) var(--space-2);
+    font-weight: 600;
+  }
+
+  [data-ui="card-body"] {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--ui-text-sm);
+  }
+
+  [data-ui="card-footer"] {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4) var(--space-4);
+  }
+
+  /* Badge */
+  [data-ui="badge"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-width: 1.25rem;
+    padding: 0 var(--space-1-5);
+    border-radius: var(--radius-full);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    font-size: var(--ui-text-2xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.25rem;
+  }
+
+  [data-ui="badge"][data-color="danger"] {
+    background-color: var(--danger);
+    color: var(--danger-foreground);
+  }
+  [data-ui="badge"][data-color="success"] {
+    background-color: var(--success);
+    color: var(--success-foreground);
+  }
+  [data-ui="badge"][data-color="warning"] {
+    background-color: var(--warning);
+    color: var(--warning-foreground);
+  }
+
+  /* Tabs */
+  [data-ui="tabs-list"] {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    background-color: var(--content2);
+    border-radius: var(--radius-md);
+  }
+
+  [data-ui="tabs-tab"] {
+    padding: var(--space-1-5) var(--space-3);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--ui-text-sm);
+    font-family: inherit;
+    cursor: var(--cursor-interactive);
+    transition:
+      background-color var(--duration-tactile) var(--ease-tactile),
+      color var(--duration-tactile) var(--ease-tactile);
+  }
+
+  [data-ui="tabs-tab"][data-selected] {
+    background-color: var(--surface);
+    color: var(--foreground);
+  }
+
+  [data-ui="tabs-panel"] {
+    padding-top: var(--space-3);
+    outline: none;
+  }
+
+  /* Tooltip & Popover */
+  [data-ui="tooltip-popup"] {
+    padding: var(--space-1-5) var(--space-2-5);
+    background-color: var(--content4);
+    color: var(--foreground);
+    border-radius: var(--radius-sm);
+    font-size: var(--ui-text-xs);
+    line-height: var(--ui-leading-tight);
+    max-width: 20rem;
+    box-shadow: var(--overlay-shadow, none);
+    /* Uma dica diz muitas vezes um caminho de ficheiro, e um caminho não tem
+       espaços por onde partir: sem isto, a caixa estica-se para além dos 20rem
+       e sai do ecrã. */
+    overflow-wrap: break-word;
+  }
+
+  /* A seta aponta ao gatilho, e o desenho vem de dentro do componente com
+     `currentColor` — sem ele, esta `color` sozinha não pintava nada. O Base UI
+     encosta-a ao lado certo e centra-a; o que falta é tirá-la de cima da caixa
+     (a altura do desenho) e virá-la para o lado de onde ela saiu. */
+  [data-ui="tooltip-arrow"] {
+    display: flex;
+    color: var(--content4);
+  }
+
+  [data-ui="tooltip-arrow"][data-side="top"] {
+    bottom: -5px;
+  }
+
+  [data-ui="tooltip-arrow"][data-side="bottom"] {
+    top: -5px;
+    rotate: 180deg;
+  }
+
+  /* Nos lados é mais 2,5px: a seta tem 10 de largo por 5 de alto, e rodada
+     continua a ocupar uma caixa de 10 — metade da diferença fica a sobrar. */
+  [data-ui="tooltip-arrow"][data-side="left"] {
+    right: -7.5px;
+    rotate: 90deg;
+  }
+
+  [data-ui="tooltip-arrow"][data-side="right"] {
+    left: -7.5px;
+    rotate: -90deg;
+  }
+
+  [data-ui="popover-popup"] {
+    padding: var(--space-4);
+    background-color: var(--overlay);
+    color: var(--overlay-foreground, var(--foreground));
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--overlay-shadow, none);
+    outline: none;
+  }
+
+  /* Table */
+  [data-ui="table-container"] {
+    width: 100%;
+    overflow-x: auto;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  [data-ui="table"] {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--ui-text-sm);
+  }
+
+  [data-ui="table-header"] {
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    font-weight: 600;
+    color: var(--muted);
+    background-color: var(--content2);
+  }
+
+  [data-ui="table-cell"] {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  [data-ui="table-row"] + [data-ui="table-row"] [data-ui="table-cell"] {
+    border-top: var(--border-width) solid var(--divider);
+  }
+
+  /* ============================================================
+     7. RESPETO A PREFERS-REDUCED-MOTION
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    [data-ui="button"]:not(:disabled, [data-disabled]):active,
+    [data-ui="button"][data-pressed]:not(:disabled, [data-disabled]),
+    [data-ui="slider-thumb"]:active {
+      transform: none !important;
+    }
+
+    [data-ui="skeleton"]::after {
+      animation: none !important;
+    }
+
+    [data-ui="spinner-circle"] {
+      animation: none !important;
+    }
+  }
+}

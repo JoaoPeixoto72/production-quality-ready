@@ -1,0 +1,10 @@
+{
+  "profile": { "name": "spa-app", "kind": "spa" },
+  "thresholds": {
+    "titleMin": 20,
+    "titleMax": 60,
+    "descriptionMin": 60,
+    "descriptionMax": 170,
+    "targetPassScore": 85
+  }
+}

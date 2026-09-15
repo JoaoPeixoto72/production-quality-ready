@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "profile": "video-editor",
+  "platform": "tauri",
+  "offline": true,
+  "framework": "react",
+  "uiPackage": "@project/ui",
+  "uiSource": "packages/ui-react/src",
+  "tokensSource": "packages/ui-tokens/src",
+  "cssSource": "packages/ui-css/src",
+  "basePrimitive": {
+    "package": "@base-ui/react",
+    "policy": "private",
+    "allowedInside": [
+      "packages/ui-react/src"
+    ],
+    "forbiddenInsideApplications": true
+  },
+  "styling": {
+    "engine": "css",
+    "tokenFormat": "css-custom-properties",
+    "slotAttribute": "data-ui",
+    "variantAttribute": "data-variant",
+    "sizeAttribute": "data-size",
+    "themeAttribute": "data-theme",
+    "defaultTheme": "studio",
+    "cssLayers": [
+      "ui.reset",
+      "ui.tokens",
+      "ui.core",
+      "ui.theme"
+    ],
+    "density": "slightly-spacious",
+    "defaultColorScheme": "dark",
+    "fonts": {
+      "sans": "Instrument Sans Variable",
+      "mono": "JetBrains Mono Variable",
+      "loading": "embedded-woff2",
+      "remoteLoading": "forbidden"
+    },
+    "colorSchemes": [
+      "dark",
+      "light"
+    ],
+    "colorSchemeAttribute": "data-color-scheme"
+  },
+  "themes": [
+    "studio"
+  ],
+  "quality": {
+    "requireKeyboardReview": true,
+    "requireFocusVisible": true,
+    "requireReducedMotion": true,
+    "requireResponsiveReview": true,
+    "requireLoadingEmptyErrorStates": true,
+    "forbidDirectExternalUiImports": true,
+    "forbidRawBrandColorsInApplications": true,
+    "forbidGenericFonts": true,
+    "requirePortalIsolation": true,
+    "forbidRemoteFontLoading": true
+  },
+  "migration": {
+    "strategy": "incremental",
+    "preserveBehaviorByDefault": true,
+    "allowCompatibilityAdapters": true,
+    "legacyUiAliases": [
+      "@/components/ui"
+    ]
+  }
+}

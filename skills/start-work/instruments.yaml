@@ -1,0 +1,7 @@
+# instruments.yaml — start-work
+# Contrato universal com adapter local. Aceita evidência do próprio owner
+# (o próprio adapter local).
+accepts:
+  - producer: start-work
+    instrument: adapter-local
+    for-checks: ["*"]

@@ -1,0 +1,11 @@
+# instruments.yaml — drive-app-window
+# Este owner é uma capability técnica: produz artefactos (screenshots,
+# event logs) que outros owners consomem como evidência. Nenhum verdict
+# fecha aqui.
+accepts:
+  - producer: drive-app-window
+    instrument: gui.ps1
+    for-checks:
+      - dw.window-found
+      - dw.pin-succeeded
+      - dw.action-executed

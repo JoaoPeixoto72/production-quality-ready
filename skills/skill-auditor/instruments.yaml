@@ -1,0 +1,10 @@
+# instruments.yaml — skill-auditor
+#
+# skill-auditor corre em plano SEPARADO do audit-app (CONTRACTS §3.5).
+# Não produz evidência para nenhum owner de produto; não aceita evidência
+# de nenhum producer que não seja o próprio.
+
+accepts:
+  - producer: skill-auditor
+    instrument: audit.sh
+    for-checks: ["*"]

@@ -1,0 +1,7 @@
+# instruments.yaml — performance-audit
+# owner-produced-only na v1.0.0. Fase 3+ adiciona instrumentos externos se e
+# quando outros owners os precisarem.
+accepts:
+  - producer: performance-audit
+    instrument: "*"
+    for-checks: ["*"]

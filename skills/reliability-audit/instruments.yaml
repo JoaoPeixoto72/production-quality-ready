@@ -1,0 +1,20 @@
+# instruments.yaml — reliability-audit
+# Regra dura: sem harness que exercita a queda, não há verdict.
+accepts:
+  - producer: reliability-audit
+    instrument: crash-harness
+    for-checks:
+      - reliability.atomic-write
+      - reliability.crash-mid-write
+      - reliability.no-double-flush
+  - producer: reliability-audit
+    instrument: migration-harness
+    for-checks:
+      - reliability.migration-forward
+      - reliability.migration-tested
+      - reliability.downgrade-declared
+      - reliability.backup-before-migrate
+  - producer: code-review-runtime
+    instrument: test-runner
+    for-checks:
+      - reliability.resume-after-reopen

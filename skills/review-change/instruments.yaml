@@ -1,0 +1,7 @@
+# instruments.yaml — review-change
+# Contrato universal com adapter local. Aceita evidência do próprio owner
+# (o próprio adapter local).
+accepts:
+  - producer: review-change
+    instrument: adapter-local
+    for-checks: ["*"]

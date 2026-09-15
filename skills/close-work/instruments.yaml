@@ -1,0 +1,7 @@
+# instruments.yaml — close-work
+# Contrato universal com adapter local. Aceita evidência do próprio owner
+# (o próprio adapter local).
+accepts:
+  - producer: close-work
+    instrument: adapter-local
+    for-checks: ["*"]

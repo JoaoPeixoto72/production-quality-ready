@@ -1,0 +1,18 @@
+# instruments.yaml — seo-audit
+# Motor executável próprio (run_seo_audit.mjs) é o producer canónico.
+# Cross-check com performance-audit para Core Web Vitals.
+accepts:
+  - producer: seo-audit
+    instrument: run_seo_audit.mjs
+    for-checks:
+      - seo.technical
+      - seo.on-page
+      - seo.structured-data
+      - seo.sitemap
+      - seo.robots
+      - seo.hreflang
+      - seo.geo-aeo
+  - producer: performance-audit
+    instrument: lighthouse
+    for-checks:
+      - seo.core-web-vitals

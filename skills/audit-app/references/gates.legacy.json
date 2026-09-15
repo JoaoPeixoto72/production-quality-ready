@@ -1,0 +1,602 @@
+{
+ "A11Y-01": {
+  "module": "ui-ux",
+  "critical": true,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "A11Y-02": {
+  "module": "ui-ux",
+  "critical": true,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "A11Y-03": {
+  "module": "ui-ux",
+  "critical": true,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "A11Y-04": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "A11Y-05": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "A11Y-06": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "A11Y-07": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "A11Y-08": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "A11Y-09": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "acessibilidade-i18n.md"
+ },
+ "ARQ-01": {
+  "module": "architecture",
+  "critical": true,
+  "primary_reference": "contexto-e-arquitectura.md"
+ },
+ "ARQ-02": {
+  "module": "architecture",
+  "critical": true,
+  "primary_reference": "contexto-e-arquitectura.md"
+ },
+ "ARQ-03": {
+  "module": "architecture",
+  "critical": true,
+  "primary_reference": "contexto-e-arquitectura.md"
+ },
+ "ARQ-04": {
+  "module": "architecture",
+  "critical": true,
+  "primary_reference": "contexto-e-arquitectura.md"
+ },
+ "ARQ-05": {
+  "module": "architecture",
+  "critical": true,
+  "primary_reference": "contexto-e-arquitectura.md"
+ },
+ "ARQ-06": {
+  "module": "architecture",
+  "critical": false,
+  "primary_reference": "contexto-e-arquitectura.md"
+ },
+ "ARQ-07": {
+  "module": "architecture",
+  "critical": false,
+  "primary_reference": "contexto-e-arquitectura.md"
+ },
+ "ARQ-08": {
+  "module": "architecture",
+  "critical": false,
+  "primary_reference": "contexto-e-arquitectura.md"
+ },
+ "DIAG-01": {
+  "module": "support",
+  "critical": true,
+  "primary_reference": "diagnostico-e-suporte.md"
+ },
+ "DIAG-02": {
+  "module": "support",
+  "critical": true,
+  "primary_reference": "diagnostico-e-suporte.md"
+ },
+ "DIAG-03": {
+  "module": "support",
+  "critical": true,
+  "primary_reference": "diagnostico-e-suporte.md"
+ },
+ "DIAG-04": {
+  "module": "support",
+  "critical": true,
+  "primary_reference": "diagnostico-e-suporte.md"
+ },
+ "DIAG-05": {
+  "module": "support",
+  "critical": true,
+  "primary_reference": "diagnostico-e-suporte.md"
+ },
+ "DIAG-06": {
+  "module": "support",
+  "critical": false,
+  "primary_reference": "diagnostico-e-suporte.md"
+ },
+ "DIAG-07": {
+  "module": "support",
+  "critical": false,
+  "primary_reference": "diagnostico-e-suporte.md"
+ },
+ "DIAG-08": {
+  "module": "support",
+  "critical": false,
+  "primary_reference": "diagnostico-e-suporte.md"
+ },
+ "DIST-01": {
+  "module": "release",
+  "critical": true,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-02": {
+  "module": "release",
+  "critical": true,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-03": {
+  "module": "release",
+  "critical": true,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-04": {
+  "module": "release",
+  "critical": true,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-05": {
+  "module": "release",
+  "critical": true,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-06": {
+  "module": "release",
+  "critical": false,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-07": {
+  "module": "release",
+  "critical": false,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-08": {
+  "module": "release",
+  "critical": false,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-09": {
+  "module": "release",
+  "critical": false,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "DIST-10": {
+  "module": "release",
+  "critical": false,
+  "primary_reference": "distribuicao-supply-chain.md"
+ },
+ "IPC-01": {
+  "module": "ipc",
+  "critical": true,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "IPC-02": {
+  "module": "ipc",
+  "critical": true,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "IPC-03": {
+  "module": "ipc",
+  "critical": true,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "IPC-04": {
+  "module": "ipc",
+  "critical": true,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "IPC-05": {
+  "module": "ipc",
+  "critical": true,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "IPC-06": {
+  "module": "ipc",
+  "critical": false,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "IPC-07": {
+  "module": "ipc",
+  "critical": false,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "IPC-08": {
+  "module": "ipc",
+  "critical": false,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "IPC-09": {
+  "module": "ipc",
+  "critical": false,
+  "primary_reference": "ipc-e-contratos.md"
+ },
+ "LEGAL-01": {
+  "module": "compliance",
+  "critical": true,
+  "primary_reference": "conformidade-legal.md"
+ },
+ "LEGAL-02": {
+  "module": "compliance",
+  "critical": true,
+  "primary_reference": "conformidade-legal.md"
+ },
+ "LEGAL-03": {
+  "module": "compliance",
+  "critical": true,
+  "primary_reference": "conformidade-legal.md"
+ },
+ "LEGAL-04": {
+  "module": "compliance",
+  "critical": true,
+  "primary_reference": "conformidade-legal.md"
+ },
+ "LEGAL-05": {
+  "module": "compliance",
+  "critical": true,
+  "primary_reference": "conformidade-legal.md"
+ },
+ "LEGAL-06": {
+  "module": "compliance",
+  "critical": false,
+  "primary_reference": "conformidade-legal.md"
+ },
+ "LEGAL-07": {
+  "module": "compliance",
+  "critical": false,
+  "primary_reference": "conformidade-legal.md"
+ },
+ "LEGAL-08": {
+  "module": "compliance",
+  "critical": false,
+  "primary_reference": "conformidade-legal.md"
+ },
+ "PERF-01": {
+  "module": "performance",
+  "critical": true,
+  "primary_reference": "performance-editor.md"
+ },
+ "PERF-02": {
+  "module": "performance",
+  "critical": true,
+  "primary_reference": "performance-editor.md"
+ },
+ "PERF-03": {
+  "module": "performance",
+  "critical": true,
+  "primary_reference": "performance-editor.md"
+ },
+ "PERF-04": {
+  "module": "performance",
+  "critical": true,
+  "primary_reference": "performance-editor.md"
+ },
+ "PERF-05": {
+  "module": "performance",
+  "critical": true,
+  "primary_reference": "performance-editor.md"
+ },
+ "PERF-06": {
+  "module": "performance",
+  "critical": false,
+  "primary_reference": "performance-editor.md"
+ },
+ "PERF-07": {
+  "module": "performance",
+  "critical": false,
+  "primary_reference": "performance-editor.md"
+ },
+ "PERF-08": {
+  "module": "performance",
+  "critical": false,
+  "primary_reference": "performance-editor.md"
+ },
+ "PERS-01": {
+  "module": "persistence",
+  "critical": true,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-02": {
+  "module": "persistence",
+  "critical": true,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-03": {
+  "module": "persistence",
+  "critical": true,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-04": {
+  "module": "persistence",
+  "critical": true,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-05": {
+  "module": "persistence",
+  "critical": true,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-06": {
+  "module": "persistence",
+  "critical": false,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-07": {
+  "module": "persistence",
+  "critical": false,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-08": {
+  "module": "persistence",
+  "critical": false,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-09": {
+  "module": "persistence",
+  "critical": false,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "PERS-10": {
+  "module": "persistence",
+  "critical": false,
+  "primary_reference": "persistencia-recuperacao.md"
+ },
+ "REACT-01": {
+  "module": "react",
+  "critical": true,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-02": {
+  "module": "react",
+  "critical": true,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-03": {
+  "module": "react",
+  "critical": true,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-04": {
+  "module": "react",
+  "critical": true,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-05": {
+  "module": "react",
+  "critical": true,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-06": {
+  "module": "react",
+  "critical": false,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-07": {
+  "module": "react",
+  "critical": false,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-08": {
+  "module": "react",
+  "critical": false,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-09": {
+  "module": "react",
+  "critical": false,
+  "primary_reference": "react-typescript.md"
+ },
+ "REACT-10": {
+  "module": "react",
+  "critical": false,
+  "primary_reference": "react-typescript.md"
+ },
+ "RUST-01": {
+  "module": "rust",
+  "critical": true,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-02": {
+  "module": "rust",
+  "critical": true,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-03": {
+  "module": "rust",
+  "critical": true,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-04": {
+  "module": "rust",
+  "critical": true,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-05": {
+  "module": "rust",
+  "critical": true,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-06": {
+  "module": "rust",
+  "critical": false,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-07": {
+  "module": "rust",
+  "critical": false,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-08": {
+  "module": "rust",
+  "critical": false,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-09": {
+  "module": "rust",
+  "critical": false,
+  "primary_reference": "rust-tauri.md"
+ },
+ "RUST-10": {
+  "module": "rust",
+  "critical": false,
+  "primary_reference": "rust-tauri.md"
+ },
+ "SEC-01": {
+  "module": "security",
+  "critical": true,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-02": {
+  "module": "security",
+  "critical": true,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-03": {
+  "module": "security",
+  "critical": true,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-04": {
+  "module": "security",
+  "critical": true,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-05": {
+  "module": "security",
+  "critical": true,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-06": {
+  "module": "security",
+  "critical": true,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-07": {
+  "module": "security",
+  "critical": true,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-08": {
+  "module": "security",
+  "critical": false,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-09": {
+  "module": "security",
+  "critical": false,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "SEC-10": {
+  "module": "security",
+  "critical": false,
+  "primary_reference": "seguranca-processos-caminhos.md"
+ },
+ "TEST-01": {
+  "module": "tests",
+  "critical": true,
+  "primary_reference": "testes.md"
+ },
+ "TEST-02": {
+  "module": "tests",
+  "critical": true,
+  "primary_reference": "testes.md"
+ },
+ "TEST-03": {
+  "module": "tests",
+  "critical": true,
+  "primary_reference": "testes.md"
+ },
+ "TEST-04": {
+  "module": "tests",
+  "critical": true,
+  "primary_reference": "testes.md"
+ },
+ "TEST-05": {
+  "module": "tests",
+  "critical": true,
+  "primary_reference": "testes.md"
+ },
+ "TEST-06": {
+  "module": "tests",
+  "critical": false,
+  "primary_reference": "testes.md"
+ },
+ "TEST-07": {
+  "module": "tests",
+  "critical": false,
+  "primary_reference": "testes.md"
+ },
+ "TEST-08": {
+  "module": "tests",
+  "critical": false,
+  "primary_reference": "testes.md"
+ },
+ "TEST-09": {
+  "module": "tests",
+  "critical": false,
+  "primary_reference": "testes.md"
+ },
+ "TEST-10": {
+  "module": "tests",
+  "critical": false,
+  "primary_reference": "testes.md"
+ },
+ "UX-01": {
+  "module": "ui-ux",
+  "critical": true,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-02": {
+  "module": "ui-ux",
+  "critical": true,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-03": {
+  "module": "ui-ux",
+  "critical": true,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-04": {
+  "module": "ui-ux",
+  "critical": true,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-05": {
+  "module": "ui-ux",
+  "critical": true,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-06": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-07": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-08": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-09": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "ui-ux.md"
+ },
+ "UX-10": {
+  "module": "ui-ux",
+  "critical": false,
+  "primary_reference": "ui-ux.md"
+ }
+}

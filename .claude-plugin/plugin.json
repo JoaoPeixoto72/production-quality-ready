@@ -1,0 +1,17 @@
+{
+  "name": "production-quality-ready",
+  "version": "1.4.0",
+  "description": "Sistema de qualidade e auditoria composto por owners independentes para elevar aplicações de 'funciona' para 'pode ser vendida', com evidência verificável e gates declarativos.",
+  "author": {
+    "name": "JoaoPeixoto72"
+  },
+  "keywords": [
+    "audit",
+    "quality",
+    "production-readiness",
+    "security",
+    "observability",
+    "design",
+    "code-review"
+  ]
+}
