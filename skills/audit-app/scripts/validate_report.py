@@ -80,7 +80,7 @@ def contrato_actual() -> tuple[str | None, str | None]:
     return None, None
 
 RE_LINHA_TABELA = re.compile(r"^\|\s*\*{0,2}([A-Z0-9]+-\d+)\*{0,2}\s*\|(.+)$", re.M)
-RE_VERSAO = re.compile(r"Contrato:\s*vers[ãa]o\s*(\d+)\.(\d+)\.(\d+)", re.I)
+RE_VERSAO = re.compile(r"\*{0,2}Contrato\*{0,2}:\s*vers[ãa]o\s*(\d+)\.(\d+)\.(\d+)", re.I)
 # O digest aparece nu (`SHA-256 66e9…`) ou entre crases, que é como o markdown
 # de um relatório real o escreve. Exigir o primeiro fazia o validador dizer
 # "sem SHA-256 do contrato" a um relatório que o tinha — a mesma validação de
@@ -473,8 +473,10 @@ def main(argv: list[str] | None = None) -> int:
     if not caminho.is_file():
         print(f"erro: {caminho} não é um ficheiro", file=sys.stderr)
         return EXIT_CANNOT_ANALYSE
-    gates = (Path(args.gates) if args.gates
-             else Path(__file__).resolve().parent.parent / "references" / "gates.json")
+    default_ref = Path(__file__).resolve().parent.parent / "references" / "gates.json"
+    if not default_ref.is_file():
+        default_ref = Path(__file__).resolve().parent.parent / "references" / "gates.legacy.json"
+    gates = Path(args.gates) if args.gates else default_ref
     if not gates.is_file():
         print(f"erro: registo de gates não encontrado em {gates}", file=sys.stderr)
         return EXIT_CANNOT_ANALYSE
