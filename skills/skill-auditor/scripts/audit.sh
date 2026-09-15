@@ -10,6 +10,7 @@
 # ran (that was true of the absolute-path check until 2026-09-13).
 
 set -euo pipefail
+export LC_ALL=C
 
 TARGET="${1:-.}"
 FAIL=0

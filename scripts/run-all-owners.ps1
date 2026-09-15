@@ -40,6 +40,9 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+# Resolve Python interpreter (handles Windows python3 Microsoft Store stub)
+$PythonExe = if (Get-Command python -ErrorAction SilentlyContinue) { "python" } elseif (Get-Command python3 -ErrorAction SilentlyContinue) { "python3" } else { "py" }
+
 # ---------------------------------------------------------------------------
 # 0. Resolve paths
 # ---------------------------------------------------------------------------
@@ -53,6 +56,12 @@ if (-not $PluginRoot) {
 $PluginRoot = (Resolve-Path -LiteralPath $PluginRoot).Path
 
 $GatesPath  = Join-Path $RepoRoot ".claude/gates.json"
+if (-not (Test-Path $GatesPath)) {
+    $AltGates = Join-Path $RepoRoot ".agents/gates.json"
+    if (Test-Path $AltGates) {
+        $GatesPath = $AltGates
+    }
+}
 $AuditRoot  = Join-Path $RepoRoot ".audit"
 $ReportsDir = Join-Path $RepoRoot "docs/auditorias"
 
@@ -215,7 +224,7 @@ function Invoke-UiSystem {
     New-Item -ItemType Directory -Force -Path (Split-Path $outArtifact) | Out-Null
 
     if (-not $DryRun) {
-        python3 $script --repo $RepoRoot --config $cfg --out $outArtifact 2>&1 | Out-Null
+        & $PythonExe $script --repo $RepoRoot --config $cfg --out $outArtifact 2>&1 | Out-Null
     }
 
     # Ten canonical checks from ui-system/SKILL.md §6.

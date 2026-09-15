@@ -14,7 +14,12 @@ const SKILL_DIR = path.resolve(SCRIPT_DIR, '..')
 const cliArgs = process.argv.slice(2)
 const getFlag = (name) => {
   const hit = cliArgs.find((a) => a.startsWith(`--${name}=`))
-  return hit ? hit.slice(name.length + 3) : ''
+  if (hit) return hit.slice(name.length + 3)
+  const idx = cliArgs.indexOf(`--${name}`)
+  if (idx !== -1 && idx + 1 < cliArgs.length && !cliArgs[idx + 1].startsWith('--')) {
+    return cliArgs[idx + 1]
+  }
+  return ''
 }
 const hasFlag = (name) => cliArgs.includes(`--${name}`)
 

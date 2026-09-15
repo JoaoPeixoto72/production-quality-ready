@@ -808,6 +808,8 @@ def scan(path: Path, root: Path, settings: AuditSettings):
 def main() -> int:
     parser = argparse.ArgumentParser(description="Auditoria do design system próprio.")
     parser.add_argument("root", nargs="?", default=".")
+    parser.add_argument("--repo", default=None, help="Directório raiz (alias para positional root).")
+    parser.add_argument("--out", default=None, help="Directório/ficheiro de saída markdown (alias para --markdown-output).")
     parser.add_argument("--config", default=None, help="Path explícito para ui.config.json.")
     parser.add_argument("--profile", default=None, help="Nome do perfil ativo (ex: video-editor) para carregar sua configuração.")
     parser.add_argument("--ui-source", action="append", default=None, help="Onde imports privados de Base UI são permitidos. Repetível.")
@@ -820,10 +822,14 @@ def main() -> int:
     parser.add_argument("--ignore-dir", action="append", default=None, help="Nome de directório adicional a ignorar durante a auditoria. Repetível.")
     args = parser.parse_args()
 
-    root = Path(args.root).resolve()
+    target_root = args.repo if args.repo is not None else args.root
+    root = Path(target_root).resolve()
     if not root.is_dir():
         print(f"Root inválido: {root}", file=sys.stderr)
         return 2
+
+    if args.out:
+        args.markdown_output = args.out
 
     settings = resolve_settings(args, root)
 
