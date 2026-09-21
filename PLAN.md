@@ -115,7 +115,7 @@ Fases 2–7 concluded. Motor extracted from `auditar-app` into
 `audit-app`. Six existing skills refactored with `instruments.yaml`;
 four new audit owners written (`observability`, `release-audit`,
 `commercial-readiness`, `performance-audit`). `bootstrap-project`
-skill authored with four templates. `skill-auditor` self-run: zero
+skill authored with four templates. `skill-readiness-auditor` self-run: zero
 mechanical findings.
 
 ### v2.0.0

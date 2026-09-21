@@ -13,7 +13,7 @@ comando efectivo usado (mesma regra que a Fase 0 do motor de auditoria).
 <caminho> é uma pasta com SKILL.md ou uma pasta que contém pastas com
 SKILL.md, em qualquer profundidade. Excluídas ao percorrer: `fixtures/`,
 `tests/`, `.git/`, `node_modules/`, `.venv/`, `venv/` — regra herdada do
-`skill-auditor` («A fixture is deliberately malformed, and reporting an
+`skill-readiness-auditor` («A fixture is deliberately malformed, and reporting an
 author's test material as their defects is noise»).
 
 Regra dura: os números do PLAN.md e das métricas de aceitação vêm daqui.
@@ -76,7 +76,7 @@ def find_skill_files(root: pathlib.Path) -> list[pathlib.Path]:
 
     Uses os.walk-style pruning: when we descend into a directory whose name
     is in EXCLUDED_DIRS, we do not recurse into it. This is the same rule
-    the skill-auditor documents (POLICY §4 — «It does not discover SKILL.md
+    the skill-readiness-auditor documents (POLICY §4 — «It does not discover SKILL.md
     files under fixtures/, tests/ or .git/»); herded here, not
     rediscovered.
     """

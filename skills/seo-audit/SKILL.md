@@ -1,6 +1,6 @@
 ---
 name: seo-audit
-description: "Audit institutional site — technical SEO, on-page, structured data, Core Web Vitals, sitemap, robots, hreflang, GEO/AEO (AI Overviews, ChatGPT, Perplexity). Executable engine with evidenceClass and SARIF v2.1.0. Use when the target is a site or static build. A heuristic never becomes critical FAIL; llms.txt is WARN at most (Google doesn't use it). Does not apply to apps with no indexable web surface — declare not-applicable in gates.json."
+description: "Audit institutional site — technical SEO, on-page, structured data, Core Web Vitals, sitemap, robots, hreflang, GEO/AEO. Executable engine with SARIF v2.1.0. Use for deep SEO on site or static build. For complete 360º website audit (cookies, analytics, CRO, spider) — that's audit-website. Heuristic never becomes critical FAIL; llms.txt is WARN at most. Non-web apps declare not-applicable in gates.json."
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
 rule-version: sarif-2.1.0

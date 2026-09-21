@@ -47,7 +47,7 @@ context cost beyond its own `description`.
 Whenever two owners touch the same subject (one as rule, another as
 instrument, or two adjacent sub-topics), each `SKILL.md` **names the
 other** in the `description`. Rule inherited from
-`skill-auditor` POLICY §11.
+`skill-readiness-auditor` POLICY §11.
 
 Pairs that touch:
 
@@ -62,17 +62,22 @@ Pairs that touch:
 | `commercial-readiness` ↔ `design-pro` | commercial says "onboarding UX — that's design-pro"; design-pro says "activation, licence — that's commercial" |
 | `observability` ↔ `reliability-audit` | observability says "data recovery — that's reliability"; reliability says "diagnose in production — that's observability" |
 | `verify` (universal) ↔ `drive-app-window` | verify says "drive the Win32 window — that's drive-app-window"; drive-app-window says "proof strategy — that's verify" |
-| `audit-app` ↔ `skill-auditor` | audit-app says "audit skills — that's skill-auditor"; skill-auditor says "audit the app — that's audit-app" |
+| `audit-app` ↔ `skill-readiness-auditor` | audit-app says "audit skills — that's skill-readiness-auditor"; skill-readiness-auditor says "audit the app — that's audit-app" |
+| `skill-readiness-auditor` ↔ `skill-security-auditor` | readiness says "security, injection, supply chain — that's skill-security-auditor"; security says "instruction quality, trigger precision — that's skill-readiness-auditor" |
+| `skill-release-gate` ↔ `skill-readiness-auditor` | release gate says "readiness analysis — that's skill-readiness-auditor"; readiness says "final release gate — that's skill-release-gate" |
+| `skill-release-gate` ↔ `skill-security-auditor` | release gate says "security analysis — that's skill-security-auditor"; security says "final release gate — that's skill-release-gate" |
 | `audit-app` ↔ `review-change` | audit-app says "review a PR — that's review-change"; review-change says "full app audit — that's audit-app" |
 | `start-work` ↔ `review-change` | start-work says "review written code — that's review-change"; review-change says "open a work session — that's start-work" |
 | `review-change` ↔ `close-work` | review-change says "update documents at close — that's close-work"; close-work says "review code before — that's review-change (comes first)" |
+| `audit-app` ↔ `audit-website` | audit-app says "public website/CRO audit — that's audit-website"; audit-website says "desktop/SaaS software audit — that's audit-app" |
+| `audit-website` ↔ `seo-audit` | audit-website says "deep technical SEO engine — that's seo-audit"; seo-audit says "360º website audit — that's audit-website" |
 | `start-work` ↔ `close-work` | start-work says "close and update documents — that's close-work"; close-work says "open a work session — that's start-work" |
 
 The work-cycle pairs form a **triangle**, not a chain — a user can type
 the wrong verb directly, not only the adjacent one. Every skill in the
 cycle delimits against the other two.
 
-The `skill-auditor` verifies each pair mechanically as a phase gate.
+The `skill-readiness-auditor` verifies each pair mechanically as a phase gate.
 
 ### 1.3 Who declares `PASS`/`FAIL`
 
@@ -145,21 +150,24 @@ other purposes:
 
 | Skill | Purpose |
 |---|---|
-| `skill-auditor` | Audits the skills themselves. Emits its own report format. Doesn't pass through `audit-app`. Mechanical isolation in `CONTRACTS §3.5`; editorial guidance in §2.4.1 below. |
+| `skill-readiness-auditor` | Audits instruction quality, triggers, workflow coverage, and schema compliance for Agent Skills. |
+| `skill-security-auditor`  | Audits security, prompt injection, capabilities, MCP, and external resources for Agent Skills. |
+| `skill-release-gate`      | Evaluates readiness + security evidence to issue final release, signing, or Trust Registry enrolment decisions. |
 | `drive-app-window` | Technical capability (Win32/WebView2). *Used* by other skills' instruments; doesn't emit evidence on its own. |
 | `bootstrap-project` | Generator. Writes files in the user's repo. Not an auditor. |
 
-### 2.4.1 Editorial guidance for the `skill-auditor` (non-mechanical)
+### 2.4.1 Editorial guidance for skill meta-auditors (non-mechanical)
 
 `CONTRACTS §3.5` only knows how to mechanically reject
-`producer: skill-auditor` outside `.audit/skill-auditor/`. Two
-situations still require editorial judgment from the human auditor or
-from `skill-auditor` itself as a concern (not a blocker):
+`producer: skill-readiness-auditor` (and other meta-auditors) outside
+their respective directories. Two situations still require editorial
+judgment from the human auditor or from `skill-readiness-auditor` itself
+as a concern (not a blocker):
 
 - An owner emits a check whose `check:` semantically means "this skill
   is well written" (e.g. `owner: design-pro`,
-  `check: description-well-formed`). That is `skill-auditor`'s subject,
-  not `audit-app`'s. **Mark as `Concern` in `skill-auditor`'s report;
+  `check: description-well-formed`). That is `skill-readiness-auditor`'s subject,
+  not `audit-app`'s. **Mark as `Concern` in `skill-readiness-auditor`'s report;
   refuse the skill merge.**
 - A reference inside a skill audits the skill's own structure —
   suspicious duplication of responsibility. **Mark as `Concern`.**
@@ -228,14 +236,14 @@ other projects.
 
 ## 4. Bilateral delimitation (mechanical)
 
-Rule written in POLICY §1.2 and verified by `skill-auditor` as a phase
+Rule written in POLICY §1.2 and verified by `skill-readiness-auditor` as a phase
 gate.
 
 **Rule 4.1.** For each pair `(A, B)` in the §1.2 table, `A`'s
 `description` mentions `B` and `B`'s mentions `A`. Missing on either
 side = the *pair* fails, not the file.
 
-**Rule 4.2.** The `skill-auditor` verifies mechanically:
+**Rule 4.2.** The `skill-readiness-auditor` verifies mechanically:
 
 1. Enumerates pairs from the §1.2 table (declarative source,
    editable).
@@ -398,7 +406,7 @@ Bumping the plugin locally requires updating the file too. The
   from silent PASS ("simply doesn't count") to explicit non-applicability
   with reason. Inherits the "requested scope, not possible scope"
   principle from `auditar-app`. §2.4.1 new — editorial guidance for
-  `skill-auditor` absorbing the semantic part `CONTRACTS §3.5` stopped
+  skill meta-auditors absorbing the semantic part `CONTRACTS §3.5` stopped
   trying to verify mechanically.
 - **v1.1.0** — §1.3 now cites the mechanical mechanism
   (`instruments.yaml` + `CONTRACTS.md §4.5`) instead of the

@@ -267,11 +267,11 @@ function Invoke-SeoAudit {
     Register-Owner -Owner $owner -Ran 1 -Passed 0 -Failed 0 -NotVerified 1
 }
 
-function Invoke-SkillAuditor {
+function Invoke-SkillReadinessAuditor {
     # Present for symmetry — audit-app skips it (§3.5), but the plugin
     # skills themselves can still be linted in a separate lane.
-    $owner  = "skill-auditor"
-    $script = Join-Path $PluginRoot "skills/skill-auditor/scripts/audit.sh"
+    $owner  = "skill-readiness-auditor"
+    $script = Join-Path $PluginRoot "skills/skill-readiness-auditor/scripts/audit.sh"
     if (-not (Test-Path $script)) {
         Register-Owner -Owner $owner -Ran 0 -Passed 0 -Failed 0 -NotVerified 0
         return
@@ -354,7 +354,9 @@ $dispatch = @{
     "release-audit"        = { Invoke-OwnerRequiresAdapter -Owner release-audit        -Kind reproducibility-run }
     "commercial-readiness" = { Invoke-OwnerRequiresAdapter -Owner commercial-readiness -Kind clean-vm-run }
     "seo-audit"            = { Invoke-SeoAudit }
-    "skill-auditor"        = { Invoke-SkillAuditor }
+    "skill-readiness-auditor" = { Invoke-SkillReadinessAuditor }
+    "skill-security-auditor"  = { Invoke-OwnerRequiresAdapter -Owner skill-security-auditor -Kind security-scan }
+    "skill-release-gate"      = { Invoke-OwnerRequiresAdapter -Owner skill-release-gate -Kind gate-decision }
 }
 
 # ---------------------------------------------------------------------------

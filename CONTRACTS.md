@@ -2,7 +2,7 @@
 
 Plugin mechanical contract. **Authoritative.** Every plugin skill refers
 to this file by its root (`contract: CONTRACTS.md`); the
-`skill-auditor` resolves the path from the plugin root. A discrepancy
+`skill-readiness-auditor` resolves the path from the plugin root. A discrepancy
 between this file and a skill is always the skill's defect.
 
 **Contract version**: 1.4.0
@@ -188,25 +188,28 @@ rule closes by *absence of the problematic condition*. `confidence:`
 reflects how the absence is known (`OBSERVED` if you looked;
 `INFERRED` if deduced; `UNKNOWN` is forbidden on `PASS`).
 
-### 3.5 Mechanical isolation of the `skill-auditor`
+### 3.5 Mechanical isolation of the skill meta-auditors
 
 Mechanical rule, verifiable by `audit-app` without semantic
 interpretation:
 
 **Rule 3.5.1.** A file at `.audit/<owner>/*.evidence.yaml` with
-`producer: skill-auditor` is only accepted if `<owner>` is
-`skill-auditor`. In any other directory, the file is rejected with
-reason `skill-auditor-out-of-scope`. The `skill-auditor` is not an
-instrument of any product owner.
+`producer: skill-readiness-auditor`, `producer: skill-security-auditor`,
+or `producer: skill-release-gate` is only accepted if `<owner>` is
+that same skill. In any other directory, the file is rejected with
+reason `skill-meta-auditor-out-of-scope`. The meta-auditors are not
+instruments of any product owner.
 
-**Rule 3.5.2.** A file at `.audit/skill-auditor/*.evidence.yaml` is
-ignored by `audit-app` — the `skill-auditor` runs in a separate plane
-and its output does not enter any product gate.
+**Rule 3.5.2.** A file at `.audit/skill-readiness-auditor/*.evidence.yaml`,
+`.audit/skill-security-auditor/*.evidence.yaml`, or
+`.audit/skill-release-gate/*.evidence.yaml` is ignored by `audit-app` —
+the meta-auditors run in a separate plane and their output does not
+enter any product gate.
 
 **Note.** The semantic distinction "this skill audits itself as a
 skill, rather than as a subject it owns" is not mechanically
 verifiable and moved to `POLICY.md` as editorial guidance for the
-`skill-auditor`. `CONTRACTS.md` defines only what the parser can
+skill meta-auditors. `CONTRACTS.md` defines only what the parser can
 reject without interpretation.
 
 ---
@@ -302,7 +305,7 @@ at the same line. The report shows both findings, each with its
 with a prefix declared by the emitting owner (`RC-`, or `<owner>::`
 like `design-pro::focus-outline-suppressed`) — to reduce accidental
 collision between owners that chose the same name for different
-causes. The `skill-auditor` warns when two owners share a
+causes. The skill meta-auditors warn when two owners share a
 `root-cause:` without distinct prefix.
 
 **Rule 4.4.4.** Dedup by `root-cause:` produces a single aggregated
@@ -349,7 +352,7 @@ if each of them declares the pair in its manifest. That is the
 `producer → instrument → owner` chain `POLICY §1.3` demands and that
 v1.0.0 had no way to validate.
 
-**Rule 4.5.2.** The `skill-auditor` rejects a skill that declares
+**Rule 4.5.2.** The `skill-readiness-auditor` rejects a skill that declares
 instruments without a manifest, and rejects a manifest pointing at
 non-existent producers.
 
@@ -454,7 +457,7 @@ coverage metrics *separately* (number of checks, severity
 distribution) but those metrics never open or close a gate.
 
 **Rule 7.2.1.** A skill that introduces a numeric score as output
-violates this contract. The `skill-auditor` refuses.
+violates this contract. The `skill-readiness-auditor` refuses.
 
 ### 7.3 Standard gates
 
@@ -508,9 +511,10 @@ owner must emit every check listed here; a missing check reports as
 | `performance-audit` | `budgets-met` | Each budget is measured in release and passes. |
 | `ui-system` | `ds-boundary` | Application does not import internal DS directly. |
 | `seo-audit` | `technical-seo-clean` | Technical SEO audit closes without critical `FAIL`. |
+| `audit-website` | `website-readiness-clean` | 360º website audit closes without BLOCKER or CRITICAL failures. |
 
 **Rule 7.4.1.** An owner may emit more checks than the canonicals;
-never fewer. The `skill-auditor` verifies this list mechanically
+never fewer. The `skill-readiness-auditor` verifies this list mechanically
 against each skill's manifest.
 
 **Rule 7.4.2.** A canonical check-id in this registry is reserved —
@@ -599,7 +603,7 @@ Nothing else.
     read-only doctrine of the original `auditar-app`.
 - **v1.2.0 + 1.2.1** — bilateral delimitation as a phase gate; the
   §5.1 fallback fixed from silent PASS to non-applicability with
-  reason; §2.4.1 editorial guidance for `skill-auditor` absorbing the
+  reason; §2.4.1 editorial guidance for skill meta-auditors absorbing the
   semantic part §3.5 stopped trying to verify mechanically.
 - **v1.1.0** — §1.3 now cites the mechanical mechanism
   (`instruments.yaml` + §4.5) instead of v1.0.0's unverifiable

@@ -1,0 +1,8 @@
+# audit-website/instruments.yaml
+accepts:
+  - producer: audit-website
+    instrument: run_website_audit.mjs
+    for-checks: ["*"]
+  - producer: seo-audit
+    instrument: run_seo_audit.mjs
+    for-checks: ["seo-*", "cwv-*"]

@@ -46,7 +46,7 @@ plugin.
    - `verify` — adapter of universal `verify`, with the project's paths,
      `.exe` and harness specifics. Uses
      `extends: production-quality-ready::verify@1.x`.
-7. **Run `skill-auditor --depth deep`** over what was just written.
+7. **Run `skill-readiness-auditor --depth deep`** over what was just written.
    Refuse to hand off with an open Blocker.
 
 ## Hard rule: every number carries its command
@@ -99,5 +99,5 @@ derived from code") or step 5b ("resolve CONTRACT_PATH") produced:
 | `DOC_OWNERSHIP_TABLE` | step 3 (CLAUDE/ESTADO files) | `close-work`; document → subject table |
 | `VERSION_BUMP_RULES` | step 2 | `close-work`; when to bump version |
 
-Step 7 (`skill-auditor --depth deep`) refuses any SKILL.md with
+Step 7 (`skill-readiness-auditor --depth deep`) refuses any SKILL.md with
 unreplaced `{{…}}` placeholders.

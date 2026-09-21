@@ -25,6 +25,8 @@ SOURCE_EXT = CODE_EXT | STYLE_EXT | HTML_EXT
 DEFAULT_IGNORED_DIRS = {
     ".git",
     ".claude",
+    ".agents",
+    ".wrangler",
     ".next",
     ".nuxt",
     ".svelte-kit",
@@ -35,6 +37,8 @@ DEFAULT_IGNORED_DIRS = {
     "coverage",
     "storybook-static",
     "vendor",
+    "tests",
+    "migrations",
 }
 
 HEX = re.compile(

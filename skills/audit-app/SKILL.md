@@ -1,6 +1,6 @@
 ---
 name: audit-app
-description: "Orchestrate a sellability audit of an app. Discovers owners via gates.json, aggregates evidence from .audit/**, applies declarative gates, emits a Product × Coverage verdict with fraction. Does not invoke other skills — announces what is missing. Use for \"audit the app\", \"is it ready to ship?\". Do NOT use to review a single PR — that's review-change. Do NOT use to review a screen or UX — that's design-pro. Do NOT use to audit the skills themselves — that's skill-auditor. Read-only."
+description: "Orchestrate a sellability audit of an app. Aggregates evidence from .audit/**, applies declarative gates, emits a Product × Coverage verdict with fraction. Does not invoke other skills. Use for \"audit the app\", \"is it ready to ship?\". Do NOT use for public website/CRO audit — that's audit-website. Do NOT use to review a single PR — that's review-change. Do NOT use for a single screen — that's design-pro. Do NOT use to audit skills — that's skill-readiness-auditor. Read-only."
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
 version: 1.0.0
@@ -72,7 +72,7 @@ detection → ask the user for `--owners X,Y,Z` (POLICY §5.3).
 
 Read `<repo-root>/.audit/**/*.evidence.yaml` recursively. Exclude
 `fixtures/`, `tests/`, `.git/`, `node_modules/`, `.venv/`, `venv/`,
-`__pycache__/` — rule inherited from `skill-auditor` POLICY §4.
+`__pycache__/` — rule inherited from `skill-readiness-auditor` POLICY §4.
 
 **Nothing is executed.** Not commands declared in `adapter-hints:`, not
 scripts anywhere. `audit-app` only reads evidence files produced

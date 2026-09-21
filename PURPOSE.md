@@ -43,12 +43,12 @@ Every skill wakes only when called. None invokes another.
 
 | Block | Skills |
 |---|---|
-| Orchestrator | `audit-app` |
+| Orchestrator | `audit-app`, `audit-website` |
 | Audit owners | `code-review-runtime`, `code-review-contract`, `ui-system`, `design-pro`, `security-audit`, `reliability-audit`, `performance-audit`, `observability`, `release-audit`, `commercial-readiness`, `seo-audit` |
 | Work cycle | `start-work`, `review-change`, `close-work` |
 | Proof | `verify` |
 | Technical capability | `drive-app-window` |
-| Meta | `skill-auditor` |
+| Meta | `skill-readiness-auditor`, `skill-security-auditor`, `skill-release-gate` |
 | Generator | `bootstrap-project` |
 
 ---
@@ -136,7 +136,10 @@ the defect to look for.
 | Distribution, supply chain, CI | `release-audit` | clean clone → one command → the same artifact |
 | Sale, activation, first run, legal conformance | `commercial-readiness` | the failing paths were walked, not just the happy one |
 | SEO and web presence | `seo-audit` | SEO requirements + CWV + structured data |
-| Hygiene of the skills themselves | `skill-auditor` | its own `POLICY.md` |
+| Public website storefront, CRO, and tracking | `audit-website` | 7-pillar website readiness + consent prior to fire |
+| Hygiene and quality of the skills themselves | `skill-readiness-auditor` | its own `POLICY.md` |
+| Security, injection, supply-chain and runtime of skills | `skill-security-auditor` | its own `POLICY.md` |
+| Final release, signing, and enrolment decision | `skill-release-gate` | its own `POLICY.md` |
 
 Some skills are not owners of a subject: `verify` and
 `drive-app-window` are proof capabilities;
@@ -176,7 +179,7 @@ Falsifiable criteria. The plugin refutes itself if it fails two.
 |---|---|
 | Every `description` under the working ceiling | `python scripts/measure-descriptions.py .` — every row is `OK` |
 | Permanent context cost | same command + the local skills `bootstrap-project` generates; totals declared and honest |
-| Zero mechanical findings in the plugin's own linter | `bash skills/skill-auditor/scripts/audit.sh skills` — "Zero mechanical findings" |
+| Zero mechanical findings in the plugin's own linter | `bash skills/skill-readiness-auditor/scripts/audit.sh skills` — "Zero mechanical findings" |
 | Bilateral pairs complete | every pair in `POLICY §1.2` is named by both `description`s |
 | Declared references exist | resolved by the linter above |
 | Coherent authority chain | every external `producer` listed in the owner's `instruments.yaml` |

@@ -173,11 +173,13 @@ production-quality-ready/
     ├── close-work/
     ├── verify/             # visual proof
     ├── drive-app-window/   # technical capability
-    ├── skill-auditor/      # meta
+    ├── skill-readiness-auditor/ # meta: instruction quality & triggers
+    ├── skill-security-auditor/  # meta: security, injection & MCP
+    ├── skill-release-gate/      # meta: enrolment & release decisions
     └── bootstrap-project/  # generator
 ```
 
-## Detailed Guide to the 19 Skills
+## Detailed Guide to the 21 Skills
 
 Each skill operates under strict boundaries defined in [`POLICY.md`](POLICY.md) and [`PURPOSE.md`](PURPOSE.md). No skill invokes another skill; all results are stored as immutable evidence files (`.audit/<owner>/*.evidence.yaml`).
 
@@ -415,18 +417,42 @@ Each skill operates under strict boundaries defined in [`POLICY.md`](POLICY.md) 
 
 ---
 
-### 19. `skill-auditor` — Meta-Auditor for Agent Skills
-- **Role:** Meta Quality Auditor.
-- **Canonical Rule:** Enforcement of `POLICY.md` standards for AI Agent Skills.
+### 19. `skill-readiness-auditor` — Agent Skill Instruction Quality & Trigger Discriminator
+- **Role:** Meta Quality & Readiness Owner.
+- **Canonical Rule:** Enforcement of `POLICY.md` standards for AI Agent Skills instruction quality, triggers, workflow coverage, and schema compliance.
 - **What it actually does:**
-  - Executable linter `scripts/audit.sh`:
-    - Validates YAML frontmatter integrity and parser compatibility.
-    - Checks description length (< 500 characters to prevent context window saturation).
-    - Verifies tool permission patterns (`allowed-tools`).
-    - Verifies empirical claims: directory counts, script paths, and file references must match disk reality.
-    - Bilateral pair-check: reciprocal routing between adjacent skills.
-    - Anti-prompt-injection validation: review-class skills must declare input as data, and descriptions must not contain agent-hijacking instructions.
-- **Instruments:** `audit.sh`. Emits `skills.mechanical-lint`, `skills.claims-verified`, `skills.pair-check-valid`.
+  - Validates YAML frontmatter integrity and schema compliance.
+  - Checks description length (< 500 characters to prevent context window saturation).
+  - Verifies tool permission patterns (`allowed-tools` / `disallowed-tools`).
+  - Verifies empirical claims: directory counts, script paths, and file references must match disk reality.
+  - Bilateral pair-check: reciprocal routing between adjacent skills.
+  - Anti-prompt-injection validation: review-class skills must declare input as data.
+- **Instruments:** `audit.sh`, `test_readiness_audit.py`. Emits `skills.mechanical-lint`, `skills.claims-verified`, `skills.pair-check-valid`.
+
+---
+
+### 20. `skill-security-auditor` — Agent Skill Security, Prompt Injection & Threat Auditor
+- **Role:** Meta Security Owner for Agent Skills.
+- **Canonical Rule:** Threat modeling, prompt injection resistance, excessive privileges, data exfiltration, supply-chain risks, and Runtime Gate requirements.
+- **What it actually does:**
+  - Audits for malicious/deceptive instructions, hidden Unicode obfuscation, and prompt injection attempts.
+  - Checks for sensitive data access, exfiltration patterns, and lateral skill access.
+  - Audits MCP servers and external resource declarations (`external-resources.json`).
+  - Integrates with NVIDIA SkillSpector scanner when available.
+  - Verifies requirements for Runtime Gate tier assignment (Tier 0 to Tier 3).
+- **Instruments:** `security-audit.py`, `skillspector-adapter.py`. Emits `security.scan`, `security.mcp`, `security.runtime-gate-requirement`.
+
+---
+
+### 21. `skill-release-gate` — Agent Skill Release, Signing & Enrolment Authority
+- **Role:** Final Gate Decision Authority for Agent Skills.
+- **Canonical Rule:** Unified evaluation of readiness and security reports to issue release, signing, or Trust Registry enrolment decisions.
+- **What it actually does:**
+  - Reads independent evidence from `skill-readiness-auditor` and `skill-security-auditor`.
+  - Enforces strict mode requirements for production enrolment.
+  - Validates bundle integrity (`bundle-integrity.json`) and provenance/signatures.
+  - Issues deterministic decision: `Eligible for enrolment`, `Hold`, `Blocked`, or `Quarantined`.
+- **Instruments:** `release-gate.py`. Emits `skills.enrolment-decision`.
 
 
 ## Verify the plugin
@@ -437,11 +463,14 @@ Before installing, or after editing it:
 # descriptions under the working ceiling (500 chars)
 python3 scripts/measure-descriptions.py .
 
-# zero mechanical findings
-bash skills/skill-auditor/scripts/audit.sh skills
+# zero mechanical findings in readiness
+bash skills/skill-readiness-auditor/scripts/audit.sh skills
 
 # validate-report tests
 python3 skills/audit-app/scripts/test_validate_report.py
+
+# e2e pipeline test for skills runtime & gate
+node --test runtime/tests/e2e-pipeline.test.mjs
 ```
 
 Pair-check (that every owner naming another in its description is named
