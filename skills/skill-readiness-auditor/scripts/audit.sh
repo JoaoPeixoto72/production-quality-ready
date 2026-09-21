@@ -9,6 +9,8 @@
 
 set -euo pipefail
 export LC_ALL=C
+export PYTHONIOENCODING=utf-8
+export PYTHONUTF8=1
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

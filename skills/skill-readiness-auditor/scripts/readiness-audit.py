@@ -23,6 +23,12 @@ from typing import Any, Iterable, Sequence
 
 import yaml
 
+# Reports contain `·` and `§`. Redirected stdout defaults to the system locale
+# on Windows, which writes cp1252 bytes that skill-release-gate cannot decode.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 VERSION = "1.0.0"
 
@@ -125,34 +131,75 @@ DIRECT_EXECUTION_EXTENSIONS = {
 }
 
 ACTION_VERBS = {
+    "aggregate",
     "analyze",
     "analyse",
+    "assess",
     "audit",
     "build",
     "check",
+    "classify",
+    "combine",
     "compare",
+    "compile",
     "compose",
+    "configure",
     "convert",
     "create",
     "debug",
+    "decide",
+    "deploy",
+    "derive",
     "detect",
+    "diagnose",
+    "document",
+    "enforce",
     "evaluate",
+    "explain",
     "extract",
+    "find",
+    "format",
+    "gate",
     "generate",
+    "identify",
+    "implement",
     "inspect",
+    "install",
     "lint",
+    "locate",
+    "map",
+    "measure",
+    "merge",
     "migrate",
+    "monitor",
     "optimize",
     "optimise",
+    "plan",
     "prepare",
     "process",
+    "profile",
+    "rank",
     "refactor",
+    "render",
+    "report",
+    "resolve",
     "review",
     "run",
+    "scan",
+    "score",
+    "search",
+    "select",
+    "simplify",
+    "sort",
     "summarize",
     "summarise",
     "test",
+    "trace",
+    "track",
     "transform",
+    "translate",
+    "update",
+    "upgrade",
     "validate",
     "verify",
     "write",
@@ -754,12 +801,18 @@ def description_first_word(description: str) -> str:
 
 
 def description_has_when_to_use(description: str) -> bool:
+    # An activation condition names a moment or a trigger. The lifecycle-stage
+    # list was previously closed, which rejected valid phrasings such as
+    # "before signing" or "after a quarantine event".
     patterns = [
-        r"\buse\s+(?:this\s+)?(?:skill\s+)?when\b",
-        r"\buse\s+before\b",
-        r"\buse\s+for\b",
-        r"\bwhen\s+(?:asked|reviewing|creating|auditing|checking)\b",
-        r"\bbefore\s+(?:commit|release|installation|publishing)\b",
+        r"\buse\s+(?:this\s+)?(?:skill\s+)?(?:when|before|after|for|during|once)\b",
+        r"\bwhen\s+(?:asked|reviewing|creating|auditing|checking|the\s|a\s|an\s)",
+        r"\bbefore\s+\w+",
+        r"\bafter\s+\w+",
+        r"\bduring\s+\w+",
+        r"\bonce\s+\w+",
+        r"\bprior\s+to\s+\w+",
+        r"\bat\s+(?:commit|release|review|install\w*|publish\w*)\b",
     ]
 
     return any(re.search(pattern, description, re.I) for pattern in patterns)
@@ -1446,6 +1499,21 @@ def check_model_fit(
             )
 
 
+DISALLOWED_TOOLS_RE = re.compile(
+    r"^disallowed-tools:\s*(?:.*?)(?=^\S|\Z)",
+    re.M | re.S,
+)
+
+
+def denied_capability_spans(text: str) -> list[tuple[int, int]]:
+    """Character ranges of the `disallowed-tools` frontmatter block.
+
+    A tool named there is a denial, not a capability. Handing it to the
+    security auditor as an observed capability wastes the handoff.
+    """
+    return [match.span() for match in DISALLOWED_TOOLS_RE.finditer(text)]
+
+
 def scan_security_handoffs(
     skill_dir: Path,
     handoffs: list[SecurityHandoff],
@@ -1510,9 +1578,20 @@ def scan_security_handoffs(
             continue
 
         relative = path.relative_to(skill_dir).as_posix()
+        denied = denied_capability_spans(text)
 
         for category, pattern, reason in checks:
-            match = pattern.search(text)
+            match = next(
+                (
+                    candidate
+                    for candidate in pattern.finditer(text)
+                    if not any(
+                        start <= candidate.start() and candidate.end() <= end
+                        for start, end in denied
+                    )
+                ),
+                None,
+            )
 
             if not match:
                 continue

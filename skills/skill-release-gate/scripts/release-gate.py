@@ -8,6 +8,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Decisions are reported with `·` and `§`. Redirected stdout defaults to the
+# system locale on Windows, which writes cp1252 bytes downstream tools cannot
+# decode as UTF-8.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 VERSION = "1.0.0"
 

@@ -11,9 +11,20 @@ from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import urlsplit, urlunsplit
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 VERSION = "1.0.0"
 
+# Kept identical to skill-readiness-auditor's EXCLUDED_DIRECTORIES so that both
+# audits describe the same target. skill-release-gate combines their reports and
+# assumes one target identity.
+#
+# `tests` is deliberately absent: a payload placed in a test directory must be
+# inspected. Only declared security fixtures are excluded, per SKILL.md
+# "Target discovery".
 EXCLUDED = {
     ".git",
     ".audit",
@@ -22,10 +33,13 @@ EXCLUDED = {
     "node_modules",
     "dist",
     "build",
+    "coverage",
     "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
     "fixtures",
     "test-fixtures",
-    "tests",
 }
 
 def strip_fenced_code(text: str) -> str:
@@ -33,6 +47,30 @@ def strip_fenced_code(text: str) -> str:
     def repl(m: re.Match[str]) -> str:
         return "\n" * m.group(0).count("\n")
     return re.sub(r"```[^\n]*\n.*?```", repl, text, flags=re.DOTALL)
+
+
+def fenced_code_spans(text: str) -> list[tuple[int, int, str]]:
+    """Character ranges of fenced markdown code blocks, with their info string."""
+    spans: list[tuple[int, int, str]] = []
+
+    for match in re.finditer(
+        r"```([^\n]*)\n.*?```",
+        text,
+        flags=re.DOTALL,
+    ):
+        start, end = match.span()
+        spans.append((start, end, match.group(1).strip().lower()))
+
+    return spans
+
+
+# Fence languages whose content an agent or shell can execute. A ```text or
+# ```json block in a policy document is an illustration, not behavior.
+EXECUTABLE_FENCE_LANGUAGES = {
+    "bash", "sh", "shell", "zsh", "console", "powershell", "ps1", "pwsh",
+    "python", "py", "js", "javascript", "ts", "typescript", "node",
+    "ruby", "rb", "perl", "php",
+}
 
 TEXT_EXTENSIONS = {
     ".md", ".txt", ".json", ".jsonc", ".yaml", ".yml",
@@ -42,10 +80,86 @@ TEXT_EXTENSIONS = {
     ".xml", ".html",
 }
 
-URL_RE = re.compile(
-    r"https?://[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]+",
+# Extensions whose content an agent or shell can execute. Documentation-context
+# suppression never applies to these: prose cannot run, code can.
+CODE_EXTENSIONS = {
+    ".py", ".sh", ".bash", ".zsh", ".js", ".mjs", ".cjs",
+    ".ts", ".tsx", ".jsx", ".ps1", ".rb", ".pl", ".php",
+}
+
+# Extensions where a security-sensitive phrase may legitimately appear as
+# policy prose, a detector specification, or a negated capability declaration.
+PROSE_EXTENSIONS = {
+    ".md", ".txt", ".json", ".jsonc", ".yaml", ".yml",
+    ".toml", ".ini", ".cfg", ".conf",
+}
+
+# Negation inverts the sentence that contains it: "the skill does not modify
+# the Trust Registry" is not a mutation claim. An author gains nothing by
+# writing it falsely, so it may appear on the matched line itself.
+NEGATION_RE = re.compile(
+    r"\b(?:cannot|can\s+not|can't|must\s+not|may\s+not|will\s+not|won't|"
+    r"shall\s+not|should\s+not|do\s+not|does\s+not|did\s+not|don't|doesn't|"
+    r"never|no\s+longer|without|forbidden|prohibited|disallow\w*|"
+    r"not\s+permitted|not\s+allowed|refuse\w*|denies|denied|deny|"
+    r"non-?goals?)\b",
     re.I,
 )
+
+# Exemplification only frames the text around it. "For example, <payload>" is
+# an assertion an attacker can make for free, so it counts only when it comes
+# from the list lead-in or the section heading — structure the payload line
+# cannot forge on its own.
+EXEMPLIFICATION_RE = re.compile(
+    r"\b(?:detect\w*|indicator\w*|"
+    r"example\w*|counter-?example\w*|fixture\w*|illustrat\w*|sample\w*|"
+    r"attempts?\s+to|attempting\s+to|untrusted|"
+    r"review\w*\s+for|inspect\w*\s+for|check\w*\s+for)\b",
+    re.I,
+)
+
+# A structured declaration that switches a capability off, for example
+# `target-may-disable-runtime-gate: false` in instruments.yaml.
+NEGATED_DECLARATION_RE = re.compile(
+    r"^\s*(?:-\s*)?[\"']?[\w.$-]+[\"']?\s*[:=]\s*"
+    r"[\"']?(?:false|no|none|never|off|0|denied|blocked|forbidden)[\"']?\s*,?\s*$",
+    re.I,
+)
+
+LIST_ITEM_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+(.*)$")
+
+# JSON and YAML keys whose value is a specification or documentation pointer,
+# never a destination the skill fetches at runtime.
+DOC_URL_KEYS = {
+    "$schema", "$id", "schema", "docs", "doc", "documentation",
+    "homepage", "repository", "url_docs", "reference", "references",
+    "seealso", "see_also", "spec", "specification", "license", "licence",
+}
+
+# Requires a syntactically real authority so that shell globs such as the
+# `http://*|https://*` guard in scripts/audit.sh are not read as destinations.
+URL_RE = re.compile(
+    r"https?://(?:[A-Za-z0-9][A-Za-z0-9-]*\.)*[A-Za-z0-9][A-Za-z0-9-]*"
+    r"(?::\d{1,5})?"
+    r"(?:[/?#][A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*)?",
+    re.I,
+)
+
+# Reserved and non-resolvable names (RFC 2606, RFC 6761) plus single-label
+# hosts. A documentation URL on one of these is a placeholder, not a
+# destination, and declaring it in a resource policy would be meaningless.
+PLACEHOLDER_HOST_RE = re.compile(
+    r"^(?:[^.]+|"
+    r"(?:[\w-]+\.)*(?:invalid|example|test|localhost|local)|"
+    r"(?:[\w-]+\.)*example\.(?:com|net|org))$",
+    re.I,
+)
+
+
+def placeholder_host(url: str) -> bool:
+    return bool(PLACEHOLDER_HOST_RE.match(urlsplit(url).hostname or ""))
+
 
 MARKDOWN_IMAGE_RE = re.compile(
     r"!\[[^\]]*]\(\s*https?://[^)]+\)",
@@ -88,19 +202,30 @@ SENSITIVE_RE = re.compile(
     re.I,
 )
 
+# Persistence requires an operation, not a topic. A bare word such as
+# "startup" appears in any document that discusses persistence and is not
+# evidence of it.
 PERSISTENCE_RE = re.compile(
-    r"\b(?:crontab|cron\.d|launchctl|systemctl\s+enable|"
-    r"schtasks|startup|shell\s+profile|\.bashrc|\.zshrc|"
-    r"LaunchAgents|scheduled\s+task)\b",
+    r"\bcrontab\s+-[el]\b|"
+    r"\b(?:>>?|tee|cp|mv|echo\b.*>>?)\s*[^\n]{0,40}"
+    r"(?:\.bashrc|\.zshrc|\.profile|\.bash_profile|/cron\.d/|"
+    r"LaunchAgents/|LaunchDaemons/)|"
+    r"\blaunchctl\s+(?:load|bootstrap|enable)\b|"
+    r"\bsystemctl\s+(?:--user\s+)?enable\b|"
+    r"\bschtasks\s+/create\b|"
+    r"\bNew-ScheduledTask\b|"
+    r"\bRegister-ScheduledJob\b",
     re.I,
 )
 
+# Bounded to a single line: a prose paragraph that mentions the Runtime Gate
+# and, two sentences later, the word "modify" is not a mutation capability.
 REGISTRY_TAMPER_RE = re.compile(
-    r"(?:write|edit|modify|replace|delete|reset|clear).{0,80}"
+    r"(?:write|edit|modify|replace|delete|reset|clear)[^\n]{0,60}?"
     r"(?:trust[- ]registry|runtime[- ]gate)|"
-    r"(?:trust[- ]registry|runtime[- ]gate).{0,80}"
+    r"(?:trust[- ]registry|runtime[- ]gate)[^\n]{0,60}?"
     r"(?:write|edit|modify|replace|delete|reset|clear)",
-    re.I | re.S,
+    re.I,
 )
 
 DEPENDENCY_FILES = {
@@ -225,6 +350,160 @@ def line_location(path: Path, text: str, needle: str) -> str:
     if index < 0:
         return str(path)
     return f"{path}:{text.count(chr(10), 0, index) + 1}"
+
+
+def line_index_at(text: str, offset: int) -> int:
+    return text.count("\n", 0, offset)
+
+
+def enclosing_clause(text: str, offset: int) -> tuple[str, str]:
+    """Return the clause and the section heading surrounding a match.
+
+    A prohibition is usually written as a lead-in sentence followed by a bullet
+    list, for example:
+
+        A target skill cannot:
+        - change Trust Registry state;
+
+    The bullet alone reads as a capability. The clause therefore spans the
+    matched line plus the lead-in line that introduces the enclosing list.
+    """
+    lines = text.splitlines()
+    index = min(line_index_at(text, offset), max(len(lines) - 1, 0))
+
+    if not lines:
+        return "", ""
+
+    clause = [lines[index]]
+
+    if LIST_ITEM_RE.match(lines[index]):
+        cursor = index - 1
+        while cursor >= 0:
+            candidate = lines[cursor]
+            if LIST_ITEM_RE.match(candidate) or not candidate.strip():
+                cursor -= 1
+                continue
+            clause.insert(0, candidate)
+            break
+
+    heading = ""
+    cursor = index
+    while cursor >= 0:
+        match = HEADING_RE.match(lines[cursor])
+        if match:
+            heading = match.group(1)
+            break
+        cursor -= 1
+
+    return "\n".join(clause), heading
+
+
+def pattern_definition_spans(text: str) -> list[tuple[int, int]]:
+    """Character ranges of module-level detector constants in Python source.
+
+    A security scanner necessarily contains the strings it looks for. Matching a
+    scanner's own `INJECTION_RE = re.compile(...)` is a self-match, not target
+    behavior. Only ALL-CAPS module-level constants qualify, and the match is
+    still reported as a documentation-context match rather than dropped.
+    """
+    spans: list[tuple[int, int]] = []
+    lines = text.splitlines(keepends=True)
+    offsets: list[int] = []
+    cursor = 0
+
+    for line in lines:
+        offsets.append(cursor)
+        cursor += len(line)
+
+    # Parentheses inside regex literals make brace counting unreliable, so the
+    # span ends at the first closing delimiter written in column 0 — the layout
+    # this file and every sibling script uses for module constants.
+    for index, line in enumerate(lines):
+        if not re.match(r"^[A-Z][A-Z0-9_]*\s*=\s*(?:re\.compile\(|\{|\()", line):
+            continue
+
+        stripped = line.rstrip().rstrip(",")
+
+        if stripped.endswith((")", "}")):
+            spans.append((offsets[index], offsets[index] + len(line)))
+            continue
+
+        for lookahead in range(index + 1, min(index + 80, len(lines))):
+            if re.match(r"^[)}],?\s*$", lines[lookahead]):
+                spans.append(
+                    (offsets[index], offsets[lookahead] + len(lines[lookahead]))
+                )
+                break
+
+    return spans
+
+
+def enclosing_fence(
+    start: int,
+    code_spans: list[tuple[int, int, str]],
+) -> tuple[bool, str]:
+    for span_start, span_end, language in code_spans:
+        if span_start <= start < span_end:
+            return True, language
+    return False, ""
+
+
+def documentation_context(
+    path: Path,
+    text: str,
+    start: int,
+    end: int,
+    code_spans: list[tuple[int, int, str]],
+    pattern_spans: list[tuple[int, int]],
+) -> str | None:
+    """Explain why a match is documentation rather than behavior, or return None.
+
+    Suppression is reported, never silent: the caller records every suppressed
+    match in `documentationMatches`.
+    """
+    suffix = path.suffix.lower()
+
+    if any(
+        span_start <= start and end <= span_end
+        for span_start, span_end in pattern_spans
+    ):
+        return "detector pattern definition"
+
+    if suffix in CODE_EXTENSIONS or suffix not in PROSE_EXTENSIONS:
+        return None
+
+    fenced, language = enclosing_fence(start, code_spans)
+
+    if fenced and language not in EXECUTABLE_FENCE_LANGUAGES:
+        return f"illustration in a non-executable ```{language or 'plain'} block"
+
+    # The matched text is masked out of every window: a payload must not
+    # qualify as its own exoneration by containing a word such as "rules".
+    clause, heading = enclosing_clause(text, start)
+    tail_clause, _ = enclosing_clause(text, max(end - 1, start))
+    window = clause if tail_clause == clause else f"{clause}\n{tail_clause}"
+    masked = window.replace(text[start:end], " ")
+
+    lines = clause.splitlines()
+
+    if lines and NEGATED_DECLARATION_RE.match(lines[-1]):
+        return "negated capability declaration"
+
+    if NEGATION_RE.search(masked):
+        return "negated statement in the enclosing clause"
+
+    # Structural framing only: the list lead-in, never the matched line.
+    lead_in = "\n".join(lines[:-1]) if len(lines) > 1 else ""
+
+    if lead_in and EXEMPLIFICATION_RE.search(lead_in):
+        return "example introduced by the enclosing list lead-in"
+
+    if heading and (
+        NEGATION_RE.search(heading) or EXEMPLIFICATION_RE.search(heading)
+    ):
+        return f"prohibition or example section: {clean(heading, 80)}"
+
+    return None
 
 
 def discover(target: Path, mode: str | None) -> list[Path]:
@@ -512,13 +791,142 @@ def load_manifest(
     return data, declared
 
 
+def url_usage(
+    path: Path,
+    text: str,
+    offset: int,
+    code_spans: list[tuple[int, int, str]],
+) -> str:
+    """Classify one URL occurrence as `runtime` or `documentation`.
+
+    Only a runtime occurrence can produce an actual request, so only a runtime
+    occurrence needs an entry in external-resources.json. A documentation
+    occurrence is a Tier 0 candidate: human-readable, never fetched.
+    """
+    suffix = path.suffix.lower()
+
+    line_start = text.rfind("\n", 0, offset) + 1
+    line_end = text.find("\n", offset)
+    line = text[line_start:line_end if line_end >= 0 else len(text)]
+
+    # A specification identifier such as `$schema` names a document, it does
+    # not request one. The key may sit on the line above the value.
+    preceding = text[:line_start].rstrip().rsplit("\n", 1)[-1] if line_start else ""
+
+    for candidate in (line, preceding):
+        key = re.match(r"\s*[\"']?([\w.$-]+)[\"']?\s*[:=]", candidate)
+        if key and key.group(1).lower() in DOC_URL_KEYS:
+            return "documentation"
+
+    if suffix in CODE_EXTENSIONS:
+        return "runtime"
+
+    if NETWORK_RE.search(line):
+        return "runtime"
+
+    if suffix == ".md":
+        fenced, language = enclosing_fence(offset, code_spans)
+        return (
+            "runtime"
+            if fenced and language in EXECUTABLE_FENCE_LANGUAGES
+            else "documentation"
+        )
+
+    if suffix in {".json", ".jsonc", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf"}:
+        return "runtime"
+
+    return "documentation"
+
+
+# A network tool granted in frontmatter is a capability. The same name under
+# `disallowed-tools` is the opposite claim and must not count.
+ALLOWED_TOOLS_RE = re.compile(
+    r"^allowed-tools:\s*(.*?)(?=^\S|\Z)",
+    re.M | re.S,
+)
+
+
+def declares_network_tool(text: str) -> bool:
+    match = ALLOWED_TOOLS_RE.search(text)
+    return bool(match and NETWORK_RE.search(match.group(1)))
+
+
+def comment_and_docstring_spans(text: str, suffix: str) -> list[tuple[int, int]]:
+    """Character ranges of source text that never executes.
+
+    Used for capability detection only. A payload written in a comment is still
+    reported as a finding, because an agent reads the whole file; it is simply
+    not evidence that the file performs a network call.
+    """
+    spans: list[tuple[int, int]] = []
+
+    if suffix == ".py":
+        for match in re.finditer(r'"""(?:.|\n)*?"""|\'\'\'(?:.|\n)*?\'\'\'', text):
+            spans.append(match.span())
+
+    comment = {
+        ".py": r"#[^\n]*",
+        ".sh": r"#[^\n]*",
+        ".bash": r"#[^\n]*",
+        ".zsh": r"#[^\n]*",
+        ".rb": r"#[^\n]*",
+        ".pl": r"#[^\n]*",
+        ".ps1": r"#[^\n]*",
+    }.get(suffix, r"//[^\n]*|/\*(?:.|\n)*?\*/")
+
+    for match in re.finditer(comment, text):
+        spans.append(match.span())
+
+    return spans
+
+
+def observes_network_call(
+    path: Path,
+    text: str,
+    pattern_spans: list[tuple[int, int]],
+    code_spans: list[tuple[int, int, str]],
+) -> bool:
+    """True when a file that executes contains a real network call.
+
+    Prose that names `curl` or `WebFetch`, and a scanner's own detector
+    pattern, are not network capability. A command inside an executable fenced
+    block is: the skill instructs an agent to run it.
+    """
+    if path.name == "SKILL.md" and declares_network_tool(text):
+        return True
+
+    if path.suffix.lower() == ".md":
+        return any(
+            language in EXECUTABLE_FENCE_LANGUAGES
+            and NETWORK_RE.search(text[start:end])
+            for start, end, language in code_spans
+        )
+
+    suffix = path.suffix.lower()
+
+    if suffix not in CODE_EXTENSIONS:
+        return False
+
+    inert = pattern_spans + comment_and_docstring_spans(text, suffix)
+
+    return any(
+        not any(
+            span_start <= match.start() and match.end() <= span_end
+            for span_start, span_end in inert
+        )
+        for match in NETWORK_RE.finditer(text)
+    )
+
+
 def scan_skill(
     skill_dir: Path,
     strict: bool,
     runtime_attestation: Path | None,
 ) -> dict[str, Any]:
     findings: list[Finding] = []
+    doc_matches: list[dict[str, str]] = []
     observed_urls: dict[str, list[str]] = {}
+    url_usages: dict[str, set[str]] = {}
     network_capable = False
     file_count = 0
     text_count = 0
@@ -540,11 +948,77 @@ def scan_skill(
 
         text_count += 1
 
+        code_spans = (
+            fenced_code_spans(text) if path.suffix.lower() == ".md" else []
+        )
+        pattern_spans = (
+            pattern_definition_spans(text)
+            if path.suffix.lower() == ".py"
+            else []
+        )
+
+        def record(
+            match: re.Match[str] | None,
+            severity: str,
+            title: str,
+            impact: str,
+            fix: str,
+            rule: str,
+            *,
+            confidence: str = "Observed",
+            location: str | None = None,
+        ) -> None:
+            """Add a finding, or record the match as documentation context.
+
+            Nothing is dropped. A suppressed match stays visible in the report
+            under "Documentation-context matches" so a reviewer can audit the
+            suppression itself.
+            """
+            if match is None:
+                return
+
+            where = location or line_location(
+                Path(relative), text, match.group(0)
+            )
+            reason = documentation_context(
+                path,
+                text,
+                match.start(),
+                match.end(),
+                code_spans,
+                pattern_spans,
+            )
+
+            if reason is not None:
+                doc_matches.append({
+                    "title": title,
+                    "location": where,
+                    "evidence": clean(match.group(0)),
+                    "reason": reason,
+                    "rule": rule,
+                })
+                return
+
+            add_finding(
+                findings,
+                severity,
+                title,
+                where,
+                match.group(0),
+                impact,
+                fix,
+                rule,
+                confidence=confidence,
+            )
+
         if path.name != "external-resources.json":
             for match in URL_RE.finditer(text):
                 normalized = canonical_url(match.group(0))
                 observed_urls.setdefault(normalized, []).append(
                     line_location(Path(relative), text, match.group(0))
+                )
+                url_usages.setdefault(normalized, set()).add(
+                    url_usage(path, text, match.start(), code_spans)
                 )
 
         for character in (
@@ -566,128 +1040,162 @@ def scan_skill(
                 )
                 break
 
-        scannable_text = strip_fenced_code(text) if path.suffix.lower() == ".md" else text
+        record(
+            INJECTION_RE.search(text),
+            "Blocker",
+            "Prompt-injection indicator detected",
+            "The target attempts to influence an agent or its own audit.",
+            "Remove the directive and investigate the source.",
+            "§8",
+        )
 
-        match = INJECTION_RE.search(scannable_text)
-        if match:
-            add_finding(
-                findings,
-                "Blocker",
-                "Prompt-injection indicator detected",
-                line_location(Path(relative), text, match.group(0)),
-                match.group(0),
-                "The target attempts to influence an agent or its own audit.",
-                "Remove the directive and investigate the source.",
-                "§8",
-            )
+        record(
+            OBFUSCATION_RE.search(text),
+            "Blocker",
+            "Encoded or obfuscated execution detected",
+            "Executed behavior is concealed from ordinary review.",
+            "Replace it with transparent source or reject the skill.",
+            "§10",
+        )
 
-        match = OBFUSCATION_RE.search(scannable_text)
-        if match:
-            add_finding(
-                findings,
-                "Blocker",
-                "Encoded or obfuscated execution detected",
-                line_location(Path(relative), text, match.group(0)),
-                match.group(0),
-                "Executed behavior is concealed from ordinary review.",
-                "Replace it with transparent source or reject the skill.",
-                "§10",
-            )
+        record(
+            MARKDOWN_IMAGE_RE.search(text),
+            "Major",
+            "External Markdown image detected",
+            "Rendering may create an undeclared external request.",
+            "Vendor the image locally or remove it.",
+            "§15",
+        )
 
-        match = MARKDOWN_IMAGE_RE.search(text)
-        if match:
-            add_finding(
-                findings,
-                "Major",
-                "External Markdown image detected",
-                line_location(Path(relative), text, match.group(0)),
-                match.group(0),
-                "Rendering may create an undeclared external request.",
-                "Vendor the image locally or remove it.",
-                "§15",
-            )
-
-        if NETWORK_RE.search(text):
+        if observes_network_call(path, text, pattern_spans, code_spans):
             network_capable = True
 
-        sensitive = SENSITIVE_RE.search(text)
-        network = NETWORK_RE.search(text)
-        if sensitive and network:
-            add_finding(
-                findings,
-                "Major",
-                "Sensitive-data access and network behavior coexist",
-                str(relative),
-                f"{sensitive.group(0)}; {network.group(0)}",
-                "The skill may be capable of transmitting sensitive runtime data.",
-                "Review the data flow and remove or strictly bound one capability.",
-                "§14-§15",
-                confidence="Inferred",
-            )
+        # Co-occurrence of a sensitive read and a network call is only evidence
+        # of a data flow in a file that executes. In prose, both are topics.
+        if path.suffix.lower() in CODE_EXTENSIONS:
+            sensitive = SENSITIVE_RE.search(text)
+            network = NETWORK_RE.search(text)
 
-        match = PERSISTENCE_RE.search(text)
-        if match:
-            add_finding(
-                findings,
-                "Major",
-                "Persistence-related behavior detected",
-                line_location(Path(relative), text, match.group(0)),
-                match.group(0),
-                "The skill may affect future sessions or system startup.",
-                "Remove persistence or require explicit consent and cleanup.",
-                "§16",
-                confidence="Inferred",
-            )
+            if sensitive and network:
+                suppressed = documentation_context(
+                    path,
+                    text,
+                    sensitive.start(),
+                    sensitive.end(),
+                    code_spans,
+                    pattern_spans,
+                ) and documentation_context(
+                    path,
+                    text,
+                    network.start(),
+                    network.end(),
+                    code_spans,
+                    pattern_spans,
+                )
 
-        match = REGISTRY_TAMPER_RE.search(text)
-        if match:
-            add_finding(
-                findings,
-                "Blocker",
-                "Trust or Runtime Gate modification detected",
-                line_location(Path(relative), text, match.group(0)),
-                match.group(0),
-                "The skill may alter its own security boundary.",
-                "Remove registry or gate mutation capability.",
-                "§17",
-            )
+                if suppressed:
+                    doc_matches.append({
+                        "title": "Sensitive-data access and network behavior coexist",
+                        "location": str(relative),
+                        "evidence": clean(
+                            f"{sensitive.group(0)}; {network.group(0)}"
+                        ),
+                        "reason": suppressed,
+                        "rule": "§14-§15",
+                    })
+                else:
+                    add_finding(
+                        findings,
+                        "Major",
+                        "Sensitive-data access and network behavior coexist",
+                        str(relative),
+                        f"{sensitive.group(0)}; {network.group(0)}",
+                        "The skill may be capable of transmitting sensitive runtime data.",
+                        "Review the data flow and remove or strictly bound one capability.",
+                        "§14-§15",
+                        confidence="Inferred",
+                    )
+
+        record(
+            PERSISTENCE_RE.search(text),
+            "Major",
+            "Persistence-related behavior detected",
+            "The skill may affect future sessions or system startup.",
+            "Remove persistence or require explicit consent and cleanup.",
+            "§16",
+            confidence="Inferred",
+        )
+
+        record(
+            REGISTRY_TAMPER_RE.search(text),
+            "Blocker",
+            "Trust or Runtime Gate modification detected",
+            "The skill may alter its own security boundary.",
+            "Remove registry or gate mutation capability.",
+            "§17",
+        )
 
         if path.name in DEPENDENCY_FILES:
-            match = MUTABLE_DEPENDENCY_RE.search(text)
-            if match:
-                add_finding(
-                    findings,
-                    "Major",
-                    "Mutable or unpinned dependency source detected",
-                    line_location(Path(relative), text, match.group(0)),
-                    match.group(0),
-                    "Dependency behavior may change after audit.",
-                    "Pin an immutable version, digest, or commit.",
-                    "§18",
-                )
+            record(
+                MUTABLE_DEPENDENCY_RE.search(text),
+                "Major",
+                "Mutable or unpinned dependency source detected",
+                "Dependency behavior may change after audit.",
+                "Pin an immutable version, digest, or commit.",
+                "§18",
+            )
 
     manifest, declared = load_manifest(skill_dir, findings)
 
-    schema_url = "https://json-schema.org/draft/2020-12/schema"
-    observed_urls.pop(schema_url, None)
+    runtime_urls = {
+        url
+        for url, usages in url_usages.items()
+        if "runtime" in usages
+    }
 
     for url, locations in sorted(observed_urls.items()):
-        if url not in declared:
-            severity = "Blocker" if network_capable else "Major"
+        if url in declared:
+            continue
+
+        if url not in runtime_urls:
+            if placeholder_host(url):
+                doc_matches.append({
+                    "title": "Undeclared documentation URL",
+                    "location": locations[0],
+                    "evidence": clean(url),
+                    "reason": "reserved or single-label placeholder host",
+                    "rule": "§20",
+                })
+                continue
+
             add_finding(
                 findings,
-                severity,
-                (
-                    "Undeclared runtime-capable external URL"
-                    if network_capable
-                    else "Undeclared external URL"
-                ),
+                "Minor",
+                "Undeclared documentation URL",
                 locations[0],
                 url,
-                "The destination is absent from the approved resource policy.",
-                "Declare and classify the URL or remove it.",
+                "The destination is human-readable only and is not fetched by the "
+                "bundle, but it is absent from the resource policy.",
+                "Declare it as Tier 0 or accept it as documentation.",
                 "§20",
+                type_="Concern",
             )
+            continue
+
+        add_finding(
+            findings,
+            "Blocker" if network_capable else "Major",
+            (
+                "Undeclared runtime-capable external URL"
+                if network_capable
+                else "Undeclared external URL"
+            ),
+            locations[0],
+            url,
+            "The destination is absent from the approved resource policy.",
+            "Declare and classify the URL or remove it.",
+            "§20",
+        )
 
     for url in sorted(declared):
         if url not in observed_urls:
@@ -709,7 +1217,10 @@ def scan_skill(
         if isinstance(value, dict)
     }
     requires_gate = network_capable or bool(tiers & {1, 2, 3})
-    has_external = bool(observed_urls or declared)
+    # Tier 0 documentation links are not external resources for policy purposes:
+    # nothing in the bundle fetches them. Counting them would force every skill
+    # with a reference link to carry a manifest.
+    has_external = bool(runtime_urls or declared)
 
     if manifest is None and has_external:
         add_finding(
@@ -796,8 +1307,14 @@ def scan_skill(
         "requiresRuntimeGate": requires_gate,
         "runtimeEnforcement": runtime_status,
         "observedUrls": observed_urls,
+        "urlUsage": {
+            url: sorted(usages)
+            for url, usages in sorted(url_usages.items())
+        },
+        "runtimeUrls": sorted(runtime_urls),
         "declaredResources": list(declared.values()),
         "findings": [asdict(item) for item in findings],
+        "documentationMatches": doc_matches,
     }
 
 
@@ -825,6 +1342,21 @@ def load_skillspector(path: Path | None) -> dict[str, Any]:
         }
 
 
+def load_scanner_trust(path: Path | None) -> dict[str, Any]:
+    if path is None or not path.is_file():
+        return {"trust": "UNVERIFIED", "errors": ["No scanner-trust record supplied."]}
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as error:
+        return {"trust": "FAILED", "errors": [f"Unreadable scanner-trust record: {error}"]}
+
+    if not isinstance(data, dict) or "trust" not in data:
+        return {"trust": "FAILED", "errors": ["Malformed scanner-trust record."]}
+
+    return data
+
+
 def scanner_material_severity(finding: dict[str, Any]) -> str:
     value = str(
         finding.get("severity")
@@ -838,12 +1370,18 @@ def decide_verdict(
     project_results: list[dict[str, Any]],
     scanner: dict[str, Any],
     strict: bool,
+    scanner_trust: dict[str, Any] | None = None,
 ) -> str:
     project_findings = [
         finding
         for result in project_results
         for finding in result["findings"]
     ]
+
+    # A scanner that contradicts its own pin cannot supply trustworthy
+    # evidence. Never approve on top of it.
+    if scanner_trust and scanner_trust.get("trust") == "FAILED":
+        return "Hold"
 
     if any(
         finding["severity"] == "Blocker"
@@ -940,6 +1478,7 @@ def print_markdown(payload: dict[str, Any]) -> None:
     print()
     print(f"**Security verdict:** {payload['securityVerdict']}  ")
     print(f"**Strict mode:** {str(payload['strict']).lower()}  ")
+    print(f"**Analysis mode:** {payload['mode']}  ")
     print(
         f"**SkillSpector:** "
         f"{payload['skillspector']['completeness']}  "
@@ -948,7 +1487,18 @@ def print_markdown(payload: dict[str, Any]) -> None:
         f"**SkillSpector version:** "
         f"{payload['skillspector'].get('scannerVersion')}  "
     )
+    print(
+        f"**Scanner trust:** "
+        f"{payload['scannerTrust'].get('trust')}  "
+    )
     print()
+
+    if payload["mode"] == "semantic":
+        print(
+            "Semantic review is performed by the auditing model, not by this "
+            "script. This report carries the deterministic evidence only."
+        )
+        print()
 
     for result in payload["results"]:
         print(f"## {result['skill']}")
@@ -989,6 +1539,30 @@ def print_markdown(payload: dict[str, Any]) -> None:
             print("Zero project-policy findings.")
             print()
 
+        doc_matches = result.get("documentationMatches", [])
+
+        if doc_matches:
+            print(
+                f"### Documentation-context matches "
+                f"({len(doc_matches)}, not findings)"
+            )
+            print()
+            print(
+                "Security-sensitive phrases that the enclosing prose negates, "
+                "prohibits, or specifies as a detector. Review the suppression "
+                "itself if the target is untrusted."
+            )
+            print()
+            print("| Rule | Location | Evidence | Why not a finding |")
+            print("|---|---|---|---|")
+            for item in doc_matches:
+                evidence = item["evidence"].replace("|", "\\|")
+                print(
+                    f"| {item['rule']} | `{item['location']}` | "
+                    f"{evidence} | {item['reason']} |"
+                )
+            print()
+
     scanner_findings = payload["skillspector"].get("findings", [])
     print(f"## SkillSpector findings ({len(scanner_findings)})")
     print()
@@ -1020,11 +1594,26 @@ def main() -> int:
     )
     parser.add_argument("--strict", action="store_true")
     parser.add_argument(
+        "--mode",
+        choices=("static", "semantic"),
+        default="static",
+        help=(
+            "Requested analysis mode. This script is always deterministic and "
+            "local; `semantic` records that the operator authorized the model "
+            "to perform the additional semantic review described in SKILL.md."
+        ),
+    )
+    parser.add_argument(
         "--format",
         choices=("markdown", "json", "sarif"),
         default="markdown",
     )
     parser.add_argument("--skillspector-report")
+    parser.add_argument(
+        "--scanner-trust",
+        dest="scanner_trust",
+        help="Path to the scanner-trust record from verify-skillspector.py",
+    )
     parser.add_argument("--runtime-attestation")
     args = parser.parse_args()
 
@@ -1064,10 +1653,15 @@ def main() -> int:
         else None
     )
 
+    scanner_trust = load_scanner_trust(
+        Path(args.scanner_trust) if args.scanner_trust else None
+    )
+
     verdict = decide_verdict(
         results,
         scanner,
         args.strict,
+        scanner_trust,
     )
 
     payload = {
@@ -1075,9 +1669,11 @@ def main() -> int:
         "auditor": "skill-security-auditor",
         "auditorVersion": VERSION,
         "strict": args.strict,
+        "mode": args.mode,
         "securityVerdict": verdict,
         "enrolmentReady": verdict == "Eligible for enrolment",
         "skillspector": scanner,
+        "scannerTrust": scanner_trust,
         "results": results,
         "safetyRecord": {
             "targetFilesModified": False,

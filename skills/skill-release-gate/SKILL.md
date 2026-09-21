@@ -1,6 +1,6 @@
 ---
 name: skill-release-gate
-description: "Combine independent readiness and security audit reports into a final installation, publication, signing, or Trust Registry enrolment decision for an Agent Skill. Do not use to perform the underlying readiness or security analysis; run skill-readiness-auditor and skill-security-auditor first."
+description: "Combine independent readiness and security audit reports into one Agent Skill release decision. Use before installing, publishing, signing, enrolling in a Trust Registry, or releasing a skill from quarantine, once both audits have produced JSON reports. Do not use to perform the underlying analysis; run skill-readiness-auditor and skill-security-auditor first."
 argument-hint: "--readiness-report <json> --security-report <json> [--action install|publish|sign|enrol|reaudit] [--format markdown|json]"
 version: 1.0.0
 evidence-schema: "1.0.x"
@@ -8,6 +8,7 @@ model: opus
 effort: medium
 allowed-tools:
   - Read
+  - Bash(bash scripts/gate.sh:*)
   - Bash(python3 scripts/release-gate.py:*)
   - Bash(python scripts/release-gate.py:*)
 disallowed-tools:
@@ -163,11 +164,18 @@ Also requires:
 Run:
 
 ```text
-python3 scripts/release-gate.py \
+bash scripts/gate.sh \
   --readiness-report <path> \
   --security-report <path> \
   --action <action>
 ```
+
+The wrapper resolves a Python interpreter that actually executes and forces
+UTF-8 output. Call `scripts/release-gate.py` directly only when a working
+interpreter is already known.
+
+Exit codes: `0` for `Eligible`, `1` for any other decision, `2` when the gate
+could not run.
 
 ## Output decisions
 
@@ -193,8 +201,13 @@ This skill does not:
 
 ## Files
 
-- `POLICY.md`
-- `instruments.yaml`
-- `references/example-report.md`
-- `scripts/release-gate.py`
-- `tests/test_release_gate.py`
+- `POLICY.md` — authoritative decision policy
+- `instruments.yaml` — evidence contract
+- `external-resources.json` — this skill's own external-resource declaration
+- `references/example-report.md` — report format
+- `schemas/enrolment-evidence.schema.json` — enrolment evidence shape
+- `schemas/release-decision.schema.json` — decision record shape
+- `schemas/signature-verification.schema.json` — signature evidence shape
+- `scripts/gate.sh` — decision entry point
+- `scripts/release-gate.py` — deterministic decision engine
+- `tests/test_release_gate.py` — decision-matrix tests

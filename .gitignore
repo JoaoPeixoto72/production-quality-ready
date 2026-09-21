@@ -7,6 +7,11 @@ __pycache__/
 env/
 venv/
 .venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+.coverage
 
 # Audit evidence generated during runs
 .audit/
