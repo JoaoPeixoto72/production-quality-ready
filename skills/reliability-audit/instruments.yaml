@@ -1,8 +1,11 @@
 # instruments.yaml — reliability-audit
-# Regra dura: sem harness que exercita a queda, não há verdict.
+# Hard rule: no harness that exercises the failure, no verdict.
+# A PASS without command + log is invalid (CONTRACTS §4.6).
+platforms: [web, desktop]
 accepts:
   - producer: reliability-audit
     instrument: crash-harness
+    platforms: [desktop]
     for-checks:
       - reliability.atomic-write
       - reliability.crash-mid-write
@@ -12,9 +15,22 @@ accepts:
     for-checks:
       - reliability.migration-forward
       - reliability.migration-tested
+      - reliability.migration-immutable
       - reliability.downgrade-declared
       - reliability.backup-before-migrate
-  - producer: code-review-runtime
+  - producer: code-review
     instrument: test-runner
     for-checks:
+      - reliability.atomic-write
       - reliability.resume-after-reopen
+  - producer: reliability-audit
+    instrument: log-inspection
+    for-checks:
+      - observability.error-diagnosable
+      - observability.logs-structured
+      - observability.correlation-id-e2e
+      - observability.pii-redacted
+      - observability.retention-declared
+      - observability.crash-report-opt-in
+      - observability.telemetry-consent
+      - observability.version-in-report

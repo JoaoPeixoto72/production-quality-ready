@@ -1,103 +1,140 @@
 ---
 name: bootstrap-project
-description: "Generate the files a new repo needs to consume the production-quality-ready plugin — CLAUDE.md, ESTADO.md, .claude/gates.json (from the audit-app template), and 4 local adapter skills (start-work, review-change, close-work, verify) that cite the plugin's owners. Every number generated carries the command that produced it. Use on a fresh repo. Do NOT use to migrate a repo already on auditar-app 2.3.x — see audit-app/migration/from-auditar-app-2.3.md."
+description: "Run first after installing the plugin: detect host, stack and platform, ask only what code cannot tell, write gates.json and the 4 project adapters (start-work, review-change, close-work, verify). Use on a repo without gates.json. Not for audits."
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
-version: 1.0.0
+platforms: [web, desktop]
+version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
 # bootstrap-project
 
-Generate the skeleton a fresh repo needs to consume the production-quality-ready
-plugin.
+The plugin is generic. The project is not. This skill closes the gap by
+writing the **four adapters that make the generic owners bite on this
+codebase** — with the project's real commands, real invariants and real
+surfaces — plus the `gates.json` that tells every owner which platform,
+sales model and stack they are looking at.
 
-## Flow
+Run it first. Run it again after a plugin major upgrade (it re-reads the
+existing adapters and only proposes diffs).
 
-1. **Read the repo — never invent.** Real package manager, manifest files,
-   tooling, project type. Phase 0 of `audit-app` reused.
-2. **Ask what can't be derived from code:**
-   - Human-readable project name.
-   - Branching rule (main-only, gitflow, trunk-based).
-   - Where the release goes (store, direct download, in-app updater).
-   - Invariants already paid for once ("we never do X because…").
-   - Whether the product sells: `commercial-readiness` applicable or not.
-3. **Write `CLAUDE.md`** — map, commands, invariants, conventions,
-   boundaries, skills, contribution rules.
-4. **Write `ESTADO.md`** — current version, what compiles and passes,
-   next step. Empty for the user to fill in.
-5. **Write `.claude/gates.json`** from
-   `production-quality-ready/skills/audit-app/migration/justclip.gates.json.template`,
-   with applicable owners marked and inapplicable ones with
-   `not-applicable: "<reason>"` (declared scope, POLICY §5.1.1).
-5b. **Resolve CONTRACT_PATH.** Two options, decided in this order:
-   - If `production-quality-ready/CONTRACTS.md` is reachable by the agent at an
-     absolute path (plugin installed globally in the environment), use
-     that path. No duplication.
-   - Otherwise, **copy** `production-quality-ready/CONTRACTS.md` to
-     `<repo>/.claude/CONTRACTS.md.snapshot` and use
-     `../CONTRACTS.md.snapshot` as CONTRACT_PATH. The file carries a
-     header: "Snapshot of production-quality-ready vX.Y.Z at <date>. Don't edit
-     here; edit in the plugin and re-bootstrap."
-6. **Write 4 local adapter skills:**
-   - `start-work` — cites plugin `start-work` as base.
-   - `review-change` — cites plugin `review-change`.
-   - `close-work` — cites plugin `close-work`.
-   - `verify` — adapter of universal `verify`, with the project's paths,
-     `.exe` and harness specifics. Uses
-     `extends: production-quality-ready::verify@1.x`.
-7. **Run `skill-readiness-auditor --depth deep`** over what was just written.
-   Refuse to hand off with an open Blocker.
+## Phase 0 — Detect (never invent)
 
-## Hard rule: every number carries its command
+Read, do not ask, for anything the repo can tell:
 
-Every number the generator emits carries the command that produced it, in
-the final file itself. Format:
+| Fact | Source |
+|---|---|
+| **Host** | `.agents/` exists → `.agents`; `.claude/` exists → `.claude`; both → ask; neither → default `.agents` and say so. |
+| **Platform** | `tauri.conf.json`, `electron` dep, `Cargo.toml` with `[[bin]]` → `desktop`. `wrangler.*`, `next.config.*`, `vite.config.*` with SSR, `package.json` with a server framework → `web`. Both → `both`. |
+| **Stack** | manifests: `package.json` (+ deps: hono, next, react, vite…), `Cargo.toml`, `pyproject.toml`, `wrangler.jsonc` (d1/r2/kv bindings). |
+| **Commands** | `package.json` scripts (`build`, `test`, `typecheck`/`tsc`, `lint`, `dev`), `Cargo.toml` (→ `cargo build --release`, `cargo test`), `Makefile`, `justfile`. |
+| **Migrations** | `migrations/*.sql`, `prisma/`, `drizzle/`, `diesel.toml` + any `verify-migrations` script. |
+| **Sales model** | `stripe`/`paddle`/`lemonsqueezy` deps → `subscription`; licence-key code / offline activation → `licensed`. Neither → ask. |
+| **Surfaces** | routes: `src/routes/**`, `app/**/page.*`, `pages/**`; desktop: window titles in `tauri.conf.json`. |
+| **Duplication hotspots** | folders with auth / db / billing / security helpers — candidates for the `start-work` ownership table. |
+| **Public URL** | `wrangler.jsonc` routes, `vercel.json`, `CNAME`, README badges. |
+| **Existing state doc** | `ESTADO.md`, `STATE.md`, `STATUS.md`, `CLAUDE.md`, `AGENTS.md`. |
+
+Record every detection with its source file. Show the table to the
+user before writing anything.
+
+## Phase 1 — Ask only what code cannot tell
+
+1. Human-readable project name.
+2. Confirm platform / sales-model / host if detection was ambiguous.
+3. **Invariants already paid for** — "we never do X because Y happened".
+   Seed the list with what the code reveals (unique indexes, checksum
+   scripts, `timingSafeEqual`, tenant guards, idempotency keys) and ask
+   the user to confirm the *reason* for each.
+4. Test credentials for `verify` (names and where they live — never
+   production secrets).
+5. Which owners are `not-applicable` and why (e.g. `drive-app-window`
+   on web, `audit-website` on desktop). Propose from platform; confirm.
+
+## Phase 2 — Write
+
+All paths below use `<host>` = `.agents` or `.claude`.
+
+1. **`<host>/gates.json`** — from `templates/gates.json.template`:
+   `platform`, `sales-model`, `stack`, `owners` (applicable +
+   `not-applicable` with reason), `adapter-hints` (every detected
+   command, including `migrations-verify-command`), `gates`.
+2. **`<host>/CONTRACTS.md.snapshot`** — copy of the plugin's
+   `CONTRACTS.md` with a header "Snapshot of production-quality-ready
+   vX.Y.Z at <date>. Do not edit; edit the plugin and re-bootstrap."
+   Adapters reference it as `../CONTRACTS.md.snapshot`.
+3. **`<host>/skills/{start-work,review-change,close-work,verify}/SKILL.md`**
+   from `templates/skills/*.template` with every `{{PLACEHOLDER}}`
+   replaced. Pre-fill:
+   - `start-work`: ownership table from detected hotspots.
+   - `review-change`: platform line, axes that apply, invariants from
+     Phase 1, proof commands in order.
+   - `close-work`: document → subject table from the docs that exist.
+   - `verify`: launch command, surfaces table, credentials pointer,
+     artefact paths (local DB / object store / logs), driver by platform.
+4. **State document** — if none exists, `ESTADO.md` from
+   `templates/ESTADO.md.template`; if one exists, do not overwrite —
+   propose additions.
+5. **Agent map** — if no `AGENTS.md`/`CLAUDE.md` exists, write one from
+   `templates/AGENTS.md.template` (named for the host: `AGENTS.md` for
+   `.agents`, `CLAUDE.md` for `.claude`). If one exists, only propose a
+   "Installed skills" block.
+
+## Phase 3 — Verify what was written
+
+1. No `{{…}}` left: `grep -rn "{{" <host>/skills <host>/gates.json`.
+2. Every command in `adapter-hints` exists in the manifest it was read
+   from.
+3. `python <plugin>/scripts/measure-descriptions.py <host>/skills` —
+   every adapter description ≤ 250 chars.
+4. `pwsh <plugin>/scripts/run-all-owners.ps1 -RepoRoot . -DryRun` lists
+   the expected owners for the platform.
+5. Every document the adapters reference exists (`ESTADO.md`,
+   `docs/decisoes/`, …). If not, create the folder or drop the line.
+
+Refuse to hand off with any of the five failing.
+
+## Hard rule: no number without its command
+
+Adapters do not store counts. Counts live in the state document with
+the command and HEAD that produced them:
 
 ```
-Tests: 512 (cargo test @ HEAD abc1234, 2026-09-14)
-Bundle: 1.8 MB (npm run build @ HEAD abc1234, 2026-09-14)
+Tests: 271 asserts (npm test @ HEAD 2d95870, 2026-09-21)
 ```
-
-Without this, the defect that bit the original `start-work` returns
-(hardcoded test count, ten commits behind the tree).
-
-## Does not
-
-- Not migrate `auditar-app` 2.3.x — see
-  `audit-app/migration/from-auditar-app-2.3.md`.
-- Not write the project-specific gate pack (which grows as invariants
-  are discovered).
-- Not configure CI — that's `release-audit` on the first pass.
-- Not decide licence or price model — that's `commercial-readiness`.
 
 ## Templates
 
-- `templates/CLAUDE.md.template`
+- `templates/gates.json.template`
+- `templates/AGENTS.md.template`
 - `templates/ESTADO.md.template`
 - `templates/skills/start-work.SKILL.md.template`
 - `templates/skills/review-change.SKILL.md.template`
 - `templates/skills/close-work.SKILL.md.template`
 - `templates/skills/verify.local.SKILL.md.template`
 
-## Placeholders replaced by the bootstrap
+## Placeholders
 
-Each template uses `{{NAME}}` for values that step 2 ("ask what can't be
-derived from code") or step 5b ("resolve CONTRACT_PATH") produced:
+| Placeholder | Source |
+|---|---|
+| `PROJECT_NAME` | Phase 1 |
+| `HOST` | Phase 0 (`.agents` / `.claude`) |
+| `PLATFORM`, `SALES_MODEL`, `STACK_JSON` | Phase 0 / 1 |
+| `AXES_THAT_APPLY` | derived from `PLATFORM` (review-change A1–A11 tags) |
+| `CONTRACT_PATH` | `../CONTRACTS.md.snapshot` |
+| `BUILD_COMMAND`, `TEST_COMMAND`, `TYPECHECK_COMMAND`, `LINT_COMMAND`, `MIGRATIONS_VERIFY_COMMAND`, `RUN_COMMAND` | Phase 0 |
+| `BASE_URL` | dev-command port, or "n/a" |
+| `PROJECT_INVARIANTS` | Phase 1 (numbered, with reason) |
+| `PROJECT_SPECIFIC_OWNERSHIP_TABLE` | Phase 0 hotspots |
+| `PROJECT_SURFACES_TABLE`, `PROJECT_ARTIFACTS_TABLE`, `TEST_CREDENTIALS` | Phase 0 / 1 |
+| `DOC_OWNERSHIP_TABLE` | Phase 0 (docs that exist) |
+| `VERSION_BUMP_RULES` | Phase 1 (or default semver text) |
+| `OWNERS_JSON`, `ADAPTER_HINTS_JSON` | Phase 0 / 1 |
+| `DATE`, `PLUGIN_VERSION` | runtime |
 
-| Placeholder | Source | Notes |
-|---|---|---|
-| `PROJECT_NAME` | step 2 (readable name) | used in every template |
-| `CONTRACT_PATH` | step 5b | `../CONTRACTS.md.snapshot` (variant B) or absolute path (variant A) |
-| `BUILD_COMMAND` | step 1 (read from repo) | e.g. `cargo build --release` |
-| `TEST_COMMAND` | step 1 (read from repo) | e.g. `cargo test` |
-| `RUN_COMMAND` | step 2 | command to start the app; `verify.local` |
-| `DATA_DIR` | step 2 | where the app leaves artifacts; `verify.local` |
-| `PROJECT_INVARIANTS` | step 2 (invariants already paid) | `review-change`, `close-work` |
-| `PROJECT_SPECIFIC_OWNERSHIP_TABLE` | step 2 + structure | `start-work`; places where code tends to repeat |
-| `PROJECT_ARTIFACTS_TABLE` | step 2 | `verify.local`; artifact → path table |
-| `DOC_OWNERSHIP_TABLE` | step 3 (CLAUDE/ESTADO files) | `close-work`; document → subject table |
-| `VERSION_BUMP_RULES` | step 2 | `close-work`; when to bump version |
+## Does not
 
-Step 7 (`skill-readiness-auditor --depth deep`) refuses any SKILL.md with
-unreplaced `{{…}}` placeholders.
+- Write the project's gate pack beyond the three standard gates.
+- Configure CI — `release-audit` reports what is missing.
+- Decide licence or price — `commercial-readiness`.

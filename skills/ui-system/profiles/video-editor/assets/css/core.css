@@ -1,9 +1,0 @@
-@layer ui.core {
-  [data-ui="timecode"],
-  [data-ui="numeric"] {
-    font-family: var(--ui-font-mono);
-    font-feature-settings: var(--font-feature-numeric);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0;
-  }
-}

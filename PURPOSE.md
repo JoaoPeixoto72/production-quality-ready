@@ -43,13 +43,13 @@ Every skill wakes only when called. None invokes another.
 
 | Block | Skills |
 |---|---|
-| Orchestrator | `audit-app`, `audit-website` |
-| Audit owners | `code-review-runtime`, `code-review-contract`, `ui-system`, `design-pro`, `security-audit`, `reliability-audit`, `performance-audit`, `observability`, `release-audit`, `commercial-readiness`, `seo-audit` |
+| Generator (run first) | `bootstrap-project` |
 | Work cycle | `start-work`, `review-change`, `close-work` |
-| Proof | `verify` |
-| Technical capability | `drive-app-window` |
-| Meta | `skill-readiness-auditor`, `skill-security-auditor`, `skill-release-gate` |
-| Generator | `bootstrap-project` |
+| Proof | `verify` (+ `drive-app-window` on desktop) |
+| Audit owners | `code-review`, `security-audit`, `reliability-audit`, `design-pro`, `ui-system`, `release-audit`, `commercial-readiness`, `audit-website` |
+| Orchestrator | `audit-app` |
+
+15 skills; 14 owners of a subject plus one technical capability.
 
 ---
 
@@ -122,29 +122,35 @@ the defect to look for.
 | Subject | Owner | Rule |
 |---|---|---|
 | What counts as proof · report format | `audit-app` | `CONTRACTS.md` |
-| Runtime: concurrency, state, types, bundle | `code-review-runtime` | the project's gate pack |
-| Test strength | `code-review-runtime` | *a test that has never failed proves nothing* |
-| Contracts: IPC, API, architecture, integrations | `code-review-contract` | both sides crossed by test, not by reading |
-| Security: input, processes, paths, dependencies | `security-audit` | OWASP ASVS 5.0 + the real product's threat model |
-| Persistence and recovery | `reliability-audit` | migration from **every** version ever published |
-| Performance | `performance-audit` | **no measurement, no recommendation** |
+| Runtime: concurrency, state, types, panics, test strength | `code-review` | *a test that has never failed proves nothing* |
+| Contracts: IPC, API, layers, integrations | `code-review` | both sides crossed by test, not by reading |
+| Performance budgets | `code-review` | **no measurement, no finding**; no budget, no rule |
+| Security: input, auth, tenants, paths, processes, dependencies | `security-audit` | OWASP ASVS 5.0 + the product's threat model |
+| Persistence and recovery | `reliability-audit` | migration from **every** version ever published; crash at the worst moment |
+| Diagnosability in production | `reliability-audit` §2 | *a customer says "doesn't work on version X" — what can you find out?* |
 | Flows and UX heuristics | `design-pro` | NN/g + observed on the running app |
 | Accessibility | `design-pro` | **WCAG 2.2 AA, with the criterion named** |
 | i18n | `design-pro` | key parity enforced by the build |
 | Design-system visual language and mechanics | `ui-system` | OKLCH tokens, `data-ui` contract — and **never closes an accessibility gate** |
-| Observability in production | `observability` | *a customer says "doesn't work on version X" — what can you find out?* |
-| Distribution, supply chain, CI | `release-audit` | clean clone → one command → the same artifact |
-| Sale, activation, first run, legal conformance | `commercial-readiness` | the failing paths were walked, not just the happy one |
-| SEO and web presence | `seo-audit` | SEO requirements + CWV + structured data |
-| Public website storefront, CRO, and tracking | `audit-website` | 7-pillar website readiness + consent prior to fire |
-| Hygiene and quality of the skills themselves | `skill-readiness-auditor` | its own `POLICY.md` |
-| Security, injection, supply-chain and runtime of skills | `skill-security-auditor` | its own `POLICY.md` |
-| Final release, signing, and enrolment decision | `skill-release-gate` | its own `POLICY.md` |
+| Distribution, supply chain, deploy, CI | `release-audit` | clean clone → one command → the same artifact |
+| Sale, activation or checkout, first run, legal | `commercial-readiness` | the failing paths were walked, not just the happy one |
+| Public web surface: SEO, GEO, CWV, cookies, CRO, links | `audit-website` | 7 pillars + deep SEO engine; consent prior to fire |
+
+Every owner declares `platforms:` (web, desktop, both). A project's
+`gates.json` declares `platform:`; checks tagged for the other platform
+resolve `NOT_APPLICABLE/platform`. This is how one plugin serves a
+Cloudflare Worker and a Tauri binary without inventing rules for either.
 
 Some skills are not owners of a subject: `verify` and
 `drive-app-window` are proof capabilities;
 `start-work`/`review-change`/`close-work` are the work cadence; and
-`bootstrap-project` is the generator.
+`bootstrap-project` is the generator — **and the first thing to run**,
+because it writes the four project adapters that make the generic
+owners bite on a concrete codebase.
+
+The three skill meta-auditors (`skill-readiness-auditor`,
+`skill-security-auditor`, `skill-release-gate`) left the plugin in
+v2.0.0: they audit skills, not products, and belong in a tooling repo.
 
 ---
 
@@ -177,11 +183,11 @@ Falsifiable criteria. The plugin refutes itself if it fails two.
 
 | Criterion | How you verify it |
 |---|---|
-| Every `description` under the working ceiling | `python scripts/measure-descriptions.py .` — every row is `OK` |
-| Permanent context cost | same command + the local skills `bootstrap-project` generates; totals declared and honest |
-| Zero mechanical findings in the plugin's own linter | `bash skills/skill-readiness-auditor/scripts/audit.sh skills` — "Zero mechanical findings" |
-| Bilateral pairs complete | every pair in `POLICY §1.2` is named by both `description`s |
-| Declared references exist | resolved by the linter above |
+| Every `description` ≤ 250 chars | `python scripts/measure-descriptions.py skills` — exit 0 |
+| Permanent context cost | same command over the plugin + the project's adapters; total declared in README |
+| No PASS without a trace | `python skills/audit-app/scripts/validate_evidence.py --repo <repo>` — 0 `no-log` downgrades |
+| Manifests coherent | `python skills/audit-app/scripts/test_validate_evidence.py` — every owner has `platforms:`, every accepted producer exists |
+| Bilateral pairs complete | every pair in `POLICY §1.2` is named by both sides (description or Boundaries) |
 | Coherent authority chain | every external `producer` listed in the owner's `instruments.yaml` |
 | Every subject owner has canonical checks | `CONTRACTS.md §7.4` against `POLICY.md §1` |
 | Generator produces skills that pass the same audit | instantiate the templates in an empty repo and run the linter |

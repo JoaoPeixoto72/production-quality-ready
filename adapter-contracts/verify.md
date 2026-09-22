@@ -7,8 +7,8 @@ Contract a local `verify` adapter must provide.
 ```yaml
 ---
 name: verify                              # or local name
-extends: production-quality-ready::verify@1.x
-contract: ../../CONTRACTS.md
+extends: production-quality-ready::verify@2.x
+contract: ../CONTRACTS.md.snapshot
 version: 1.0.0
 allowed-tools: Read, Glob, Grep, Bash
 ---

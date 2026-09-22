@@ -11,6 +11,8 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Declared in external-resources.json (Tier 2). The only third-party host this script calls.
+const PSI_ENDPOINT = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
 
 // Helper for parsing CLI arguments
 function parseArgs(args) {
@@ -44,7 +46,7 @@ function printHelp() {
 audit-website — 360º Website Audit Engine
 
 Usage:
-  node run_website_audit.mjs --url=https://example.com [options]
+  node run_website_audit.mjs --url=<https-url> [options]
   node run_website_audit.mjs --dir=./dist [options]
 
 Options:
@@ -112,7 +114,7 @@ class WebsiteAuditor {
     try {
       const res = await fetch(targetUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; WebsiteAuditor/1.0; +https://github.com/production-quality-ready)'
+          'User-Agent': 'Mozilla/5.0 (compatible; WebsiteAuditor/1.0)'
         },
         redirect: 'follow'
       });
@@ -382,7 +384,7 @@ class WebsiteAuditor {
         message: 'A página não especifica um URL canónico explícito.',
         url: pageUrl,
         impact: 'Risco de conteúdo duplicado devido a variações de parâmetros de URL e barras finais.',
-        fix: 'Inserir <link rel="canonical" href="https://dominio.com/url-limpo">.'
+        fix: 'Inserir <link rel="canonical" href="..."> com o URL absoluto e limpo da página.'
       });
     }
 
@@ -751,7 +753,8 @@ class WebsiteAuditor {
   async auditPageSpeed(targetUrl) {
     console.log(`⚡ Querying Google PageSpeed Insights API...`);
     try {
-      const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(targetUrl)}&strategy=mobile&key=${this.options.psiKey}`;
+      const endpoint = new URL(PSI_ENDPOINT);
+      endpoint.search = new URLSearchParams({ url: targetUrl, strategy: 'mobile', key: this.options.psiKey }).toString();
       const res = await fetch(endpoint);
       if (res.status === 200) {
         const data = await res.json();

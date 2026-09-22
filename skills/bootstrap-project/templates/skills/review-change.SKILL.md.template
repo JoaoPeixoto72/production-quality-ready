@@ -1,32 +1,39 @@
 ---
 name: review-change
-description: Review a change in {{PROJECT_NAME}} before calling it done. Local adapter for production-quality-ready's review-change — inherits the Universal Adversarial Matrix (concurrency, input tampering, IDOR, webhooks, XSS, WCAG AA, DB immutability) and applies {{PROJECT_NAME}}'s specific invariants. Use after writing or changing code, before `close-work`. Do NOT use to audit the whole app (audit-app, plugin). Do NOT use to open a work session — that's `start-work`.
+description: Reviews a change in {{PROJECT_NAME}} before it is called done. Use after writing or changing code and before close-work. Applies this project's invariants, the plugin's adversarial axes for platform {{PLATFORM}}, and runs the proof commands. Not for auditing the whole app (audit-app) or opening a session (start-work).
 contract: {{CONTRACT_PATH}}
-extends: "production-quality-ready::review-change@1.x"
-version: 1.1.0
+extends: "production-quality-ready::review-change@2.x"
+version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
 # review-change in {{PROJECT_NAME}}
 
-Local adapter. Universal contract and the 7-axis Adversarial Matrix live in
-`production-quality-ready/skills/review-change/SKILL.md`; adapter contract in
-`production-quality-ready/adapter-contracts/review-change.md`.
+Local adapter. The adversarial matrix (A1–A11) lives in
+`{{HOST}}/plugins/production-quality-ready/skills/review-change/SKILL.md`;
+this file only instantiates it.
 
-## Regra Fundacional
+## Platform
 
-Testes a passar são o requisito mínimo, nunca a prova de aprovação.
-Toda a alteração deve ser avaliada contra os **Invariantes do {{PROJECT_NAME}}** abaixo e a **Matriz Adversarial Universal** herdada do plugin.
+`platform: {{PLATFORM}}` (from `{{HOST}}/gates.json`). Axes that apply:
+{{AXES_THAT_APPLY}}.
 
 ## This project's invariants
 
 {{PROJECT_INVARIANTS}}
 
+## Where to look
+
+{{AXES_LOOKUP_TABLE}}
+
 ## Proof commands
 
 ```bash
+{{TYPECHECK_COMMAND}}
+{{LINT_COMMAND}}
 {{BUILD_COMMAND}}
 {{TEST_COMMAND}}
+{{MIGRATIONS_VERIFY_COMMAND}}
 ```
 
-Counts live in `docs/VERIFICAR.md` — never here.
+Counts live in `ESTADO.md` — never here.

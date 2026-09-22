@@ -190,7 +190,7 @@ Quando um comando previsto não existe ou falha:
    é fallback (cobertura menor).
 4. **Não instalar nada.**
 5. **Não transformar a ausência da ferramenta num finding da app.** Que
-   `cargo-deny` não esteja instalado nesta máquina não é um defeito do JustClip.
+   `cargo-deny` não esteja instalado nesta máquina não é um defeito do projeto auditado.
    O que pode ser defeito é o CI nunca o correr — mas isso verifica-se no CI, e
    pertence a `distribuicao-supply-chain.md`.
 

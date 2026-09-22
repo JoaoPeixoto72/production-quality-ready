@@ -1,11 +1,12 @@
 ---
 name: close-work
-description: "Update the project's documents at the end of a work session. Says which document owns which subject (rule \"one subject, one owner\"), separates reason (stays), proof (stays in verified-facts), history (goes). Rewrites ESTADO.md. Universal contract; each project supplies the adapter with its document table. Use at the end of every work session, before commit. Do NOT use to open — that's start-work. Do NOT use to review code — that's review-change (comes first)."
+description: "Run at the end of every session, after review-change, before commit: rewrite ESTADO.md ('one subject, one owner; reason stays, history goes') and record proof numbers with command and HEAD. Not for opening a session (start-work)."
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
 requires-adapter: true
 adapter-contract: adapter-contracts/close-work.md
-version: 1.0.0
+platforms: [web, desktop]
+version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 

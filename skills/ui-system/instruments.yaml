@@ -1,6 +1,7 @@
 # instruments.yaml — ui-system
 # Este owner é ele próprio o producer canónico: audit_ui.py corre e escreve
 # a evidência dos 10 checks listados no SKILL.md §6.
+platforms: [web, desktop]
 accepts:
   - producer: ui-system
     instrument: audit_ui.py

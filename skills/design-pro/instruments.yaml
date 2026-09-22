@@ -3,6 +3,7 @@
 # design-pro é dono da régua de UX / a11y / i18n. Aceita instrumentos externos
 # que produzam candidatos para os seus checks canónicos (CONTRACTS §7.4).
 
+platforms: [web, desktop]
 accepts:
   - producer: ui-system
     instrument: audit_ui.py

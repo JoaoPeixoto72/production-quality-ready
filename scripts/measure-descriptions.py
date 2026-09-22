@@ -12,9 +12,10 @@ comando efectivo usado (mesma regra que a Fase 0 do motor de auditoria).
 
 <caminho> é uma pasta com SKILL.md ou uma pasta que contém pastas com
 SKILL.md, em qualquer profundidade. Excluídas ao percorrer: `fixtures/`,
-`tests/`, `.git/`, `node_modules/`, `.venv/`, `venv/` — regra herdada do
-`skill-readiness-auditor` («A fixture is deliberately malformed, and reporting an
-author's test material as their defects is noise»).
+`tests/`, `.git/`, `node_modules/`, `.venv/`, `venv/`.
+
+Exit 1 se alguma description ultrapassar o teto (250 por omissão) — o CI
+do plugin usa isto como gate.
 
 Regra dura: os números do PLAN.md e das métricas de aceitação vêm daqui.
 Nenhum número escrito nos documentos do plugin fica sem o comando que o
@@ -75,10 +76,7 @@ def find_skill_files(root: pathlib.Path) -> list[pathlib.Path]:
     """Recursively find SKILL.md files, skipping the excluded directories.
 
     Uses os.walk-style pruning: when we descend into a directory whose name
-    is in EXCLUDED_DIRS, we do not recurse into it. This is the same rule
-    the skill-readiness-auditor documents (POLICY §4 — «It does not discover SKILL.md
-    files under fixtures/, tests/ or .git/»); herded here, not
-    rediscovered.
+    is in EXCLUDED_DIRS, we do not recurse into it.
     """
     if root.is_file() and root.name == "SKILL.md":
         return [root]
@@ -119,9 +117,9 @@ def main() -> int:
     ap.add_argument(
         "--ceiling",
         type=int,
-        default=500,
-        help="working ceiling in chars (default 500); "
-        "hard limit is 1024 per the platform",
+        default=250,
+        help="ceiling in chars (default 250 — the host listing truncates "
+        "there and skills over budget stop being shown); hard limit 1024",
     )
     ap.add_argument(
         "--print-interpreter",

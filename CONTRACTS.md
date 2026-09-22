@@ -1,11 +1,10 @@
 # CONTRACTS — plugin `production-quality-ready`
 
 Plugin mechanical contract. **Authoritative.** Every plugin skill refers
-to this file by its root (`contract: CONTRACTS.md`); the
-`skill-readiness-auditor` resolves the path from the plugin root. A discrepancy
+to this file by its root (`contract: CONTRACTS.md`). A discrepancy
 between this file and a skill is always the skill's defect.
 
-**Contract version**: 1.4.0
+**Contract version**: 2.0.0
 
 This file **does not describe workflows** — it describes *what counts
 as proof* and *how skills speak to each other*. Authority, activation
@@ -98,6 +97,8 @@ evidence:                                          # see §3.4
 result:           FAIL                             # one of: PASS | FAIL | NOT_VERIFIED | NOT_APPLICABLE
 severity:         HIGH                             # required if result=FAIL; see §5
 confidence:       OBSERVED                         # one of: OBSERVED | INFERRED | UNKNOWN
+command:          "python audit_ui.py src --strict" # required if result=PASS; see §4.6
+log:              .audit/design-pro/keyboard-focus-visibility.log   # required if result=PASS; must exist
 ```
 
 **Rule 3.1.1 (authority).** `owner` is the skill that owns the rule —
@@ -128,6 +129,12 @@ chain and has no reasonable value to assume.
 `NOT_VERIFIED` with reason `missing-instrument` — the §4.5 manifest
 requires a `(producer, instrument)` pair, not a bare producer.
 
+**Rule 3.1.5 (PASS needs a trace).** `result: PASS` requires `command:`
+and `log:` (§4.6). Without both, the parser downgrades the file to
+`NOT_VERIFIED` with reason `no-log`. `FAIL`, `NOT_VERIFIED` and
+`NOT_APPLICABLE` do not require them — an owner may fail a check from
+inspection, but may never pass one from inspection.
+
 ### 3.2 Optional fields
 
 ```yaml
@@ -153,13 +160,10 @@ external standard; optional for owners with their own rule.
 | Owner | `rule-version` required? | Expected format |
 |---|---|---|
 | `design-pro` | yes | `wcag-2.2-AA`, `wcag-2.2-AAA`, `hig-2026`, `material-3` |
-| `seo-audit` | yes | `sarif-2.1.0`, `schema-org-2025-10` |
+| `audit-website` | yes | `sarif-2.1.0`, `schema-org-2025-10` |
 | `security-audit` | yes | `owasp-asvs-5.0`, `nist-ssdf-1.1` |
-| `code-review-runtime` | optional | semver of the project's gate pack |
-| `code-review-contract` | optional | idem |
+| `code-review` | optional | semver of the project's gate pack |
 | `reliability-audit` | optional | idem |
-| `performance-audit` | optional | idem |
-| `observability` | optional | idem |
 | `release-audit` | optional | idem |
 | `commercial-readiness` | optional | idem |
 | `ui-system` | no | internal contract is `evidence-schema` |
@@ -188,29 +192,15 @@ rule closes by *absence of the problematic condition*. `confidence:`
 reflects how the absence is known (`OBSERVED` if you looked;
 `INFERRED` if deduced; `UNKNOWN` is forbidden on `PASS`).
 
-### 3.5 Mechanical isolation of the skill meta-auditors
+### 3.5 Platform tags
 
-Mechanical rule, verifiable by `audit-app` without semantic
-interpretation:
-
-**Rule 3.5.1.** A file at `.audit/<owner>/*.evidence.yaml` with
-`producer: skill-readiness-auditor`, `producer: skill-security-auditor`,
-or `producer: skill-release-gate` is only accepted if `<owner>` is
-that same skill. In any other directory, the file is rejected with
-reason `skill-meta-auditor-out-of-scope`. The meta-auditors are not
-instruments of any product owner.
-
-**Rule 3.5.2.** A file at `.audit/skill-readiness-auditor/*.evidence.yaml`,
-`.audit/skill-security-auditor/*.evidence.yaml`, or
-`.audit/skill-release-gate/*.evidence.yaml` is ignored by `audit-app` —
-the meta-auditors run in a separate plane and their output does not
-enter any product gate.
-
-**Note.** The semantic distinction "this skill audits itself as a
-skill, rather than as a subject it owns" is not mechanically
-verifiable and moved to `POLICY.md` as editorial guidance for the
-skill meta-auditors. `CONTRACTS.md` defines only what the parser can
-reject without interpretation.
+Every owner declares `platforms:` in its `instruments.yaml` (`web`,
+`desktop`, or both). An individual `accepts:` entry may narrow it
+further. Checks tagged `desktop` in a `web` project (or vice-versa)
+resolve as `NOT_APPLICABLE` with reason `platform` and do not count
+against `coverage-complete`. The project declares its `platform:` in
+`gates.json` (§5.4); without it `audit-app` aborts with
+`platform-undeclared`.
 
 ---
 
@@ -352,9 +342,34 @@ if each of them declares the pair in its manifest. That is the
 `producer → instrument → owner` chain `POLICY §1.3` demands and that
 v1.0.0 had no way to validate.
 
-**Rule 4.5.2.** The `skill-readiness-auditor` rejects a skill that declares
-instruments without a manifest, and rejects a manifest pointing at
-non-existent producers.
+**Rule 4.5.2.** A skill that declares instruments without a manifest,
+or a manifest pointing at non-existent producers, is a defect of the
+plugin; `audit-app` reports it as `unauthorized-instrument`.
+
+### 4.6 A PASS is a trace, not an opinion
+
+The v1.x contract stopped the parser from *promoting* missing fields,
+but nothing stopped a producer — human or model — from writing
+`result: PASS` after reading the source. That is the hole this rule
+closes.
+
+**Rule 4.6.1.** `result: PASS` is valid only when the file carries:
+
+- `command:` — the exact command line that produced the observation
+  (a test runner, a scanner, a measurement, a browser drive). Reading
+  files is not a command; `grep` is not a command for this purpose.
+- `log:` — a path, relative to the repo root, to the captured stdout /
+  stderr / artefact of that command. The path must exist on disk when
+  `audit-app` runs. A missing file is `NOT_VERIFIED/no-log`.
+
+**Rule 4.6.2.** `confidence: OBSERVED` is only valid together with a
+valid §4.6.1 pair. `OBSERVED` without a trace is rewritten to
+`INFERRED`.
+
+**Rule 4.6.3.** The orchestrator (`run-all-owners.ps1` or a project
+harness) writes `command:` and `log:` itself from what it actually
+executed. It never templates a `PASS`. An owner it cannot run writes
+`NOT_VERIFIED/missing-instrument` — the gap is declared, not filled.
 
 ---
 
@@ -380,6 +395,27 @@ whether to promote it.
 **Rule 5.2.** `result: PASS` with `severity:` present is forbidden.
 `severity:` only exists for `FAIL` (required) and for `NOT_VERIFIED`
 (optional, to signal that had it been known it was severe).
+
+---
+
+### 5.4 Project declarations in `gates.json`
+
+```jsonc
+{
+  "plugin": "production-quality-ready",
+  "plugin-version": "2.0.0",
+  "platform": "web",                  // web | desktop | both — required
+  "sales-model": "subscription",      // licensed | subscription | both — required if commercial-readiness applies
+  "stack": ["typescript", "hono", "d1"],
+  "owners": { ... },
+  "adapter-hints": { ... },
+  "gates": [ ... ]
+}
+```
+
+`platform` selects which owners and checks apply (§3.5).
+`sales-model` selects which rows of `commercial-readiness` apply.
+`bootstrap-project` writes both from detection and confirms with the user.
 
 ---
 
@@ -434,7 +470,7 @@ gate:      production-ready
 requires:
   - no-open: [BLOCKER, CRITICAL]
   - all-pass-in-owner: [security-audit, release-audit]
-  - coverage-complete: [design-pro, code-review-contract]
+  - coverage-complete: [design-pro, code-review]
   - conditional:
       when: project.sells == true
       require:
@@ -457,7 +493,7 @@ coverage metrics *separately* (number of checks, severity
 distribution) but those metrics never open or close a gate.
 
 **Rule 7.2.1.** A skill that introduces a numeric score as output
-violates this contract. The `skill-readiness-auditor` refuses.
+violates this contract.
 
 ### 7.3 Standard gates
 
@@ -468,7 +504,7 @@ a new predicate, it's the human reading of the declarative form.
 
 | Gate | Declarative form | Human reading |
 |---|---|---|
-| `release-candidate` | `no-open: [BLOCKER]` + `coverage-complete: [code-review-runtime, verify]` | Compiles, tests ran, no BLOCKER. A LOW FAIL on a non-critical check does not stop a candidate. |
+| `release-candidate` | `no-open: [BLOCKER]` + `coverage-complete: [code-review, verify]` | Compiles, tests ran, no BLOCKER. A LOW FAIL on a non-critical check does not stop a candidate. |
 | `production-ready` | `no-open: [BLOCKER, CRITICAL]` + `coverage-complete: [<all-applicable-owners>]` + `all-pass-in-owner: [security-audit, release-audit]` | Every owner with complete coverage, no BLOCKER/CRITICAL, and the areas with non-negotiable integrity (security, release) 100 % PASS. |
 | `sellable` | `production-ready` **and** `all-pass-in-owner: [commercial-readiness]` | Production-ready and fit to sell. |
 
@@ -478,7 +514,7 @@ is binary (a `LOW` security vulnerability is still a vulnerability;
 an unsigned artifact is still unsigned). For continuous quality, the
 right predicate is `coverage-complete` + `no-open` of the severity
 that matters. The v1.1.0 had this inverted: a `FAIL LOW` in
-`code-review-runtime` blocked `release-candidate` but not
+`code-review` blocked `release-candidate` but not
 `production-ready`. Fixed in 1.2.0.
 
 ### 7.4 Canonical checks a skill must emit
@@ -488,34 +524,37 @@ checks the owner commits to emit. This is the minimum registry — each
 owner must emit every check listed here; a missing check reports as
 `NOT_VERIFIED` and the gate doesn't close.
 
-| Owner | Canonical check-id | Semantics |
-|---|---|---|
-| `code-review-runtime` | `build-passes` | The project compiles in a clean clone with the declared command. Owner emits the evidence; `audit-app` doesn't run the build (§7.5). |
-| `code-review-runtime` | `tests-pass` | The declared test suite ends without failures. |
-| `code-review-runtime` | `types-check` | The project's typecheck ends without error. |
-| `code-review-runtime` | `test-strength` | Tests protect what they say they protect — a reversible minimal mutation turns the test red. "A test that has never failed proves nothing." |
-| `code-review-runtime` | `risk-proof-matrix` | Every declared material risk has a named test or a `NO_PROOF` reason. |
-| `code-review-runtime` | `tests-that-never-run` | No test outside discovery, filtered or `ignored` without recorded reason. |
-| `code-review-contract` | `contracts-cross` | Contracts between parts (IPC/API) cross without inconsistency. |
-| `verify` | `smoke-test-passes` | A manual/automated smoke test of the real app passes. |
-| `security-audit` | `dependency-scan` | No dependency with a known `CRITICAL`+ vulnerability. |
-| `security-audit` | `sast-run` | Static analysis ran and emitted no `CRITICAL`+. |
-| `release-audit` | `reproducible-artifact` | Two builds of the same commit produce the same artifact. |
-| `release-audit` | `signed-artifact` | Final artifact signed with a declared key. |
-| `commercial-readiness` | `sell-01-activation` through `sell-06-end-of-payment` | Six SELL-* gates, each with its own check-id. |
-| `design-pro` | `a11y-critical-flows` | Critical flows verified against WCAG 2.2 AA in an `INTERACTIVE` environment. |
-| `observability` | `error-diagnosable` | An anonymous user error is diagnosable with what has been logged. |
-| `reliability-audit` | `atomic-write` | No write path loses data on interruption. |
-| `reliability-audit` | `migration-chain` | Migration from the earliest published version ends intact. |
-| `performance-audit` | `budgets-declared` | Performance budgets exist in the project. |
-| `performance-audit` | `budgets-met` | Each budget is measured in release and passes. |
-| `ui-system` | `ds-boundary` | Application does not import internal DS directly. |
-| `seo-audit` | `technical-seo-clean` | Technical SEO audit closes without critical `FAIL`. |
-| `audit-website` | `website-readiness-clean` | 360º website audit closes without BLOCKER or CRITICAL failures. |
+| Owner | Canonical check-id | Platform | Semantics |
+|---|---|---|---|
+| `code-review` | `runtime.build-passes` | both | The project compiles in a clean clone with the declared command. Owner emits the evidence; `audit-app` doesn't run the build (§7.5). |
+| `code-review` | `runtime.tests-pass` | both | The declared test suite ends without failures. |
+| `code-review` | `runtime.types-check` | both | The project's typecheck ends without error. |
+| `code-review` | `runtime.tests-have-oracles` | both | Every new test declares risk and specific oracle; a reversible minimal mutation turns it red. |
+| `code-review` | `runtime.concurrency-safe` | both | No read-then-write on shared state; convergence under concurrent calls proven by test. |
+| `code-review` | `contract.input-not-trusted` | both | Every boundary receiver validates input; survives bad-faith payloads by test. |
+| `code-review` | `contract.retry-idempotent` | both | Retries only where idempotent; identifier declared. |
+| `code-review` | `perf.budgets-declared` | both | Performance budgets exist in the project. |
+| `verify` | `smoke-test-passes` | both | A manual/automated smoke test of the real app passes. |
+| `security-audit` | `sec.threat-model-declared` | both | Threat model in a versioned file. |
+| `security-audit` | `sec.deps-no-cve` | both | No dependency with a known `HIGH`+ vulnerability without dated waiver. |
+| `security-audit` | `sec.secrets-not-committed` | both | Secret scan over full history is clean. |
+| `security-audit` | `sec.tenant-isolation` | web | Private resources scoped by principal; cross-tenant is `404` by test. |
+| `release-audit` | `release.reproducible-artifact` | both | Two builds of the same commit produce the same artifact. |
+| `release-audit` | `release.lockfiles-immutable` | both | Lockfiles committed and installed frozen. |
+| `release-audit` | `release.signed-artifact` | desktop | Final artifact signed with a declared key. |
+| `release-audit` | `release.rollback-declared` | web | Previous version restorable in one declared step. |
+| `commercial-readiness` | `sell-01-activation` … `sell-06-end-of-payment` | both | Six SELL-* gates, rows selected by `sales-model`. |
+| `design-pro` | `a11y-critical-flows` | both | Critical flows verified against WCAG 2.2 AA in an `INTERACTIVE` environment. |
+| `reliability-audit` | `reliability.atomic-write` | both | No write path loses data on interruption. |
+| `reliability-audit` | `reliability.migration-forward` | both | Migration from the earliest published version ends intact. |
+| `reliability-audit` | `observability.error-diagnosable` | both | An anonymous user error is diagnosable from what was logged. |
+| `ui-system` | `ui.architectural-boundary` | both | Application does not import internal DS directly. |
+| `audit-website` | `web.seo-technical` | web | Technical SEO closes without critical `FAIL`. |
+| `audit-website` | `web.core-web-vitals` | web | CWV measured within thresholds, with measurement table. |
 
 **Rule 7.4.1.** An owner may emit more checks than the canonicals;
-never fewer. The `skill-readiness-auditor` verifies this list mechanically
-against each skill's manifest.
+never fewer — except checks whose platform tag does not match the
+project (§3.5), which resolve `NOT_APPLICABLE/platform`.
 
 **Rule 7.4.2.** A canonical check-id in this registry is reserved —
 another skill cannot use the same `<owner>::<check-id>`.
@@ -531,7 +570,7 @@ reading `.audit/**/*.evidence.yaml` and writing the report.
 **Rule 7.5.2 (build/tests/types are evidence like any other).** What
 v1.2.0 called "preconditions" — that the tree compiles, that tests
 pass, that typecheck closes — are now canonical checks of
-`code-review-runtime` (§7.4). The owner that already owns the runtime
+`code-review` (§7.4). The owner that already owns the runtime
 is the one that produces the evidence file with the result; a YAML
 may disagree with the exit code that generated it, but that is a
 known pain of the owner that decided to emit the evidence, not of the
@@ -540,7 +579,7 @@ orchestrator.
 **Rule 7.5.3.** `POLICY §5.1` still allows a `build-command:` section
 and similar in the project's `gates.json` — but only as **declarative
 metadata** for use by the very owner that emits the evidence (e.g. a
-`code-review-runtime` adapter that knows how to run `cargo build`).
+`code-review` adapter that knows how to run `cargo build`).
 None of those strings reaches `audit-app`.
 
 **Design.** v1.2.0 tried to save ceremony ("a YAML to say cargo test
@@ -578,6 +617,24 @@ Nothing else.
 
 ## Appendix A — changes since v1.0.0
 
+- **v2.0.0** — Plugin made platform-agnostic and the evidence hole
+  closed. Breaking:
+  - **Rule 3.1.5 / §4.6**: `PASS` requires `command:` + `log:` that
+    exists on disk; `OBSERVED` without a trace becomes `INFERRED`. The
+    orchestrator never templates a `PASS`.
+  - **§3.5** rewritten from "meta-auditor isolation" to **platform
+    tags**; the three skill meta-auditors left the plugin (they audit
+    skills, not products).
+  - **§5.4**: `gates.json` requires `platform:` and, when
+    `commercial-readiness` applies, `sales-model:`.
+  - **Owners merged** (22 → 14): `code-review-runtime` +
+    `code-review-contract` + `performance-audit` → `code-review`;
+    `observability` → `reliability-audit` §2; `seo-audit` →
+    `audit-website` (sub-engine `seo/`). Check-ids keep their prefixes
+    (`runtime.*`, `contract.*`, `perf.*`, `observability.*`, `web.*`).
+  - **§7.4** registry rewritten with the platform column.
+  - Location-agnostic: `gates.json` and adapters may live under
+    `.agents/` or `.claude/`.
 - **v1.4.0** — Full plugin translated into English. No semantic
   change; `evidence-schema: 1.3.x` unchanged (compatibility across the
   translation is guaranteed — no field renamed, no rule changed; only

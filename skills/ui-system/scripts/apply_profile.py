@@ -91,14 +91,19 @@ def _fontes_do_perfil(config: dict) -> tuple[list[str], list[str]]:
     return pacotes, imports
 
 
-def aplicar(skill: Path, alvo: Path, perfil: str, seco: bool, ui_dir: str | None,
-            com_tailwind: bool) -> int:
-    pasta_perfil = skill / "profiles" / perfil
-    if not pasta_perfil.is_dir():
-        print(f"Erro: perfil '{perfil}' não existe em {pasta_perfil}", file=sys.stderr)
-        disponiveis = sorted(p.name for p in (skill / "profiles").iterdir() if p.is_dir())
-        print(f"Perfis disponíveis: {', '.join(disponiveis) or '(nenhum)'}", file=sys.stderr)
-        return EXIT_ERRO
+def aplicar(skill: Path, alvo: Path, perfil: str | None, seco: bool, ui_dir: str | None,
+            com_tailwind: bool, with_react: bool = False) -> int:
+    if perfil:
+        pasta_perfil = skill / "profiles" / perfil
+        if not pasta_perfil.is_dir():
+            print(f"Erro: perfil '{perfil}' não existe em {pasta_perfil}", file=sys.stderr)
+            pasta_perfis = skill / "profiles"
+            disponiveis = sorted(p.name for p in pasta_perfis.iterdir() if p.is_dir()) if pasta_perfis.is_dir() else []
+            print(f"Perfis disponíveis: {', '.join(disponiveis) or '(nenhum — usar o perfil base sem argumento)'}", file=sys.stderr)
+            return EXIT_ERRO
+    else:
+        perfil = "base"
+        pasta_perfil = skill / "assets"
 
     ui = _pasta_ui(alvo, ui_dir)
     css = ui / "css"
@@ -116,10 +121,17 @@ def aplicar(skill: Path, alvo: Path, perfil: str, seco: bool, ui_dir: str | None
         _copiar(skill / "assets" / "css" / "tailwind-bridge.css",
                 css / "tailwind-bridge.css", seco)
 
-    componentes = sorted((skill / "assets" / "components").glob("*.ts*"))
-    for f in componentes:
-        _copiar(f, ui / "components" / f.name, seco)
-    print(f"  · {len(componentes)} componentes")
+    # Components are a React pack (packs/react-components); only copied when
+    # the profile (or --with-react) asks for it. hono/jsx, Svelte, vanilla
+    # and Tauri-without-React projects take tokens + core + themes only.
+    quer_react = bool(config.get("react")) or with_react
+    if quer_react:
+        componentes = sorted((skill / "packs" / "react-components").glob("*.ts*"))
+        for f in componentes:
+            _copiar(f, ui / "components" / f.name, seco)
+        print(f"  · {len(componentes)} componentes React (packs/react-components)")
+    else:
+        print("  · componentes React não copiados (sem 'react' no perfil; usar --with-react)")
 
     # -- 2. Só os temas que o perfil declara --------------------------------
     temas = config.get("themes") or (config.get("styling") or {}).get("themes") or ["neutral"]
@@ -202,12 +214,15 @@ class _Parser(argparse.ArgumentParser):
 
 def main() -> int:
     ap = _Parser(description="Instala o design system e um perfil num projeto.")
-    ap.add_argument("profile", help="Nome do perfil (ex: video-editor)")
+    ap.add_argument("profile", nargs="?", default=None,
+                    help="Perfil em profiles/<nome>/ (opcional; sem argumento usa assets/ui.config.json)")
     ap.add_argument("--target", default=".", help="Projeto destino (default: .)")
     ap.add_argument("--ui-dir", default=None,
                     help="Onde pôr a UI, relativo ao destino (default: src/ui, ou o que já existir)")
     ap.add_argument("--tailwind", action="store_true",
                     help="Inclui a ponte para Tailwind v4. Sem isto, só CSS.")
+    ap.add_argument("--with-react", action="store_true",
+                    help="Copia também o pack de componentes React (packs/react-components).")
     ap.add_argument("--dry-run", action="store_true", help="Simula, sem escrever")
     args = ap.parse_args()
 
@@ -216,7 +231,7 @@ def main() -> int:
     if not alvo.is_dir():
         print(f"Erro: destino '{alvo}' não é um directório", file=sys.stderr)
         return EXIT_ERRO
-    return aplicar(skill, alvo, args.profile, args.dry_run, args.ui_dir, args.tailwind)
+    return aplicar(skill, alvo, args.profile, args.dry_run, args.ui_dir, args.tailwind, args.with_react)
 
 
 if __name__ == "__main__":

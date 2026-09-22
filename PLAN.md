@@ -2,7 +2,7 @@
 
 Log of what was proposed and each correction, with the reason.
 
-**Plan version**: 4.0.0
+**Plan version**: 5.0.0
 
 `PLAN.md` is not read at runtime by anyone. It exists so a future
 reviewer can see *why* the current shape looks the way it does. The
@@ -49,9 +49,14 @@ The plugin ships:
 - `adapter-contracts/*.md` for the four skills that require a local
   adapter (`start-work`, `review-change`, `close-work`, `verify`).
 - `scripts/measure-descriptions.py` as the single source of truth for
-  `description` counts.
+  `description` counts (exit 1 above 250 chars).
+- `scripts/run-all-owners.ps1` — runs what the plugin can run, writes
+  evidence with `command:` + `log:`, declares the rest as
+  `NOT_VERIFIED/missing-instrument`.
+- `skills/audit-app/scripts/validate_evidence.py` — mechanical check of
+  every `.audit/**/*.evidence.yaml` against CONTRACTS §3.1/§3.5/§4.5/§4.6.
 - Templates under `skills/bootstrap-project/templates/` for a fresh
-  repo.
+  repo (gates.json, AGENTS.md, ESTADO.md, four adapters).
 
 ---
 
@@ -69,7 +74,60 @@ Kept **short** on purpose. Details of each phase live in the version
 appendices of `POLICY.md` and `CONTRACTS.md`, closer to the rules
 they changed.
 
-### v4.0.0 (current)
+### v5.0.0 (current) — plugin v2.0.0
+
+**Audit of the plugin against a real project (Provo, Cloudflare
+Workers + Hono + D1) found four structural defects; this version
+closes them.**
+
+1. **Fabricated evidence.** 30 of 43 `.audit/**` files in the pilot
+   project said `result: PASS / confidence: OBSERVED` with no command
+   and no log — written by the model after reading source.
+   `run-all-owners.ps1` also registered a `Passed 1` for an owner it
+   never executed and templated ten `ui-system` checks without parsing
+   the instrument's output. **Fix:** CONTRACTS §3.1.5/§4.6 — `PASS`
+   requires `command:` + `log:` on disk; `validate_evidence.py`
+   downgrades the rest to `NOT_VERIFIED/no-log`; the runner's
+   `Write-Evidence` throws if asked to write a PASS without a trace
+   and now parses `audit_ui.py` JSON into per-check verdicts.
+2. **Not agnostic.** Desktop-only assumptions (installer signing,
+   offline activation, `kill -9` harness, Win32 window) sat beside
+   web-only ones (SEO, cookies) with no way to tell which applied.
+   **Fix:** `platforms:` on every owner and instrument; `platform:` and
+   `sales-model:` in `gates.json`; checks for the other platform
+   resolve `NOT_APPLICABLE/platform` automatically. Owners that had
+   only one platform in mind gained the other (`release-audit`:
+   deploy/rollback; `reliability-audit`: managed-DB atomicity;
+   `commercial-readiness`: subscription rows; `security-audit`:
+   `sec.tenant-isolation`; `verify`: browser driver).
+3. **Duplication and dead weight.** 22 skills where 14 do the work:
+   two near-identical SEO engines, contract checks produced by the
+   runtime owner anyway, a desktop-centric performance owner whose web
+   half lived in SEO, 12 generic "how to be an agent" files inside
+   `design-pro`, 39 React components shipped to a `hono/jsx` project,
+   three skill meta-auditors (484 kB) that audit skills rather than
+   products, historical migration notes and a JustClip gate template.
+   **Fix:** `code-review-runtime` + `code-review-contract` +
+   `performance-audit` → `code-review`; `observability` →
+   `reliability-audit` §2; `seo-audit` → `audit-website/seo/`;
+   `design-pro/agent/` 12 → 3 files; React components → optional
+   `ui-system/packs/react-components/` (`apply_profile.py --with-react`);
+   meta-auditors moved out of the plugin; migration/legacy files deleted.
+4. **Context cost and host lock-in.** 9 466 description chars in the
+   plugin alone (Claude Code drops skills silently above 15 000 total);
+   every SKILL.md hardcoded `.claude/` while the pilot host used
+   `.agents/`. **Fix:** all descriptions ≤ 250 chars, directive, third
+   person (3 661 total, −61 %); `measure-descriptions.py` exits 1 above
+   the ceiling; every path is `<host>/…` with `.agents` and `.claude`
+   both detected by `audit-app`, `run-all-owners.ps1`,
+   `validate_evidence.py` and `bootstrap-project`.
+
+`bootstrap-project` is now declared the first skill to run: it detects
+host, stack, platform and commands, asks only what code cannot tell,
+and writes the four adapters **pre-filled** — the per-project layer
+the pilot showed to be where all the value lives.
+
+### v4.0.0
 
 **Full translation into English.** The plugin was originally written
 in Portuguese; every top-level document, every `SKILL.md` body, every
@@ -168,10 +226,14 @@ Recorded in `PURPOSE.md §8`.
 Every other item on the roadmap is a possible extension, not a
 missing piece:
 
-- `bootstrap-project --migrate <from-version>` mode, mentioned in
-  `POLICY §6.4`.
-- Additional profile packs for `ui-system` (`profiles/*`) and
-  `seo-audit` (`profiles/*`) as new project shapes appear.
+- `bootstrap-project` re-run mode that diffs existing adapters
+  (`POLICY §6.4`).
+- More instruments the runner can execute without a project harness
+  (Lighthouse via headless Chrome for `web.core-web-vitals`, `cargo
+  deny` for `sec.deps-provenance`, two-build hash compare for
+  `release.reproducible-artifact`).
+- Additional profile packs for `ui-system` and `audit-website/seo`
+  as new project shapes appear.
 - Cross-plugin evidence federation (multiple plugins writing under
   the same `.audit/` root) — not on any roadmap yet, listed as a
   known future stress point.

@@ -10,4 +10,5 @@
 # — pertencem ao owner apropriado (commercial-readiness, design-pro),
 # não ao audit-app.
 
+platforms: [web, desktop]
 accepts: []

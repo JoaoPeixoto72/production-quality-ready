@@ -1,106 +1,97 @@
 ---
 name: verify
-description: "Prove a change in the real app — start it, drive it by actions, take screenshots, compare before/after. Universal contract; each project supplies a local adapter (requires-adapter: true) with paths, .exe and pilot projects. The harness that drives the Win32/WebView2 window is drive-app-window; this skill is the proof strategy, not the mechanism. Use for \"see this change working\", \"prove without relying on tests alone\". Do NOT use for cargo test — that's code-review-runtime."
+description: "Test a change in the running app: launch it, drive real actions, capture before/after artefacts and compare. Web via browser automation, desktop via drive-app-window. Use for 'see this working'. Not for running the test suite (code-review)."
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
+platforms: [web, desktop]
 requires-adapter: true
 adapter-contract: adapter-contracts/verify.md
-version: 1.0.0
+version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---
 
 # verify
 
-**What tests can't catch is in the window.** This skill is the proof
-strategy for changes to visible behaviour. Who drives the window is
-`drive-app-window` (Windows/Tauri) — this owner decides *what* to prove
-and *how to read* what the window returns. Bilateral pair with
-`drive-app-window` (POLICY §1.2).
+**What tests can't catch is on the screen.** This skill decides *what*
+to prove and *how to read* what the app returns. The mechanism that
+drives the app is a driver chosen by platform:
+
+| Platform | Driver | Capture |
+|---|---|---|
+| web | browser automation available in the host (`chrome-devtools_*` tools, Playwright, or `curl` for API-only flows) | screenshot, a11y snapshot, DOM, network log, response body |
+| desktop | `drive-app-window` (Win32/WebView2/Tauri) | `content` capture, event log, files the app wrote |
+
+Bilateral pair with `drive-app-window` on desktop (POLICY §1.2).
 
 ## Founding rule: show, don't describe
 
-A change is verified when there is **an artifact that shows it**: a
-before/after image, a structured log of what happened, a file the app
-produced with hash compared. Describing the change in prose is intent;
-the artifact is proof. No verdict closes without an artifact.
+A change is verified when there is **an artefact that shows it**: a
+before/after image, an a11y snapshot with the new node, a structured
+log, a file with its hash compared. Prose is intent; the artefact is
+proof. No verdict closes without one.
 
 ## `requires-adapter: true`
 
-This skill is a **contract**, not an implementation. A project that
-activates it must supply the local adapter — see
-`adapter-contracts/verify.md` for the full contract. Without an adapter,
-the skill returns `NOT_VERIFIED/missing-adapter` (CONTRACTS §4.5). The
-adapter provides:
+This skill is a contract. The local adapter supplies:
 
-1. Command to launch the app + a check that the binary is newer than
-   the sources.
-2. Path where the app leaves the artifacts it writes.
-3. Project-specific traps that are neither general nor covered by
-   `drive-app-window`.
-4. Pilot projects — quick examples for smoke tests.
+1. **Launch** — command to start the app (dev server or binary) and how
+   to tell the build is fresher than the sources.
+2. **Surfaces** — routes / screens / windows worth proving, with what
+   each one is for.
+3. **Credentials** — test accounts and where secrets come from (never
+   the values of production secrets).
+4. **Artefact paths** — where the app writes (local DB, object store,
+   logs).
+5. **Traps** — project-specific pitfalls not covered below.
+
+Without an adapter: `NOT_VERIFIED/missing-adapter`.
 
 ## Canonical order
 
-1. **Launch** — the adapter's command; never wait for a slow build if
-   there's already a fresh binary. If sources are newer than the
-   binary, run the build first (the adapter says which).
-2. **Reach the initial state** — open a pilot project, wait for it to
-   settle (the adapter says which signal — status bar, event).
-3. **Execute actions** — `drive-app-window` for
-   click/type/scroll (Windows) or the platform equivalent.
-4. **Capture** — `content` (never `shot` in a WebView2, which comes back
-   blank) before and after. Each file named with the step and the HEAD
-   hash.
-5. **Read what the app wrote** — output files, logs, cache. The adapter
-   says where.
-6. **Compare** — hashes, text, image. Expected differences listed
-   upfront; unexpected differences are findings.
-7. **Close the app** — Windows holds the `.exe` while it runs; the next
-   build silently fails if the app stays open.
+1. **Launch** (adapter command). Rebuild first if sources are newer.
+2. **Reach the initial state** — open the route / project; wait for the
+   settle signal the adapter names.
+3. **Before** — capture.
+4. **Act** — drive the user flow with the platform driver. Keyboard-only
+   pass when the change touches interactive UI (feeds `design-pro`).
+5. **After** — capture; read what the app wrote (DB row, file, log).
+6. **Compare** — expected differences listed upfront; unexpected ones
+   are findings.
+7. **Tear down** — stop the dev server / close the app (an open desktop
+   binary silently breaks the next build).
 
-## Where artifacts live
+## Where artefacts live
 
-The conventional folder is `.verify/` at the repo root, in `.gitignore`.
-It's where session PNGs, logs and diffs go. Never in the tracked repo —
-a proof session is intermediate, not history.
+`.verify/` at the repo root, git-ignored. Each file named
+`<step>-<HEAD>.{png,json,log}`. Never committed.
 
-## Common traps (project-independent)
+## Common traps
 
-- **Blank screenshot in a WebView2.** Not an app bug; `PrintWindow` read
-  before the GPU composed. Always use `-Action content` (see
-  `drive-app-window`).
-- **Invisible secondary window** (Tauri opens a 16x16). Searching by
-  `MainWindowHandle` falls on it; always search by title. That is
-  `drive-app-window`'s rule; here it's a warning.
-- **Font falling to generic sans-serif.** Two very different fonts
-  rendering *identical to each other* is the sign that neither loaded.
-  Never a "harness rendering problem".
-- **Open app blocks the next build.** `taskkill //IM <exe> //F` at
-  end of session; otherwise the next `build` fails with a linking
-  error that never mentions the app was open.
+**Web**
+- A page that "works" with cache: reload with cache disabled before the
+  *before* capture.
+- SSR vs hydrated: capture both when the change touches first paint.
+- Local dev DB differs from production schema: run migrations locally
+  first (adapter says how).
+
+**Desktop**
+- Blank screenshot in WebView2 → use `content` capture, not `shot`.
+- Tauri opens an invisible 16×16 helper window → search by title.
+- Two different fonts rendering identically → neither loaded.
+- Open `.exe` blocks the next build → `taskkill` at end of session.
 
 ## Boundaries
 
-- **drive-app-window** — bilateral pair. Here: the *what* and *why* of
-  what you're proving. There: the *how* of clicking/capturing.
-- **code-review-runtime** — automated tests (`cargo test`, `npm test`).
-  Here: what those tests can't prove by themselves.
-- **reliability-audit** — persistence and migration. If the change is
-  about how the file is written, the adapter cites `reliability-audit`.
-- **observability** — if the change alters what the app diagnoses in
-  the field, the adapter cites `observability`.
-
-## This owner does NOT
-
-- Drive the window itself — that's `drive-app-window`.
-- Run `cargo test` — that's `code-review-runtime`.
-- Decide whether a feature is commercially ready — that's
-  `commercial-readiness`.
+- **drive-app-window** — desktop driver. Here: what and why; there: how.
+- **code-review** — automated tests. Here: what they cannot prove alone.
+- **design-pro** — closes the a11y verdict from the keyboard pass done here.
+- **reliability-audit** — if the change alters how data is written or
+  what is logged, the adapter cites it.
 
 ## Accepted instruments
 
-See `instruments.yaml`. Canonical producers:
-`drive-app-window::gui.ps1` (Windows harness) + the project's local
-adapter (launch commands, artifact reading). Without an adapter,
-`NOT_VERIFIED/missing-adapter`.
+See `instruments.yaml`. Producers: `drive-app-window::gui.ps1`
+(desktop), `verify::browser-driver` (web — chrome-devtools / Playwright /
+curl, recorded as `command:`), and the local adapter. A `PASS` without
+`command` and an artefact `log` is invalid (CONTRACTS §4.6).

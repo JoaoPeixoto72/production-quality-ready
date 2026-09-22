@@ -1,0 +1,45 @@
+# instruments.yaml — code-review
+# Canonical mechanical producer of the plugin: runs the project's pipeline
+# (adapter-hints in gates.json) and writes .audit/code-review/*.
+# A PASS without command + log is invalid (CONTRACTS §4.6).
+platforms: [web, desktop]
+accepts:
+  - producer: code-review
+    instrument: build-runner
+    for-checks:
+      - runtime.build-passes
+      - runtime.types-check
+      - perf.bundle-within-budget
+  - producer: code-review
+    instrument: test-runner
+    for-checks:
+      - runtime.tests-pass
+      - runtime.tests-have-oracles
+      - runtime.concurrency-safe
+      - runtime.cancellation-cleaned
+      - contract.timeout-declared
+      - contract.retry-idempotent
+      - contract.failure-modes-declared
+      - contract.input-not-trusted
+      - contract.cancellation-honoured
+  - producer: code-review
+    instrument: static-analysis
+    for-checks:
+      - runtime.no-silent-panics
+      - contract.layer-direction
+      - contract.schema-compat
+      - contract.side-effects-bounded
+  - producer: code-review
+    instrument: measurement-run
+    for-checks:
+      - perf.budgets-declared
+      - perf.hot-path-met
+      - perf.cold-start
+      - perf.memory-floor
+      - perf.install-size
+      - perf.no-regressions
+  # Web CWV measured by audit-website count as hot-path evidence.
+  - producer: audit-website
+    instrument: run_website_audit.mjs
+    for-checks:
+      - perf.hot-path-met

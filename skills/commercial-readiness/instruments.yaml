@@ -1,7 +1,41 @@
 # instruments.yaml — commercial-readiness
-# owner-produced-only na v1.0.0. Fase 3+ adiciona instrumentos externos se e
-# quando outros owners os precisarem.
+# A PASS without command + log is invalid (CONTRACTS §4.6).
+platforms: [web, desktop]
 accepts:
   - producer: commercial-readiness
-    instrument: "*"
-    for-checks: ["*"]
+    instrument: licensing-harness
+    platforms: [desktop]
+    for-checks:
+      - sell-01-activation
+      - sell-02-offline-or-failure
+      - sell-03-machine-or-account-change
+      - sell-04-trial-to-paid
+      - sell-05-refund-cancel
+      - sell-06-end-of-payment
+  - producer: commercial-readiness
+    instrument: billing-harness
+    platforms: [web]
+    for-checks:
+      - sell-01-activation
+      - sell-02-offline-or-failure
+      - sell-03-machine-or-account-change
+      - sell-04-trial-to-paid
+      - sell-05-refund-cancel
+      - sell-06-end-of-payment
+      - commercial.tax-invoice-valid
+  - producer: code-review
+    instrument: test-runner
+    for-checks:
+      - sell-01-activation
+      - sell-04-trial-to-paid
+      - commercial.tax-invoice-valid
+  - producer: commercial-readiness
+    instrument: clean-run
+    for-checks:
+      - commercial.first-run-timed
+  - producer: commercial-readiness
+    instrument: legal-inspection
+    for-checks:
+      - commercial.licenses-clean
+      - commercial.legal-clean
+      - commercial.support-channel-declared

@@ -1,5 +1,7 @@
 # instruments.yaml — security-audit
-# Régua ASVS 5.0. Cada check tem producer canónico; sem ele = missing-producer.
+# Rule ASVS 5.0. Each check has a canonical producer; without one = missing-producer.
+# A PASS without command + log is invalid (CONTRACTS §4.6).
+platforms: [web, desktop]
 accepts:
   - producer: security-audit
     instrument: threat-model-check
@@ -8,21 +10,31 @@ accepts:
       - sec.auth-strength
       - sec.capabilities-min
       - sec.csp-strict
-  - producer: code-review-runtime
+      - sec.api-surface-declared
+      - sec.crypto-primitives-justified
+      - sec.transport-tls
+  - producer: code-review
     instrument: test-runner
     for-checks:
+      - sec.session-integrity
+      - sec.access-control-default-deny
+      - sec.tenant-isolation
       - sec.input-validated
+      - sec.process-boundaries
+      - sec.paths-canonicalized
       - sec.errors-no-leak
+      - sec.business-logic-abuse
       - sec.file-uploads-safe
   - producer: security-audit
     instrument: dep-scanner
     for-checks:
       - sec.deps-no-cve
+      - sec.deps-provenance
   - producer: security-audit
     instrument: secret-scanner
     for-checks:
       - sec.secrets-not-committed
-  - producer: reliability-audit
-    instrument: crash-harness
+  - producer: security-audit
+    instrument: threat-model-check
     for-checks:
       - sec.data-at-rest

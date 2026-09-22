@@ -1,11 +1,12 @@
 ---
 name: start-work
-description: "Open a work session on a project. Read the state, confirm the tree is sound (build, tests), find the owner before writing, avoid duplication. Universal contract; each project supplies a local adapter with its paths and commands. Use at the start of every conversation, and again mid-session before writing new code. Do NOT use to review written code — that's review-change. Do NOT use to close and update documents — that's close-work."
+description: "Run at the start of every conversation and before new code: read the state document, confirm build and tests at HEAD, name the canonical owner of the code about to change, prevent duplication. Not for review or close (close-work)."
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
 requires-adapter: true
 adapter-contract: adapter-contracts/start-work.md
-version: 1.0.0
+platforms: [web, desktop]
+version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 

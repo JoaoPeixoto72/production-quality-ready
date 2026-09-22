@@ -1,0 +1,37 @@
+{
+  "version": "1.0.0",
+  "hasExternalResources": true,
+  "requiresRuntimeGate": false,
+  "resources": [
+    {
+      "url": "https://base-ui.com/",
+      "tier": 0,
+      "purpose": "Base UI home page, cited in references/upstream.md for humans. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://base-ui.com/llms.txt",
+      "tier": 0,
+      "purpose": "Base UI docs index for a human or agent to open by hand when checking the component matrix. Never fetched by a script.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://base-ui.com/react/components/select.md",
+      "tier": 0,
+      "purpose": "Base UI Select docs, cited in references/component-strategy.md. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://base-ui.com/react/overview/releases",
+      "tier": 0,
+      "purpose": "Base UI release notes, cited in references/upstream.md for version checks by a human. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://github.com/mui/base-ui",
+      "tier": 0,
+      "purpose": "Base UI source repository, cited in references/upstream.md. Never fetched.",
+      "maxBytes": 1
+    }
+  ]
+}

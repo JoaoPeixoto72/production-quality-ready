@@ -60,4 +60,3 @@ Modern products routinely accept camera, voice, scan, image drop, or screen shar
 - `./ai-agent.md` — screenshots and voice as prompts to an agent.
 - `./search.md` — voice search entry point.
 - `./error-handling.md` — fallback paths when a mode fails.
-- `../agent/tool-strategy.md` — which tool to reach for when validating multimodal capture.

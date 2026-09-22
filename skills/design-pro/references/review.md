@@ -58,7 +58,6 @@ Use `../templates/review-report.md.tmpl`. The structure:
 
 ## Stopping rules
 
-- One pass. Do not re-run the checklist or rewrite findings after the report is written. Targeted checks of a single claim follow `../agent/verification.md`.
 - Do not narrate your reasoning to the user.
 - Do not add sections beyond the four above unless the user asked.
 - If the user asked for brevity, cap the summary at 2 sentences and top fixes at 3. Do NOT rely on the effort setting to shorten output.
@@ -66,12 +65,5 @@ Use `../templates/review-report.md.tmpl`. The structure:
 
 ## Related
 
-- `../agent/agent-operating-model.md` — the five stances, the review turn, what NOT to do.
 - `../agent/evidence-protocol.md` — Observed / Inferred / Unknown and citation format.
 - `../agent/visual-inspection.md` — how to read screenshots and running apps.
-- `../agent/cross-skill-orchestration.md` — precedence and deduplication across guides.
-- `../agent/human-in-the-loop.md` — when to ask vs act.
-- `../agent/context-management.md` — keep / summarize / drop rules during a review.
-- `../agent/task-decomposition.md` — how to run a whole-app review as focused groups.
-- `../agent/implementation-loop.md` — when a review turns into implementation.
-- `../agent/uncertainty.md` — when to stop and ask, when to produce a partial review.

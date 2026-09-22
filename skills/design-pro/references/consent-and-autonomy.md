@@ -72,5 +72,3 @@ Settings > Autonomy shows: every capability the agent has, its current tier, its
 - `./safety-privacy.md` — data-collection consent (distinct from action consent).
 - `./error-handling.md` — undo mechanics, failure-state screens.
 - `./settings.md` — where the autonomy panel lives.
-- `../agent/human-in-the-loop.md` — the agent-side decision table for when the agent should ask.
-- `../agent/uncertainty.md` — how to surface low-confidence proposals to the user.

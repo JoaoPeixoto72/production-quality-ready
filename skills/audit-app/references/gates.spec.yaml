@@ -11,7 +11,7 @@ gates:
       não-crítico não impede um candidato.
     requires:
       - no-open: [BLOCKER]
-      - coverage-complete: [code-review-runtime, verify]
+      - coverage-complete: [code-review, verify]
 
   - name: production-ready
     description: |
@@ -30,7 +30,14 @@ gates:
       - gate: production-ready
       - all-pass-in-owner: [commercial-readiness]
 
-# Predicados suportados na v1.3.0 (CONTRACTS §7.1):
+# Plataforma (v2.0.0, CONTRACTS §5.4):
+#   gates.json declara `platform: web | desktop | both`.
+#   Um owner/check cujo `platforms:` não inclui a plataforma do projeto é
+#   NOT_APPLICABLE por omissão e não conta para coverage-complete.
+#   `sales-model: licensed | subscription | both` seleciona as linhas de
+#   commercial-readiness.
+#
+# Predicados suportados (CONTRACTS §7.1):
 #   no-open: [severidades...]           # nenhum FAIL com essa severidade
 #   all-pass-in-owner: [owners...]      # todos os checks emitidos = PASS
 #   coverage-complete: [owners...]      # todos os canónicos resolvidos

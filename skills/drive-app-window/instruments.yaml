@@ -2,6 +2,7 @@
 # Este owner é uma capability técnica: produz artefactos (screenshots,
 # event logs) que outros owners consomem como evidência. Nenhum verdict
 # fecha aqui.
+platforms: [desktop]
 accepts:
   - producer: drive-app-window
     instrument: gui.ps1

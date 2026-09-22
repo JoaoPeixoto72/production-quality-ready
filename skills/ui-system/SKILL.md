@@ -1,10 +1,11 @@
 ---
 name: ui-system
-description: "Build, migrate or audit the project's design system — OKLCH tokens, 4 elevations, data-ui contract, canonical components, architectural boundary (@project/ui). Static OKLCH contrast instrument (ΔL) for the design-pro WCAG rule; produces candidates, does not close a11y gates. Use for \"create app\", \"migrate frontend\", \"eradicate AI slop\", \"new DS component\". Do NOT use to audit UX or accessibility that doesn't touch the DS — that's design-pro."
+description: "Build, migrate or audit the design system: OKLCH tokens, 4 elevations, data-ui contract, @project/ui boundary, executable audit_ui.py. CSS core is framework-agnostic; React components optional. Use for new app/page, DS component, migration."
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
 argument-hint: "[create | migrate | audit | review | extend | theme | profile] [options]"
-version: 1.0.0
+platforms: [web, desktop]
+version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---
@@ -73,8 +74,11 @@ reads the ΔL value and decides the verdict against WCAG 2.2 SC
 
 - **Create**: Initialize a new app, page or component by copying the
   base files from `assets/` (`ui.config.json`, tokens and core CSS from
-  `assets/css/`, needed components from `assets/components/`) into the
-  project's UI directory (e.g. `src/ui/`).
+  `assets/css/`; React components from `packs/react-components/` only
+  when the project is React) into the project's UI directory (e.g.
+  `src/ui/`). Non-React stacks (hono/jsx, Svelte, Vue, vanilla, Tauri
+  without React) take tokens + core + themes and write their own
+  components against the `data-ui` contract.
 - **Migrate**: Move an existing app progressively to `@project/ui` in
   concentric layers.
 - **Audit**: Inspect conformance, focus rings, imports and OKLCH
@@ -84,8 +88,8 @@ reads the ΔL value and decides the verdict against WCAG 2.2 SC
 - **Extend**: Add new components to the public `@project/ui` library.
 - **Theme**: Switch or create new visual themes (`neutral`, `heroui`,
   `studio`, `editorial`).
-- **Profile**: Activate a specialized product profile (e.g.
-  `video-editor`).
+- **Profile**: Apply the base profile (`assets/ui.config.json`) or a
+  project-supplied one under `profiles/<name>/`.
 
 When multiple modes apply, follow the canonical order:
 
@@ -140,36 +144,37 @@ assets/
 │       ├── heroui.css                # Modern SaaS (4 surfaces content1-content4)
 │       ├── studio.css                # Dark industrial / amber workstation
 │       └── editorial.css             # Expressive editorial with serif
-└── components/                       # Canonical components (HeroUI parity, Level 2)
+packs/
+└── react-components/                 # Optional React pack (HeroUI parity, Level 2)
 ```
 
 > [!IMPORTANT]
 > **The count is verifiable, and is meant to be verified before writing a
-> new component:** `ls assets/components/*.tsx | wc -l`. If the number
+> new component:** `ls packs/react-components/*.tsx | wc -l`. If the number
 > differs from what a caller expected, this list is stale and a hidden
 > component becomes a hand-rewritten one.
 
 ---
 
-## 5. Specialized profiles (`profiles/`)
+## 5. Profiles (`profiles/`)
 
-For apps with specific technical constraints (e.g. Tauri desktop,
-offline creative suites), the skill ships modular drop-in profiles:
-
-- **`profiles/video-editor/`**:
-  - Config `platform: tauri`, `offline: true`.
-  - Pure-black preview canvas (`--canvas-void: oklch(0% 0 0)`).
-  - Amber accent calibrated so it doesn't contaminate colour perception.
-  - Numeric rendering and timecodes with tabular figures (`tnum`).
-
-To activate a profile in a target project:
+The skill ships the **base profile** (`assets/ui.config.json`: neutral
+theme, offline fonts, no CDN). A project with specific constraints
+(Tauri offline suite, pure-black canvas, tabular numerics…) adds its own
+`profiles/<name>/{ui.config.json, profile.md, assets/}` and applies it:
 
 ```bash
-python scripts/apply_profile.py video-editor --target .
+# base profile, CSS only (any stack)
+python scripts/apply_profile.py --target .
+# base profile + React component pack
+python scripts/apply_profile.py --target . --with-react
+# project profile
+python scripts/apply_profile.py <name> --target .
 ```
 
-(Invoked from the skill folder; on an installed project the path starts
-under `.claude/skills/ui-system/`.)
+Paths are relative to this skill folder
+(`<host>/plugins/production-quality-ready/skills/ui-system/`, where
+`<host>` is `.agents` or `.claude`).
 
 ---
 
@@ -184,7 +189,7 @@ python scripts/audit_ui.py <target-dir> --strict
 To validate with a specific profile:
 
 ```bash
-python scripts/audit_ui.py <target-dir> --profile video-editor --strict
+python scripts/audit_ui.py <target-dir> --profile <name> --strict
 ```
 
 The auditor validates and blocks (`error`):
@@ -213,7 +218,7 @@ The auditor validates and blocks (`error`):
 
 - Close a11y verdicts — that's `design-pro` (bilateral pair).
 - Write generic UX outside the DS — that's `design-pro`.
-- Decide bundle budget — that's `performance-audit`.
+- Decide bundle budget — that is `code-review` (`perf.*`).
 
 ## Accepted instruments
 

@@ -1,17 +1,17 @@
 ---
 name: verify
-description: Run {{PROJECT_NAME}} and drive it through the window to prove changes. Local adapter for the universal verify — concrete launch commands, artifact paths, project-specific traps. The harness that drives the Win32/WebView2 window is drive-app-window, in the plugin. Use for "see this change working". Do NOT use to run tests (that's code, cd + cargo test) or to audit the app (audit-app, plugin).
+description: Runs {{PROJECT_NAME}} locally and proves changes in the real app. Use for "see this working" or manual verification of a flow, screen or endpoint. Gives the launch command, surfaces, test credentials and artefact paths; driver is {{VERIFY_DRIVER}}. Not for running the test suite (code-review) or auditing (audit-app).
 contract: {{CONTRACT_PATH}}
-extends: "production-quality-ready::verify@1.x"
+extends: "production-quality-ready::verify@2.x"
 requires-adapter: false
-version: 1.0.0
+version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# Run {{PROJECT_NAME}}
+# Run and verify {{PROJECT_NAME}}
 
-Local adapter of the universal `verify`. Everything the harness needs
-that is **specific to this project**.
+Local adapter of the universal `verify`. Platform `{{PLATFORM}}`; driver
+`{{VERIFY_DRIVER}}`.
 
 ## Launch
 
@@ -19,16 +19,20 @@ that is **specific to this project**.
 {{RUN_COMMAND}}
 ```
 
-Binaries and models live in `{{DATA_DIR}}`.
+Base URL / entry point: `{{BASE_URL}}`
 
-## Artifacts
+## Surfaces worth proving
+
+{{PROJECT_SURFACES_TABLE}}
+
+## Test credentials
+
+{{TEST_CREDENTIALS}}
+
+## Artefacts the app writes
 
 {{PROJECT_ARTIFACTS_TABLE}}
 
 ## Traps
 
-None known specific to this project yet. Add them here as they surface.
-
-## Pilot projects
-
-Add small, fast-loading projects here as they are identified.
+{{PROJECT_TRAPS}}

@@ -1,7 +1,28 @@
 # instruments.yaml — release-audit
-# owner-produced-only na v1.0.0. Fase 3+ adiciona instrumentos externos se e
-# quando outros owners os precisarem.
+# A PASS without command + log is invalid (CONTRACTS §4.6).
+platforms: [web, desktop]
 accepts:
   - producer: release-audit
-    instrument: "*"
-    for-checks: ["*"]
+    instrument: reproducibility-run
+    for-checks:
+      - release.reproducible-artifact
+      - release.lockfiles-immutable
+  - producer: release-audit
+    instrument: sbom-verifier
+    for-checks:
+      - release.sbom-present
+  - producer: release-audit
+    instrument: ci-inspection
+    for-checks:
+      - release.ci-matrix-declared
+      - release.changelog-from-git
+      - release.deploy-single-command
+      - release.rollback-declared
+      - release.migrations-in-pipeline
+      - release.env-parity
+  - producer: release-audit
+    instrument: signature-verifier
+    platforms: [desktop]
+    for-checks:
+      - release.signed-artifact
+      - release.updater-verified

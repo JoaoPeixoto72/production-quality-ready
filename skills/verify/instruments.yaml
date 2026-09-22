@@ -1,16 +1,28 @@
 # instruments.yaml — verify
-# Contrato universal (requires-adapter: true). Producers canónicos:
-# drive-app-window (harness Windows) + adapter local do projecto.
-# Sem adapter local, NOT_VERIFIED/missing-adapter (CONTRACTS §4.5).
+# Universal contract (requires-adapter: true). Driver by platform:
+#   desktop → drive-app-window::gui.ps1
+#   web     → verify::browser-driver (chrome-devtools / Playwright / curl)
+# Without a local adapter, NOT_VERIFIED/missing-adapter (CONTRACTS §4.5).
+# A PASS without command + log is invalid (CONTRACTS §4.6).
+platforms: [web, desktop]
 accepts:
   - producer: drive-app-window
     instrument: gui.ps1
+    platforms: [desktop]
     for-checks:
       - verify.action-executed
       - verify.screenshot-captured
+  - producer: verify
+    instrument: browser-driver
+    platforms: [web]
+    for-checks:
+      - verify.action-executed
+      - verify.screenshot-captured
+      - verify.keyboard-pass
   - producer: verify
     instrument: adapter-local
     for-checks:
       - verify.app-launched
       - verify.artifact-read
       - verify.before-after-compared
+      - smoke-test-passes

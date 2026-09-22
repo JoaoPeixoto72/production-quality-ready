@@ -7,8 +7,8 @@ Contract a local `start-work` adapter must provide.
 ```yaml
 ---
 name: start-work                          # or local name
-extends: production-quality-ready::start-work@1.x
-contract: ../../CONTRACTS.md              # relative to target repo root
+extends: production-quality-ready::start-work@2.x
+contract: ../CONTRACTS.md.snapshot              # relative to target repo root
 version: 1.0.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---

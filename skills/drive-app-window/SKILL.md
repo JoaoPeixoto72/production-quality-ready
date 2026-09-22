@@ -1,10 +1,11 @@
 ---
 name: drive-app-window
-description: "Drive a desktop app's window on Windows from the terminal — click, type, drag, scroll and screenshot it. Built for Tauri/WebView2, works on any native window. Technical capability: an instrument invoked by verify and others — does not close verdicts on its own. Use for \"prove this change in the window\", \"the screenshot came out blank\", \"the click lands elsewhere\". Do NOT use for proof strategy (what to verify) — that's verify. Windows only."
+description: "Test a change in a running desktop window on Windows: click, type, drag, scroll, full-content screenshot (Win32, WebView2, Tauri, Electron). Use when verify needs a desktop driver. Closes no verdict. Not for web apps (use a browser instead)."
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
 argument-hint: "-Title <window> -Process <exe without .exe> -Action <content|shot|crop|screen|click|hover|drag|wheel|rawkeys|list>"
-version: 1.0.0
+platforms: [desktop]
+version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---
@@ -27,7 +28,7 @@ the title and the process go on the command line every time. Put them in a pair
 of variables once and forget them:
 
 ```bash
-G="scripts/gui.ps1"   # from the skill folder; on an installed project it's under .claude/skills/
+G="scripts/gui.ps1"   # from the skill folder: <host>/plugins/production-quality-ready/skills/drive-app-window/
 A="-Title MyApp -Process my_app"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File $G $A -Action content -Out "out\x.png"
 ```
@@ -142,7 +143,7 @@ Windows, and the PowerShell that ships with it (5.1 or newer). Nothing external.
 - Does not run on macOS or Linux — the harness is Win32 (register as
   `not-applicable: "non-Windows target"` in `gates.json` when it does not
   apply).
-- Does not run tests — that is `code-review-runtime`.
+- Does not run tests — that is `code-review`.
 
 ## Instruments accepted
 

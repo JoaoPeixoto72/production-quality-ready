@@ -56,6 +56,20 @@ CUSTOM_PROP_DECLARATION = re.compile(r"--[\w-]+\s*:\s*.*?;", re.DOTALL)
 
 GENERIC_FONTS = re.compile(r"\b(?:Inter|Roboto)\b", re.IGNORECASE)
 
+
+def primary_font_is_generic(value: str) -> bool:
+    """True only when Inter/Roboto is the *chosen* family: the first entry
+    of the stack, after unwrapping var(--x, fallback). Roboto in the middle
+    of `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, …` is a
+    platform fallback, not a design decision, and is not flagged."""
+    v = value.strip()
+    # unwrap var(--font, <fallback-list>) -> <fallback-list>
+    m = re.match(r"var\(\s*--[\w-]+\s*,\s*(.*)\)\s*$", v, re.DOTALL)
+    if m:
+        v = m.group(1)
+    first = v.split(",", 1)[0].strip().strip("'\"")
+    return bool(GENERIC_FONTS.fullmatch(first))
+
 ARBITRARY_COLOR_UTILITY = re.compile(
     r"(?<![\w-])(?:bg|text|border|shadow|ring|from|via|to)-\[(?!var\(--)[^\]]+\]"
 )
@@ -138,6 +152,11 @@ class AuditSettings:
     offline: bool
     config_path: str | None
     ignored_dirs: set[str]
+    # quality.* flags from ui.config.json — default True (strict) when the key is absent.
+    forbid_raw_brand_colors: bool = True
+    forbid_generic_fonts: bool = True
+    forbid_direct_external_ui_imports: bool = True
+    require_focus_visible: bool = True
 
 
 def is_inside(path: Path, root: Path, relative: str) -> bool:
@@ -565,9 +584,24 @@ def extract_css_blocks(content: str, offset: int = 0) -> list[tuple[str, str, in
 
 
 def has_top_level_box_shadow(body: str) -> bool:
+    """True when a :focus block *draws* a ring with box-shadow.
+    `box-shadow: none` (a reset that removes a ring) is not a ring."""
     depth = 0
-    name: list[str] = []
-    reading_name = True
+    for decl in _top_level_declarations(body):
+        name, _, value = decl.partition(":")
+        if name.strip().lower() != "box-shadow":
+            continue
+        v = value.strip().lower().replace("!important", "").strip()
+        if v in ("none", "initial", "unset", "inherit", ""):
+            continue
+        return True
+    return False
+
+
+def _top_level_declarations(body: str) -> list[str]:
+    out: list[str] = []
+    depth = 0
+    cur: list[str] = []
     for ch in body:
         if ch == "{":
             depth += 1
@@ -577,19 +611,14 @@ def has_top_level_box_shadow(body: str) -> bool:
             continue
         if depth > 0:
             continue
-        if ch == ":":
-            if "".join(name).strip().lower() == "box-shadow":
-                return True
-            name = []
-            reading_name = False
-            continue
         if ch == ";":
-            name = []
-            reading_name = True
+            out.append("".join(cur))
+            cur = []
             continue
-        if reading_name:
-            name.append(ch)
-    return False
+        cur.append(ch)
+    if "".join(cur).strip():
+        out.append("".join(cur))
+    return out
 
 
 def classify_module_source(source: str) -> str | None:
@@ -679,6 +708,10 @@ def resolve_settings(args: argparse.Namespace, root: Path) -> AuditSettings:
     forbidden_ui_aliases = args.forbidden_ui_alias or list(config_aliases or [])
     offline = bool(config.get("offline")) or bool(quality.get("forbidRemoteFontLoading"))
 
+    def flag(name: str, default: bool = True) -> bool:
+        v = quality.get(name) if isinstance(quality, dict) else None
+        return default if v is None else bool(v)
+
     ignored_dirs = set(DEFAULT_IGNORED_DIRS)
     ignored_dirs.update(args.ignore_dir or [])
 
@@ -697,6 +730,10 @@ def resolve_settings(args: argparse.Namespace, root: Path) -> AuditSettings:
         offline=offline,
         config_path=cfg_disp,
         ignored_dirs=ignored_dirs,
+        forbid_raw_brand_colors=flag("forbidRawBrandColorsInApplications"),
+        forbid_generic_fonts=flag("forbidGenericFonts"),
+        forbid_direct_external_ui_imports=flag("forbidDirectExternalUiImports"),
+        require_focus_visible=flag("requireFocusVisible"),
     )
 
 
@@ -721,6 +758,8 @@ def scan(path: Path, root: Path, settings: AuditSettings):
     has_transition = ext in STYLE_EXT and bool(TRANSITION.search(body_css))
     has_reduced = bool(REDUCED_MOTION.search(body_css if ext in STYLE_EXT else content))
 
+    raw_color_sev = "error" if settings.forbid_raw_brand_colors else "warn"
+
     if ext in CODE_EXT:
         for source, source_line in extract_module_sources(js_without_comments):
             system = classify_module_source(source)
@@ -728,7 +767,7 @@ def scan(path: Path, root: Path, settings: AuditSettings):
                 if system == "base-ui" and in_ui_source:
                     continue
                 findings.append(Finding(
-                    "error",
+                    "error" if settings.forbid_direct_external_ui_imports else "warn",
                     "external-ui-import",
                     rel,
                     source_line,
@@ -753,7 +792,7 @@ def scan(path: Path, root: Path, settings: AuditSettings):
                 if in_ui_source:
                     slots.emitted.setdefault(slot, (rel, n))
             for m in ARBITRARY_COLOR_UTILITY.finditer(line):
-                findings.append(Finding("error", "arbitrary-color-utility", rel, n, m.group(0), "Cor arbitrária em utility. Usar um token semântico."))
+                findings.append(Finding(raw_color_sev, "arbitrary-color-utility", rel, n, m.group(0), "Cor arbitrária em utility. Usar um token semântico."))
             for m in ARBITRARY_SPACE_UTILITY.finditer(line):
                 findings.append(Finding("warn", "arbitrary-space-utility", rel, n, m.group(0), "Espaçamento arbitrário. Confirmar se é cálculo estrutural local (permitido) ou devia ser token."))
             if re.search(r"\bstyle\s*=\s*\{\{", line):
@@ -770,7 +809,9 @@ def scan(path: Path, root: Path, settings: AuditSettings):
             for m in BOOLEAN_STATE_SELECTOR.finditer(line):
                 findings.append(Finding("error", "boolean-state-selector", rel, n, m.group(0), "Os atributos de estado booleanos do Base UI são renderizados sem valor: usar [data-pressed] em vez de [data-pressed=\"true\"]."))
             for m in HEX.finditer(line):
-                findings.append(Finding("error", "raw-hex", rel, n, m.group(0), "Cor hexadecimal crua. O sistema usa tokens e mistura em oklch/oklab."))
+                if in_tokens and line_in_ranges(n, allowed_token_ranges):
+                    continue
+                findings.append(Finding(raw_color_sev, "raw-hex", rel, n, m.group(0), "Cor hexadecimal crua. O sistema usa tokens e mistura em oklch/oklab."))
             if settings.offline and (REMOTE_CSS_IMPORT.search(line) or REMOTE_URL.search(line)):
                 findings.append(Finding("error", "remote-resource", rel, n, line.strip()[:160], "Recurso remoto proibido pela configuração actual da UI (offline / sem assets remotos)."))
 
@@ -780,7 +821,7 @@ def scan(path: Path, root: Path, settings: AuditSettings):
             match_line = line_number(body_css, m.start())
             if in_tokens and line_in_ranges(match_line, allowed_token_ranges):
                 continue
-            findings.append(Finding("error", "raw-color-function", rel, match_line, m.group(0), "Função de cor crua fora da camada de tokens. Usar token ou derivar com color-mix()."))
+            findings.append(Finding(raw_color_sev, "raw-color-function", rel, match_line, m.group(0), "Função de cor crua fora da camada de tokens. Usar token ou derivar com color-mix()."))
 
         findings.extend(color_mix_percent_findings(body_css, rel))
         findings.extend(check_oklch_contrast_pairs(body_css, rel))
@@ -788,7 +829,7 @@ def scan(path: Path, root: Path, settings: AuditSettings):
             if ":focus" not in selector:
                 continue
             if has_top_level_box_shadow(block_body):
-                findings.append(Finding("error", "focus-box-shadow", rel, block_line, selector[:120], "Anel de foco por box-shadow. Preferir outline com outline-offset; em forced-colors o box-shadow é suprimido."))
+                findings.append(Finding("error" if settings.require_focus_visible else "warn", "focus-box-shadow", rel, block_line, selector[:120], "Anel de foco por box-shadow. Preferir outline com outline-offset; em forced-colors o box-shadow é suprimido."))
 
     if ext in HTML_EXT:
         for n, line in enumerate(html_without_comments.splitlines(), start=1):
@@ -803,8 +844,8 @@ def scan(path: Path, root: Path, settings: AuditSettings):
         body = body_css if ext in STYLE_EXT else (html_without_comments if ext in HTML_EXT else js_without_comments)
         for m in FONT_DECL.finditer(body):
             value = m.group(1)
-            if GENERIC_FONTS.search(value):
-                findings.append(Finding("error", "generic-font", rel, line_number(body, m.start()), value.strip()[:120], "Inter/Roboto são defaults genéricos de output gerado. Escolher uma família deliberada para o projecto."))
+            if primary_font_is_generic(value):
+                findings.append(Finding("error" if settings.forbid_generic_fonts else "warn", "generic-font", rel, line_number(body, m.start()), value.strip()[:120], "Inter/Roboto como família primária são defaults genéricos de output gerado. Escolher uma família deliberada para o projecto (como fallback do sistema são aceites)."))
 
     return findings, slots, has_transition, has_reduced
 
@@ -815,7 +856,7 @@ def main() -> int:
     parser.add_argument("--repo", default=None, help="Directório raiz (alias para positional root).")
     parser.add_argument("--out", default=None, help="Directório/ficheiro de saída markdown (alias para --markdown-output).")
     parser.add_argument("--config", default=None, help="Path explícito para ui.config.json.")
-    parser.add_argument("--profile", default=None, help="Nome do perfil ativo (ex: video-editor) para carregar sua configuração.")
+    parser.add_argument("--profile", default=None, help="Nome do perfil ativo em profiles/<nome>/ para carregar a sua configuração.")
     parser.add_argument("--ui-source", action="append", default=None, help="Onde imports privados de Base UI são permitidos. Repetível.")
     parser.add_argument("--token-dir", action="append", default=None, help="Directórios onde primitives de cor podem ser declarados. Repetível.")
     parser.add_argument("--json-output", default="ui-audit.json")

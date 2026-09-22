@@ -64,4 +64,3 @@ Network conditions are unpredictable. An app that only works on fast Wi-Fi is no
 - `./error-handling.md` — error message writing and retry patterns.
 - `./help-onboarding.md` — loading indicators and skeleton screens.
 - `./ai-agent.md` — long-running tasks that survive a page reload.
-- `../agent/tool-strategy.md` — running the accessibility / performance tool to verify a network claim.

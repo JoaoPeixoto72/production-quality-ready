@@ -7,8 +7,8 @@ Contract a local `close-work` adapter must provide.
 ```yaml
 ---
 name: close-work                          # or local name
-extends: production-quality-ready::close-work@1.x
-contract: ../../CONTRACTS.md
+extends: production-quality-ready::close-work@2.x
+contract: ../CONTRACTS.md.snapshot
 version: 1.0.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---

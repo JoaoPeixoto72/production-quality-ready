@@ -1,24 +1,26 @@
-# Exemplo mínimo de ficheiro de evidência conforme CONTRACTS.md v1.3.0.
+# Exemplo mínimo de ficheiro de evidência conforme CONTRACTS.md v2.0.0.
 #
 # Local: <repo-root>/.audit/<owner>/<producer>--<check-id>.evidence.yaml
 # Este ficheiro é exemplo — não é auditado.
 
 # ---- caso 1: owner corre o seu próprio instrumento (comum) ----
-check:            build-passes
-owner:            code-review-runtime
-producer:         code-review-runtime
-instrument:       cargo-build
-rule:             pack de gates do projecto
+check:            runtime.build-passes
+owner:            code-review
+producer:         code-review
+instrument:       build-runner
+rule:             release-clean
 evidence-schema:  1.3.0
 methods:
-  - command-output
+  - build-runner
 evidence:
-  - path: /tmp/build.log
+  - path: .audit/code-review/runtime.build-passes.log
     excerpt: "Finished `release` profile [optimized] target(s) in 47.2s"
     kind: command-output
-    hash: sha256:abc123...
 result:           PASS
 confidence:       OBSERVED
+# §4.6 — sem estes dois campos, um PASS é NOT_VERIFIED/no-log
+command:          "cargo build --release"
+log:              .audit/code-review/runtime.build-passes.log
 
 ---
 # ---- caso 2: instrumento externo (ui-system produz para design-pro) ----

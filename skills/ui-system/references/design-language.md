@@ -29,7 +29,7 @@ Starter characteristics:
 - color reserved for action, status, and emphasis;
 - motion used to clarify change.
 
-If the repository selects a profile such as `video-editor`, read that profile's
+If the repository selects a profile under `profiles/<name>/`, read that profile's
 own design-language notes before applying product-specific visual rules.
 
 ## Fixed core

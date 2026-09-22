@@ -1,8 +1,23 @@
-# audit-website/instruments.yaml
+# instruments.yaml — audit-website
+# Two executable engines shipped with the skill are the canonical producers.
+# A PASS without command + log is invalid (CONTRACTS §4.6).
+platforms: [web]
 accepts:
   - producer: audit-website
     instrument: run_website_audit.mjs
-    for-checks: ["*"]
-  - producer: seo-audit
+    for-checks:
+      - web.seo-technical
+      - web.core-web-vitals
+      - web.cookie-prior-consent
+      - web.analytics-tags
+      - web.cro-heuristics
+      - web.link-health
+      - web.a11y-public
+  - producer: audit-website
     instrument: run_seo_audit.mjs
-    for-checks: ["seo-*", "cwv-*"]
+    for-checks:
+      - web.seo-technical
+      - web.seo-on-page
+      - web.structured-data
+      - web.geo-aeo
+      - web.core-web-vitals

@@ -46,38 +46,30 @@ context cost beyond its own `description`.
 
 Whenever two owners touch the same subject (one as rule, another as
 instrument, or two adjacent sub-topics), each `SKILL.md` **names the
-other** in the `description`. Rule inherited from
-`skill-readiness-auditor` POLICY §11.
+other** in the `description` or in its Boundaries section.
 
 Pairs that touch:
 
 | Pair | How they delimit |
 |---|---|
-| `design-pro` ↔ `ui-system` | design-pro says "don't build the DS — that's ui-system"; ui-system says "UX/a11y audit not touching the DS — that's design-pro" |
-| `design-pro` ↔ `audit-app` | design-pro says "full app audit — that's audit-app"; audit-app says "single-screen UX review — that's design-pro" |
-| `code-review-runtime` ↔ `code-review-contract` | runtime says "contracts between parts — that's contract"; contract says "runtime behaviour — that's runtime" |
-| `code-review-runtime` ↔ `verify` | runtime says "visual proof in the window — that's verify"; verify says "cargo test / automated tests — that's code-review-runtime" |
-| `code-review-contract` ↔ `security-audit` | contract says "untrusted input — that's security"; security says "shape of the contract — that's contract" |
-| `release-audit` ↔ `security-audit` | release says "signing, SBOM — that's release"; security says "vulnerable-dependency analysis — that's security" |
-| `commercial-readiness` ↔ `design-pro` | commercial says "onboarding UX — that's design-pro"; design-pro says "activation, licence — that's commercial" |
-| `observability` ↔ `reliability-audit` | observability says "data recovery — that's reliability"; reliability says "diagnose in production — that's observability" |
-| `verify` (universal) ↔ `drive-app-window` | verify says "drive the Win32 window — that's drive-app-window"; drive-app-window says "proof strategy — that's verify" |
-| `audit-app` ↔ `skill-readiness-auditor` | audit-app says "audit skills — that's skill-readiness-auditor"; skill-readiness-auditor says "audit the app — that's audit-app" |
-| `skill-readiness-auditor` ↔ `skill-security-auditor` | readiness says "security, injection, supply chain — that's skill-security-auditor"; security says "instruction quality, trigger precision — that's skill-readiness-auditor" |
-| `skill-release-gate` ↔ `skill-readiness-auditor` | release gate says "readiness analysis — that's skill-readiness-auditor"; readiness says "final release gate — that's skill-release-gate" |
-| `skill-release-gate` ↔ `skill-security-auditor` | release gate says "security analysis — that's skill-security-auditor"; security says "final release gate — that's skill-release-gate" |
-| `audit-app` ↔ `review-change` | audit-app says "review a PR — that's review-change"; review-change says "full app audit — that's audit-app" |
-| `start-work` ↔ `review-change` | start-work says "review written code — that's review-change"; review-change says "open a work session — that's start-work" |
-| `review-change` ↔ `close-work` | review-change says "update documents at close — that's close-work"; close-work says "review code before — that's review-change (comes first)" |
-| `audit-app` ↔ `audit-website` | audit-app says "public website/CRO audit — that's audit-website"; audit-website says "desktop/SaaS software audit — that's audit-app" |
-| `audit-website` ↔ `seo-audit` | audit-website says "deep technical SEO engine — that's seo-audit"; seo-audit says "360º website audit — that's audit-website" |
-| `start-work` ↔ `close-work` | start-work says "close and update documents — that's close-work"; close-work says "open a work session — that's start-work" |
+| `design-pro` ↔ `ui-system` | design-pro: "don't build the DS — ui-system"; ui-system: "UX/a11y verdict — design-pro" |
+| `design-pro` ↔ `audit-app` | design-pro: "full app audit — audit-app"; audit-app: "single screen — design-pro" |
+| `code-review` ↔ `verify` | code-review: "proof in the running app — verify"; verify: "automated tests — code-review" |
+| `code-review` ↔ `security-audit` | code-review: "the adversary, CVEs — security"; security: "shape of the contract — code-review" |
+| `code-review` ↔ `review-change` | review-change is the pre-commit gate that cites code-review's checks; it does not re-declare them |
+| `release-audit` ↔ `security-audit` | release: "vulnerable deps — security"; security: "signing, SBOM, deploy — release" |
+| `commercial-readiness` ↔ `design-pro` | commercial: "onboarding UX — design-pro"; design-pro: "activation, checkout — commercial" |
+| `reliability-audit` ↔ `security-audit` | reliability: "malicious corruption — security"; security: "accidental corruption — reliability" |
+| `verify` ↔ `drive-app-window` | verify: "drive the window — drive-app-window"; drive-app-window: "what to prove — verify" |
+| `audit-app` ↔ `review-change` | audit-app: "one PR — review-change"; review-change: "whole app — audit-app" |
+| `audit-app` ↔ `audit-website` | audit-app: "public web surface — audit-website"; audit-website: "software behind login — audit-app" |
+| `start-work` ↔ `review-change` | start-work: "review code — review-change"; review-change: "open a session — start-work" |
+| `review-change` ↔ `close-work` | review-change: "update documents — close-work"; close-work: "review first — review-change" |
+| `start-work` ↔ `close-work` | start-work: "close — close-work"; close-work: "open — start-work" |
 
 The work-cycle pairs form a **triangle**, not a chain — a user can type
 the wrong verb directly, not only the adjacent one. Every skill in the
 cycle delimits against the other two.
-
-The `skill-readiness-auditor` verifies each pair mechanically as a phase gate.
 
 ### 1.3 Who declares `PASS`/`FAIL`
 
@@ -113,7 +105,7 @@ Who can call a skill:
 
 `audit-app` doesn't invoke other skills. It:
 
-1. Discovers applicable owners from the project's `.claude/gates.json`.
+1. Discovers applicable owners from the project's `gates.json` (`.agents/` or `.claude/`), filtered by `platform`.
 2. Reads evidence from `.audit/**/*.evidence.yaml`.
 3. Validates each file against `CONTRACTS.md`.
 4. Aggregates by owner, applies declarative gates.
@@ -145,34 +137,11 @@ Consequence: an owner can run alone. Nightly CI running only
 
 ### 2.4 Skills that don't emit evidence
 
-Some plugin skills don't emit evidence for `audit-app`. They serve
-other purposes:
-
 | Skill | Purpose |
 |---|---|
-| `skill-readiness-auditor` | Audits instruction quality, triggers, workflow coverage, and schema compliance for Agent Skills. |
-| `skill-security-auditor`  | Audits security, prompt injection, capabilities, MCP, and external resources for Agent Skills. |
-| `skill-release-gate`      | Evaluates readiness + security evidence to issue final release, signing, or Trust Registry enrolment decisions. |
-| `drive-app-window` | Technical capability (Win32/WebView2). *Used* by other skills' instruments; doesn't emit evidence on its own. |
-| `bootstrap-project` | Generator. Writes files in the user's repo. Not an auditor. |
-
-### 2.4.1 Editorial guidance for skill meta-auditors (non-mechanical)
-
-`CONTRACTS §3.5` only knows how to mechanically reject
-`producer: skill-readiness-auditor` (and other meta-auditors) outside
-their respective directories. Two situations still require editorial
-judgment from the human auditor or from `skill-readiness-auditor` itself
-as a concern (not a blocker):
-
-- An owner emits a check whose `check:` semantically means "this skill
-  is well written" (e.g. `owner: design-pro`,
-  `check: description-well-formed`). That is `skill-readiness-auditor`'s subject,
-  not `audit-app`'s. **Mark as `Concern` in `skill-readiness-auditor`'s report;
-  refuse the skill merge.**
-- A reference inside a skill audits the skill's own structure —
-  suspicious duplication of responsibility. **Mark as `Concern`.**
-
-None of these situations is blocked by `audit-app` at runtime.
+| `drive-app-window` | Technical capability (Win32/WebView2). *Used* by `verify` on desktop; emits artefacts, not verdicts. |
+| `bootstrap-project` | Generator. Writes `gates.json` and the four project adapters. Not an auditor. |
+| `start-work` / `close-work` | Work cadence. Read and rewrite the state document. |
 
 ---
 
@@ -198,8 +167,10 @@ the adapter does not do.
 
 ### 3.2 Location of the adapter
 
-Local adapter lives in `.claude/skills/<name>/` inside the target repo.
-It travels with the project's commits. Its version is independent of
+Local adapter lives in `<host>/skills/<name>/` inside the target repo,
+where `<host>` is `.agents` (OpenCode, Antigravity, Codex…) or `.claude`
+(Claude Code). `bootstrap-project` detects the host. It travels with the
+project's commits. Its version is independent of
 the plugin's; it declares which `extends` it inherits from.
 
 Two options for the `contract:` path (`bootstrap-project` step 5b):
@@ -207,7 +178,7 @@ Two options for the `contract:` path (`bootstrap-project` step 5b):
 - **Plugin installed globally** → absolute path to
   `production-quality-ready/CONTRACTS.md`. No duplication.
 - **Local snapshot** → `bootstrap-project` copies `CONTRACTS.md` to
-  `<repo>/.claude/CONTRACTS.md.snapshot`; the adapter uses
+  `<repo>/<host>/CONTRACTS.md.snapshot`; the adapter uses
   `../CONTRACTS.md.snapshot`. The snapshot carries a header saying
   which version it is a copy of; editing the snapshot is not editing
   the contract.
@@ -236,19 +207,16 @@ other projects.
 
 ## 4. Bilateral delimitation (mechanical)
 
-Rule written in POLICY §1.2 and verified by `skill-readiness-auditor` as a phase
-gate.
+Rule written in POLICY §1.2. Verified by reading: each side of a pair
+names the other.
 
 **Rule 4.1.** For each pair `(A, B)` in the §1.2 table, `A`'s
 `description` mentions `B` and `B`'s mentions `A`. Missing on either
 side = the *pair* fails, not the file.
 
-**Rule 4.2.** The `skill-readiness-auditor` verifies mechanically:
-
-1. Enumerates pairs from the §1.2 table (declarative source,
-   editable).
-2. For each side, checks that the token of the other owner appears in
-   the `description`.
+**Rule 4.2.** The §1.2 table is the declarative source. A reviewer of
+a plugin change enumerates its pairs and checks that the token of the
+other owner appears in the `description` or Boundaries of each side.
 
 **Rule 4.3.** Adding a subject that touches an existing one (or
 splitting an existing owner) adds a row to the table and requires a
@@ -263,32 +231,30 @@ In order:
 
 ### 5.1 Project gate pack
 
-Default source: `<repo-root>/.claude/gates.json`. Structure:
+Source: `<repo-root>/.agents/gates.json` or `<repo-root>/.claude/gates.json`
+(`.agents` wins if both exist). Structure (CONTRACTS §5.4):
 
-```json
+```jsonc
 {
   "plugin": "production-quality-ready",
-  "plugin-version": "^1.0.0",
+  "plugin-version": "2.0.0",
+  "platform": "web",                       // web | desktop | both — required
+  "sales-model": "subscription",           // licensed | subscription | both
+  "stack": ["typescript", "hono", "d1"],
   "owners": {
-    "code-review-runtime": {
-      "applicable": true,
-      "adapter-hints": {
-        "build-command": "cargo build --release",
-        "test-command": "cargo test"
-      }
-    },
-    "code-review-contract": { "applicable": true },
-    "security-audit": { "applicable": true },
-    "seo-audit": {
-      "applicable": false,
-      "not-applicable": "no indexable web surface"
-    },
+    "code-review": { "adapter": "code-review.local.md" },
+    "security-audit": {},
+    "audit-website": { "target": "https://example.com" },
+    "drive-app-window": { "not-applicable": "web app; verify uses browser automation" },
     "…": "…"
   },
-  "gates": {
-    "release-candidate": { "owners": ["code-review-runtime", "security-audit"] },
-    "sellable": { "owners": ["*"] }
-  }
+  "adapter-hints": {
+    "build-command": "npm run build",
+    "tests-command": "npm test",
+    "typecheck-command": "npm run typecheck",
+    "migrations-verify-command": "node scripts/verify-migrations.mjs"
+  },
+  "gates": ["release-candidate", "production-ready", "sellable"]
 }
 ```
 
@@ -301,8 +267,9 @@ Reason: "silent omission" is silent PASS. Rule inherited from
 `auditar-app`.
 
 **Rule 5.1.2 (`adapter-hints:`).** The `adapter-hints:` section is
-**metadata for local adapters that emit their own evidence** (e.g. a
-local `code-review-runtime` adapter that knows `cargo build`).
+**metadata for producers that emit their own evidence** — the local
+adapters and `scripts/run-all-owners.ps1`, which runs the declared
+commands and writes `.audit/code-review/*` with `command:` + `log:`.
 `audit-app` **never reads it**. Not runnable commands from
 `audit-app`'s point of view.
 
@@ -316,11 +283,17 @@ adapter).
 POLICY: **the orchestrator does not read `adapter-hints:`.**
 Emphasized here to prevent a future refactor from confusing the fields.
 
+**Rule 5.1.5 (platform).** `platform:` is required. Owners and checks
+whose `platforms:` exclude it are `NOT_APPLICABLE/platform` without
+being listed as `not-applicable` by hand (CONTRACTS §3.5). Listing them
+anyway, with a reason, is allowed and clearer.
+
 ### 5.2 Project-type detection
 
-If no `.claude/gates.json`, `audit-app` tries detection by manifest
-files (`Cargo.toml` → runtime/contract Rust profile; `package.json` +
-Web framework → runtime frontend + seo-audit; …).
+If no `gates.json`, `audit-app` tries detection by manifest files
+(`Cargo.toml` or `tauri.conf.json` → `platform: desktop`; `package.json`
++ web framework or `wrangler.*` → `platform: web`; …) and tells the user
+to run `bootstrap-project`, which writes the file.
 
 Detection is a **starting suggestion**, not authority. First run
 proposes a gate pack; the user confirms and commits.
@@ -363,10 +336,9 @@ skill's migration.
 
 ### 6.4 Project files across majors
 
-The `.claude/gates.json` of a project follows the plugin's major.
-Bumping the plugin locally requires updating the file too. The
-`bootstrap-project` skill has a `--migrate <from-version>` mode
-(planned) to help.
+The project's `gates.json` follows the plugin's major. Bumping the
+plugin locally requires updating the file too; re-running
+`bootstrap-project` proposes the diff.
 
 ---
 
@@ -386,6 +358,14 @@ Bumping the plugin locally requires updating the file too. The
 
 ## Appendix A — changes since v1.0.0
 
+- **v2.0.0** — Plugin made platform-agnostic; owners merged 22 → 15
+  (`code-review-runtime` + `code-review-contract` + `performance-audit`
+  → `code-review`; `observability` → `reliability-audit` §2;
+  `seo-audit` → `audit-website/seo`); the three skill meta-auditors
+  removed (tooling, not product). §1.2 pair table rewritten. §2.4.1
+  removed with them. §3.2 and §5.1 become host-agnostic (`.agents` or
+  `.claude`). §5.1 gains `platform`, `sales-model`, Rule 5.1.5.
+  `bootstrap-project` declared the first skill to run.
 - **v1.5.0** — POLICY translated into English (whole plugin now in
   English); §1.2 recount cross-checked with the pair-check script.
   No breaking change; `evidence-schema: 1.3.x` unchanged.
