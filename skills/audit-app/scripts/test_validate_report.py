@@ -525,5 +525,36 @@ class AchadosCitados(unittest.TestCase):
             self.assertEqual(set(), vr.achados_anteriores(Path(tmp)))
 
 
+class RegistoV2(unittest.TestCase):
+    """Sem `--gates`, o registo vem do próprio plugin: CONTRACTS.md §7.4."""
+
+    REGISTO = vr.registo_v2(Path(__file__).resolve().parents[3])
+
+    def test_canonicos_do_contrato_sao_criticos(self):
+        criticos = {k for k, m in self.REGISTO.items() if m["critical"]}
+        self.assertIn("security-audit::sec.secrets-not-committed", criticos)
+        # O intervalo `sell-01-…` … `sell-06-…` expande para os seis.
+        self.assertEqual(6, sum(k.startswith("commercial-readiness::sell-0")
+                                for k in criticos))
+        self.assertFalse(self.REGISTO["ui-system::ui.focus-ring"]["critical"])
+
+    def test_ids_owner_check_sao_lidos_e_os_criticos_em_falta_apontados(self):
+        texto = (CABECALHO
+                 + "| ID | Estado | Gate | Evidencia | Cobertura | Artefacto | Nota |\n"
+                 "|---|---|---|---|---|---|---|\n"
+                 "| `ui-system::ui.architectural-boundary` | CLEARED | sim | EXECUCAO | COMPLETA | - | ok |\n"
+                 "| `ui-system::ui.focus-ring` | CLEARED | nao | EXECUCAO | COMPLETA | - | ok |\n"
+                 "| `security-audit::sec.deps-no-cve` | CLEARED | sim | EXECUCAO | COMPLETA | - | ok |\n"
+                 "\nPROVEN: 0 - CLEARED: 3 - UNPROVEN: 0 - NOT_APPLICABLE: 0\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            caminho = Path(tmp) / "auditorias" / "2026-09-23-full.md"
+            caminho.parent.mkdir(parents=True)
+            problemas, _ = vr.validar(texto, self.REGISTO, caminho)
+        self.assertTrue(any("sec.secrets-not-committed" in p and "falta" in p
+                            for p in problemas), problemas)
+        self.assertFalse(any("ui.architectural-boundary" in p for p in problemas), problemas)
+        self.assertFalse(any("contagem" in p for p in problemas), problemas)
+
+
 if __name__ == "__main__":
     unittest.main()

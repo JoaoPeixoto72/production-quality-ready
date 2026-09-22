@@ -146,6 +146,8 @@ the report itself, declare it and adjust coverage.
 
 - `scripts/validate_report.py` — validates the structure of a written
   report. Does not validate whether the evidence is true; validates form.
+  Obligation IDs are `owner::check`; the registry is read from
+  `CONTRACTS.md` §7.4 (critical) and each owner's `instruments.yaml`.
 - `scripts/test_validate_report.py` — regression.
 
 ## Anti-patterns

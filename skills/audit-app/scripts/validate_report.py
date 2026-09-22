@@ -79,7 +79,10 @@ def contrato_actual() -> tuple[str | None, str | None]:
             return version, digest
     return None, None
 
-RE_LINHA_TABELA = re.compile(r"^\|\s*\*{0,2}([A-Z0-9]+-\d+)\*{0,2}\s*\|(.+)$", re.M)
+# Um ID de obrigação: `SEC-01` (registo v1) ou `owner::check` (contrato v2).
+RE_ID_OBRIGACAO = re.compile(r"[A-Z0-9]+-\d+|[a-z][a-z0-9-]*::[A-Za-z0-9._-]+")
+RE_CANONICO_V2 = re.compile(r"^\|\s*`([a-z][a-z0-9-]*)`\s*\|\s*`([^`]+)`(?:\s*…\s*`([^`]+)`)?\s*\|", re.M)
+RE_FOR_CHECKS = re.compile(r"^\s+-\s+([A-Za-z0-9._-]+)\s*$", re.M)
 RE_VERSAO = re.compile(r"\*{0,2}Contrato\*{0,2}:\s*vers[ãa]o\s*(\d+)\.(\d+)\.(\d+)", re.I)
 # O digest aparece nu (`SHA-256 66e9…`) ou entre crases, que é como o markdown
 # de um relatório real o escreve. Exigir o primeiro fazia o validador dizer
@@ -115,6 +118,38 @@ RE_PRIORIDADE = re.compile(r"\*\*Prioridade\*\*:\s*\*{0,2}(P[0-3])\*{0,2}")
 RE_AREA = re.compile(r"\*\*[ÁA]rea\*\*:\s*\*{0,2}`?([A-Za-z][A-Za-z0-9\-]*)`?")
 RE_MODIFICADOR = re.compile(
     r"\b(PROVEN|CLEARED|UNPROVEN|NOT_APPLICABLE)\s*\(([^)]+)\)")
+
+
+def registo_v2(raiz_plugin: Path) -> dict:
+    """O registo de obrigações do contrato v2, lido do próprio plugin.
+
+    Críticas: as linhas da §7.4 do `CONTRACTS.md` (`owner::check`). Um
+    intervalo (`sell-01-…` … `sell-06-…`) expande-se pelos checks com o mesmo
+    prefixo no `instruments.yaml` do owner. Não críticas: tudo o que um owner
+    declara em `for-checks`, mais o `<owner>.instrument-available` que o runner
+    escreve quando falta o instrumento.
+    """
+    registo: dict[str, dict] = {}
+    skills = raiz_plugin / "skills"
+    declarados: dict[str, list[str]] = {}
+    for manifesto in sorted(skills.glob("*/instruments.yaml")):
+        owner = manifesto.parent.name
+        declarados[owner] = RE_FOR_CHECKS.findall(manifesto.read_text(encoding="utf-8"))
+        for check in declarados[owner] + [f"{owner}.instrument-available"]:
+            registo[f"{owner}::{check}"] = {"module": owner, "critical": False}
+
+    contrato = (raiz_plugin / "CONTRACTS.md").read_text(encoding="utf-8")
+    inicio = contrato.find("### 7.4")
+    fim = contrato.find("\n### ", inicio + 1)
+    for owner, primeiro, ultimo in RE_CANONICO_V2.findall(contrato[inicio:fim]):
+        checks = [primeiro]
+        if ultimo:
+            prefixo = re.match(r"[a-z]+-", primeiro)
+            checks = [c for c in declarados.get(owner, [])
+                      if prefixo and c.startswith(prefixo.group(0))] or [primeiro, ultimo]
+        for check in checks:
+            registo[f"{owner}::{check}"] = {"module": owner, "critical": True}
+    return registo
 
 
 class _Parser(argparse.ArgumentParser):
@@ -291,7 +326,7 @@ def validar(texto: str, registo: dict, caminho: Path,
             return limpar(celulas_linha[i]) if i is not None and i < len(celulas_linha) else ""
 
         oid = cel("id")
-        if not re.fullmatch(r"[A-Z0-9]+-\d+", oid):
+        if not RE_ID_OBRIGACAO.fullmatch(oid):
             continue
         # Uma linha mais curta do que o cabeçalho tem as últimas colunas a
         # devolver `""`, e um `CLEARED` com cobertura `AMOSTRA` passaria por
@@ -466,21 +501,27 @@ def main(argv: list[str] | None = None) -> int:
                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("relatorio", help="ficheiro .md do relatório")
     ap.add_argument("--gates", default=None,
-                    help="references/gates.json (por omissão, ao lado do script)")
+                    help="registo v1 em JSON; por omissão, o registo v2 do próprio plugin")
     args = ap.parse_args(argv)
 
     caminho = Path(args.relatorio)
     if not caminho.is_file():
         print(f"erro: {caminho} não é um ficheiro", file=sys.stderr)
         return EXIT_CANNOT_ANALYSE
-    default_ref = Path(__file__).resolve().parent.parent / "references" / "gates.json"
-    if not default_ref.is_file():
-        default_ref = Path(__file__).resolve().parent.parent / "references" / "gates.legacy.json"
-    gates = Path(args.gates) if args.gates else default_ref
-    if not gates.is_file():
-        print(f"erro: registo de gates não encontrado em {gates}", file=sys.stderr)
+    # Registo: o `--gates` explícito (v1), senão o próprio plugin (v2:
+    # CONTRACTS.md §7.4 + instruments.yaml de cada owner).
+    raiz_plugin = Path(__file__).resolve().parents[3]
+    if args.gates:
+        gates = Path(args.gates)
+        if not gates.is_file():
+            print(f"erro: registo de gates não encontrado em {gates}", file=sys.stderr)
+            return EXIT_CANNOT_ANALYSE
+        registo = json.loads(gates.read_text(encoding="utf-8"))
+    elif (raiz_plugin / "CONTRACTS.md").is_file():
+        registo = registo_v2(raiz_plugin)
+    else:
+        print(f"erro: sem --gates e sem CONTRACTS.md em {raiz_plugin}", file=sys.stderr)
         return EXIT_CANNOT_ANALYSE
-    registo = json.loads(gates.read_text(encoding="utf-8"))
 
     versao_contrato, hash_actual = contrato_actual()
     if versao_contrato is None:
