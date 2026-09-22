@@ -246,6 +246,8 @@ Source: `<repo-root>/.agents/gates.json` or `<repo-root>/.claude/gates.json`
     "security-audit": {},
     "audit-website": { "target": "https://example.com" },
     "drive-app-window": { "not-applicable": "web app; verify uses browser automation" },
+    "review-change": { "adapter": "rever-mudanca" },   // local name of the adapter skill
+    "ui-system": { "ignore-dirs": ["servidor"] },      // passed to audit_ui.py as --ignore-dir
     "…": "…"
   },
   "adapter-hints": {

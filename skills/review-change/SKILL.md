@@ -143,7 +143,8 @@ these.
 
 ## Contract for the local adapter
 
-The adapter (`<host>/skills/review-change/SKILL.md`, where `<host>` is
+The adapter (`<host>/skills/review-change/SKILL.md`, or the local name
+declared in `gates.json` under `owners.review-change.adapter`; `<host>` is
 `.agents` or `.claude`) MUST provide:
 
 1. `This project's invariants` — numbered, each with the concrete

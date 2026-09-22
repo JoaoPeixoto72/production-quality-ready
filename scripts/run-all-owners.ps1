@@ -348,6 +348,12 @@ function Invoke-UiSystem {
 
     $jsonRel = ".audit/$owner/audit_ui.json"; $mdRel = ".audit/$owner/audit_ui.md"; $logRel = ".audit/$owner/audit_ui.log"
     $cmd = "$PythonExe `"$script`" --repo `"$RepoRoot`" --config `"$cfg`" --json-output `"$(Join-Path $RepoRoot $jsonRel)`" --markdown-output `"$(Join-Path $RepoRoot $mdRel)`""
+    # owners.ui-system.ignore-dirs: folders that are not UI (e.g. a server
+    # inside a desktop repo); without it their findings fail the owner.
+    $uiCfg = $gates.owners.PSObject.Properties['ui-system']
+    if ($uiCfg -and $uiCfg.Value -and $uiCfg.Value.PSObject.Properties['ignore-dirs']) {
+        foreach ($d in @($uiCfg.Value.'ignore-dirs')) { if ($d) { $cmd += " --ignore-dir `"$d`"" } }
+    }
     $ok = Invoke-Logged -Cmd $cmd -LogRel $logRel
     if ($null -eq $ok) { Register-Owner -Owner $owner -Ran 0 -Passed 0 -Failed 0 -NotVerified 0; return }
     $jsonAbs = Join-Path $RepoRoot $jsonRel

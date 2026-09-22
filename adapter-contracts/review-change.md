@@ -6,7 +6,7 @@ Contract a local `review-change` adapter must provide.
 
 ```yaml
 ---
-name: review-change
+name: review-change                       # or local name
 extends: production-quality-ready::review-change@2.x
 contract: ../CONTRACTS.md.snapshot
 version: 2.0.0
