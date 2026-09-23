@@ -139,6 +139,30 @@ python -m unittest discover -s tests/code-review -p "test_*.py"   # quality_scan
 pwsh scripts/run-all-owners.ps1 -RepoRoot <repo> -DryRun          # lists owners for the platform
 ```
 
+## What NVIDIA SkillSpector says about these skills
+
+Every skill here was scanned with [SkillSpector](https://github.com/NVIDIA/SkillSpector)
+2.11.2 (`--no-llm`) through [skill-auditor](https://github.com/JoaoPeixoto72/skill-auditor)
+5.3.0 (`audit.sh <skill> --strict`). **None is rejected and none gets a
+`CRITICAL` finding.** Eight are eligible; seven are held for a person to look
+at, and this is why — each one is a pattern the scanner flags on sight, not
+behaviour that harms anyone:
+
+| Skill | What the scanner flags | What it actually is |
+|---|---|---|
+| `code-review` | `subprocess` in `quality_scan.py` | one `git` call with a fixed argument list and no shell, to list the files git would commit and the files a change touched |
+| `release-audit` | `subprocess` in `ci_inspection.py` | one read-only `git log -1` on the changelog, to date it |
+| `security-audit` | `subprocess` in `secret_scan.py` | looks for committed secrets in the history — `gitleaks` when installed, otherwise `git log -p` with its own rules; that is its job |
+| `audit-website` | network access; one file too long for its parser | it audits a public website, so it fetches that website; the URL is the one you give it |
+| `reliability-audit` | "obfuscated text" in `migration_harness.py`; "autonomous decisions" in `log_inspection.py` | the text is em dashes in comments and SQLite's `executescript`, applying migrations to a throwaway database; the "decision" is a line in a report |
+| `design-pro` | mixed-script Unicode; "autonomy", "persistence" and "scope" in the references | `ΔL` (the OKLCH luminance difference, Greek delta) in the text; UX guidance *about* AI features, offline fallbacks and review scope |
+| `ui-system` | a metadata YARA rule on the description; mixed-script Unicode; one component too long for its parser | the description names an executable instrument (`audit_ui.py`); `ΔL` again |
+
+SkillSpector reads text for patterns and cannot tell a skill that *documents*
+or *runs a fixed tool* from one that misuses it — its README lists that limit.
+A hold is a request for a person to read the flagged line, which is what this
+table does.
+
 ## What it does NOT
 
 - **Correct anything.** It audits. Correction is another session.

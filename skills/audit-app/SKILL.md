@@ -3,7 +3,6 @@ name: audit-app
 description: "Aggregate owner evidence from .audit/**, apply gates.json gates and write a Product × Coverage verdict. Runs nothing. Use when asked 'audit the app' or 'ready to ship/sell?'. Not for websites (audit-website) or one PR (review-change)."
 contract: CONTRACTS.md
 platforms: [web, desktop]
-model: opus
 effort: high
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
