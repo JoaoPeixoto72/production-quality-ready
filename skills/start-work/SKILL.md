@@ -6,7 +6,7 @@ evidence-schema: "1.3.x"
 requires-adapter: true
 adapter-contract: adapter-contracts/start-work.md
 platforms: [web, desktop]
-version: 2.0.0
+version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
@@ -27,14 +27,27 @@ defect, not a shortcut.
 ## Order
 
 1. **Read the state.** The adapter says where `ESTADO.md` (or equivalent)
-   lives.
+   lives, and which part of it decides anything.
 2. **Confirm the tree is sound.** Run the project's proof command
    (build + tests). Every reported number carries the command that
-   produced it and the HEAD hash.
+   produced it and the HEAD hash. A red baseline is reported before any
+   new work — otherwise the next failure has no owner.
 3. **Look up documents of decisions / facts / audits.** The adapter lists
    them.
 4. **Search for the owner** of the subject about to change.
-5. **Only then write.**
+5. **If the task is a bug, reproduce it first** — a command, a test, or
+   the steps in the running app that show it. A bug nobody reproduced
+   cannot be proven fixed.
+6. **Only then write.**
+
+## Rationalisations that do not pass
+
+| Excuse | Answer |
+|---|---|
+| "I know where this lives." | The conversation has no memory; search anyway. It takes a `grep`. |
+| "Writing it fresh is faster." | Faster today, a second owner forever. Extend the one that exists. |
+| "Tests were green last session." | Last session is not HEAD. Run the baseline. |
+| "The bug is obvious, no need to reproduce." | Then reproducing is cheap. Without it, "fixed" is an opinion. |
 
 ## Contract for the local adapter
 

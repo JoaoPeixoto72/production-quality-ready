@@ -5,17 +5,17 @@ contract: CONTRACTS.md
 evidence-schema: "1.3.x"
 argument-hint: "[create | migrate | audit | review | extend | theme | profile] [options]"
 platforms: [web, desktop]
-version: 2.0.0
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+version: 2.1.0
+allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
-# UI System (The Definitive UI Engine)
+# ui-system
 
-Build and migrate interfaces through a **Level-2 Commercial UI
-Architecture**.
+Build, migrate and audit the project's design system. Unlike the audit
+owners, this skill **writes code** in create/migrate/extend/theme modes;
+in audit mode it only reports.
 
-The system's architecture is strictly unidirectional:
+The architecture is strictly unidirectional:
 
 ```text
 Application (Pages / Views / Routes)
@@ -172,9 +172,8 @@ python scripts/apply_profile.py --target . --with-react
 python scripts/apply_profile.py <name> --target .
 ```
 
-Paths are relative to this skill folder
-(`<host>/plugins/production-quality-ready/skills/ui-system/`, where
-`<host>` is `.agents` or `.claude`).
+Paths are relative to this skill's folder (the directory holding this
+`SKILL.md`), wherever the host installed the plugin.
 
 ---
 

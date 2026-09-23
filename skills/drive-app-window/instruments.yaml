@@ -1,7 +1,6 @@
 # instruments.yaml — drive-app-window
-# Este owner é uma capability técnica: produz artefactos (screenshots,
-# event logs) que outros owners consomem como evidência. Nenhum verdict
-# fecha aqui.
+# A technical capability: produces artefacts (screenshots, event logs)
+# that other owners read as evidence. No verdict closes here.
 platforms: [desktop]
 accepts:
   - producer: drive-app-window

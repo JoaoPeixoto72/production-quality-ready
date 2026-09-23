@@ -39,7 +39,8 @@ repository, that answers *"can this be sold?"* with demonstrated
 defects, declared scope, and an honest list of what could not be
 verified.
 
-Every skill wakes only when called. None invokes another.
+Every skill wakes when its `description` matches the task. None
+invokes another.
 
 | Block | Skills |
 |---|---|
@@ -148,10 +149,6 @@ Some skills are not owners of a subject: `verify` and
 because it writes the four project adapters that make the generic
 owners bite on a concrete codebase.
 
-The three skill meta-auditors (`skill-readiness-auditor`,
-`skill-security-auditor`, `skill-release-gate`) left the plugin in
-v2.0.0: they audit skills, not products, and belong in a tooling repo.
-
 ---
 
 ## 5. Closed decisions — don't reopen without new reason
@@ -166,7 +163,7 @@ Anyone evaluating saves time knowing what has been discussed and why.
 | **Multiple instruments** per rule | §3.2 — reducing loses coverage |
 | The orchestrator **does not run commands** against the audited repo | running commands declared by the target is arbitrary execution driven by the target |
 | **No numeric score** | gate ≠ score |
-| Each `description` **under the working ceiling** (500 characters) | the platform limit is 1024; the working ceiling gives space to iterate |
+| Each `description` **≤ 250 characters** | every description is in context on every turn; the platform limit is 1024, and the host drops skills silently above its total budget |
 | Two owners that touch **name each other** in the `description` | unilateral disambiguation lets the other win by accident; it's the pair that fails, not the file |
 
 A decision that **was** reopened, registered as such: the original

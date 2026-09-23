@@ -28,7 +28,7 @@ the title and the process go on the command line every time. Put them in a pair
 of variables once and forget them:
 
 ```bash
-G="scripts/gui.ps1"   # from the skill folder: <host>/plugins/production-quality-ready/skills/drive-app-window/
+G="<this skill folder>/scripts/gui.ps1"   # the directory holding this SKILL.md
 A="-Title MyApp -Process my_app"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File $G $A -Action content -Out "out\x.png"
 ```

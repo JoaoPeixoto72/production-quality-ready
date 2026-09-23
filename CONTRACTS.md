@@ -4,7 +4,7 @@ Plugin mechanical contract. **Authoritative.** Every plugin skill refers
 to this file by its root (`contract: CONTRACTS.md`). A discrepancy
 between this file and a skill is always the skill's defect.
 
-**Contract version**: 2.0.0
+**Contract version**: 2.1.0
 
 This file **does not describe workflows** — it describes *what counts
 as proof* and *how skills speak to each other*. Authority, activation
@@ -85,7 +85,7 @@ producer:         ui-system                        # slug of the skill that WROT
 instrument:       audit_ui.py                      # id of the instrument inside the producer
 rule:             WCAG 2.2 SC 2.4.7                # human-readable rule name
 rule-version:     wcag-2.2-AA                      # see §3.3
-evidence-schema:  1.1.0                            # see §6
+evidence-schema:  1.3.0                            # see §6
 methods:                                           # instruments used; at least one
   - dom-inspection
   - screenshot
@@ -113,13 +113,12 @@ own instruments — common and legitimate. What is **not** accepted is
 `owner ≠ producer` without `instrument` declared as belonging to
 `producer` in the instrument manifest that `owner` recognises (§4.5).
 
-**Rule 3.1.2 (forbidden defaults).** A 1.2 parser that finds `producer:`
+**Rule 3.1.2 (forbidden defaults).** A parser that finds `producer:`
 missing reads the field as `producer: unknown` — and `unknown` **never**
 satisfies step 3 of §4.5, nor is it accepted by any instruments
 manifest. The file reads as `NOT_VERIFIED` with reason
 `missing-producer`. A compatibility default may degrade; it may not
-promote. The v1.1.0 had a promoting default (`producer := owner`) that
-fabricated authority — removed in 1.2.0.
+promote — `producer := owner` would fabricate authority.
 
 **Rule 3.1.3.** Missing `owner:` is always `NOT_VERIFIED` with reason
 `missing-owner`, without default. `owner` is the root of the authority
@@ -251,9 +250,7 @@ only recorded in the report for debugging.
 
 **Absence ≠ PASS.** If `.audit/<owner>/` doesn't exist or is empty,
 `audit-app` reports that owner as `Coverage: BLOCKED (0/N)` in the
-report and assigns it no verdict. Inherits the `PROVEN` vs
-`UNPROVEN` distinction from auditar-app, but attached to the owner
-rather than the check.
+report and assigns it no verdict.
 
 **Rule 4.3.1 (mandatory fraction).** The report always writes
 `BLOCKED (n/m)`, `PARTIAL (n/m)` or `COMPLETE (m/m)` — never the token
@@ -263,18 +260,16 @@ alone — where:
 - **`n`** = number of those checks resolved to `PASS`, `FAIL` or
   `NOT_APPLICABLE`. `NOT_VERIFIED` doesn't count.
 
+**Rule 4.3.2.** `BLOCKED (0/8)` and `BLOCKED (7/8)` are the same token
+but **not the same knowledge state**. Without the fraction the reader
+can't tell "hasn't looked" from "one left to close".
+
 **Rule 4.3.3 (canonical checks are a pre-req).** An owner without an
 entry in the canonical registry §7.4 has no `m`; reports
 `BLOCKED (—/?)` with reason `no-canonical-registry`. There is no
-"use what was emitted" fallback — that mechanism (v1.2.0) allowed an
-owner to emit 3 of 20 possible checks and get `COMPLETE (3/3)`.
-Registering canonicals is a precondition for the owner to close any
-`coverage-complete` gate.
-
-**Rule 4.3.2.** `BLOCKED (0/8)` and `BLOCKED (7/8)` are the same token
-but **not the same knowledge state**. Without the fraction the reader
-can't tell "hasn't looked" from "one left to close". The original
-`auditar-app` paid this lesson once; the plugin inherits it from birth.
+"use what was emitted" fallback — it would let an owner emit 3 of 20
+possible checks and get `COMPLETE (3/3)`. Registering canonicals is a
+precondition for the owner to close any `coverage-complete` gate.
 
 ### 4.4 Dedup by root cause
 
@@ -295,8 +290,7 @@ at the same line. The report shows both findings, each with its
 with a prefix declared by the emitting owner (`RC-`, or `<owner>::`
 like `design-pro::focus-outline-suppressed`) — to reduce accidental
 collision between owners that chose the same name for different
-causes. The skill meta-auditors warn when two owners share a
-`root-cause:` without distinct prefix.
+causes.
 
 **Rule 4.4.4.** Dedup by `root-cause:` produces a single aggregated
 entry in the report, listing every distinct `producer` and `owner`
@@ -348,10 +342,9 @@ plugin; `audit-app` reports it as `unauthorized-instrument`.
 
 ### 4.6 A PASS is a trace, not an opinion
 
-The v1.x contract stopped the parser from *promoting* missing fields,
-but nothing stopped a producer — human or model — from writing
-`result: PASS` after reading the source. That is the hole this rule
-closes.
+§3.1 stops the parser from *promoting* missing fields; nothing there
+stops a producer — human or model — from writing `result: PASS` after
+reading the source. This rule does.
 
 **Rule 4.6.1.** `result: PASS` is valid only when the file carries:
 
@@ -423,7 +416,9 @@ whether to promote it.
 
 ### 6.1 `evidence-schema`
 
-Semver of this file's contract. Blocks aggregation **across majors**.
+Semver of the evidence **file format** (§3), independent of the contract
+version at the top of this file. Current: `1.3.x`. Blocks aggregation
+**across majors**.
 
 - **Major (X.0.0)** — parser-breaking change: new required field,
   rename, semantics swap. `audit-app` on major `X` **refuses** to read
@@ -433,6 +428,10 @@ Semver of this file's contract. Blocks aggregation **across majors**.
   Compatible with previous evidence.
 - **Patch (1.0.X)** — text clarification, editorial fix. Zero semantic
   change.
+
+**Rule 6.1.1.** A rule that can only *degrade* a file (§3.1.5, §4.6)
+applies to every schema version and does not bump the major: an old file
+loses its `PASS`; it is never refused for it.
 
 ### 6.2 `rule-version`
 
@@ -477,7 +476,7 @@ requires:
         - all-pass-in-owner: [commercial-readiness]
 ```
 
-Predicates supported in v1.0.0:
+Predicates:
 
 | Predicate | Semantics |
 |---|---|
@@ -513,9 +512,8 @@ severity. `all-pass-in-owner` only enters where the domain integrity
 is binary (a `LOW` security vulnerability is still a vulnerability;
 an unsigned artifact is still unsigned). For continuous quality, the
 right predicate is `coverage-complete` + `no-open` of the severity
-that matters. The v1.1.0 had this inverted: a `FAIL LOW` in
-`code-review` blocked `release-candidate` but not
-`production-ready`. Fixed in 1.2.0.
+that matters — otherwise a `FAIL LOW` in `code-review` would block
+`release-candidate` but not `production-ready`.
 
 ### 7.4 Canonical checks a skill must emit
 
@@ -563,110 +561,24 @@ another skill cannot use the same `<owner>::<check-id>`.
 
 **Rule 7.5.1 (strict read-only).** `audit-app` does not run any
 command against the audited repository. It doesn't read
-`gates.json.preconditions`, doesn't invoke build systems, doesn't
+`adapter-hints:`, doesn't invoke build systems, doesn't
 execute scripts declared by the target. Its only disk operation is
 reading `.audit/**/*.evidence.yaml` and writing the report.
 
-**Rule 7.5.2 (build/tests/types are evidence like any other).** What
-v1.2.0 called "preconditions" — that the tree compiles, that tests
-pass, that typecheck closes — are now canonical checks of
-`code-review` (§7.4). The owner that already owns the runtime
+**Rule 7.5.2 (build/tests/types are evidence like any other).** That
+the tree compiles, that tests pass, that typecheck closes — these are
+canonical checks of `code-review` (§7.4). The owner that already owns the runtime
 is the one that produces the evidence file with the result; a YAML
 may disagree with the exit code that generated it, but that is a
 known pain of the owner that decided to emit the evidence, not of the
 orchestrator.
 
-**Rule 7.5.3.** `POLICY §5.1` still allows a `build-command:` section
-and similar in the project's `gates.json` — but only as **declarative
-metadata** for use by the very owner that emits the evidence (e.g. a
-`code-review` adapter that knows how to run `cargo build`).
-None of those strings reaches `audit-app`.
+**Rule 7.5.3.** `adapter-hints:` in the project's `gates.json`
+(`POLICY §5.1`) is **declarative metadata** for the owner that emits
+the evidence (e.g. a `code-review` harness that knows how to run
+`cargo build`). None of those strings reaches `audit-app`.
 
-**Design.** v1.2.0 tried to save ceremony ("a YAML to say cargo test
-returned 0 is redundant") but the price was executing commands
-declared by a file in the target repo — arbitrary execution driven by
-the target. The original `auditar-app` has whole read-only doctrine
-("Read-only. An audit observes; does not fix.") that this shortcut
-violated. The right choice is the same one already made for every
-other piece of evidence: what the orchestrator sees is a file. If an
-owner wants its `build-passes` check to reflect the build exit code,
-it's the owner that runs the command and emits the YAML — inside its
-own harness, not audit-app's.
-
-This rule closes defect C3 of PLAN §11.
-
----
-
-## 8. Non-goals of this contract
-
-What this file deliberately **does not** define, and lives in
-`POLICY.md` or elsewhere:
-
-- **Who** may declare `PASS`/`FAIL` on each subject (authority) —
-  `POLICY.md` §1.
-- **How** a skill wakes and who activates it — `POLICY.md` §2.
-- **How** a local adapter declares itself — `POLICY.md` §3.
-- **How** two touching owners delimit each other — `POLICY.md` §4.
-- **How** the orchestrator discovers applicable owners —
-  `POLICY.md` §5.
-
-This file defines **what counts as proof** and **how proof travels**.
-Nothing else.
-
----
-
-## Appendix A — changes since v1.0.0
-
-- **v2.0.0** — Plugin made platform-agnostic and the evidence hole
-  closed. Breaking:
-  - **Rule 3.1.5 / §4.6**: `PASS` requires `command:` + `log:` that
-    exists on disk; `OBSERVED` without a trace becomes `INFERRED`. The
-    orchestrator never templates a `PASS`.
-  - **§3.5** rewritten from "meta-auditor isolation" to **platform
-    tags**; the three skill meta-auditors left the plugin (they audit
-    skills, not products).
-  - **§5.4**: `gates.json` requires `platform:` and, when
-    `commercial-readiness` applies, `sales-model:`.
-  - **Owners merged** (22 → 14): `code-review-runtime` +
-    `code-review-contract` + `performance-audit` → `code-review`;
-    `observability` → `reliability-audit` §2; `seo-audit` →
-    `audit-website` (sub-engine `seo/`). Check-ids keep their prefixes
-    (`runtime.*`, `contract.*`, `perf.*`, `observability.*`, `web.*`).
-  - **§7.4** registry rewritten with the platform column.
-  - Location-agnostic: `gates.json` and adapters may live under
-    `.agents/` or `.claude/`.
-- **v1.4.0** — Full plugin translated into English. No semantic
-  change; `evidence-schema: 1.3.x` unchanged (compatibility across the
-  translation is guaranteed — no field renamed, no rule changed; only
-  prose translated).
-- **v1.3.0** — Three defects closed:
-  - **C1**: `code-review-runtime` recovers six canonicals — three
-    v1.2.0 had removed for preconditions (`build-passes`,
-    `tests-pass`, `types-check`) and three new review checks
-    (`test-strength`, `risk-proof-matrix`, `tests-that-never-run`).
-    The owner stops collapsing into "someone emitted something".
-  - **C2**: "no-canonicals fallback" removed from `coverage-complete`
-    (§7.1) and replaced by rule 4.3.3: an owner without canonicals
-    registered in §7.4 reports `BLOCKED (—/?)`. Registration in §7.4
-    becomes a precondition for closing any `coverage-complete` gate.
-  - **C3**: §7.5 rewritten as "`audit-app` does not execute
-    commands". Preconditions cease to exist as a concept;
-    `build-passes`, `tests-pass`, `types-check` become normal
-    canonical checks of `code-review-runtime` (the owner produces
-    them, inside its own harness). The v1.2.0 `gates.json.preconditions`
-    renames to `adapter-hints:` in POLICY §5.1 and is read only by
-    local adapters, never by the orchestrator. Closes the vector of
-    arbitrary execution driven by the target — restores the
-    read-only doctrine of the original `auditar-app`.
-- **v1.2.0 + 1.2.1** — bilateral delimitation as a phase gate; the
-  §5.1 fallback fixed from silent PASS to non-applicability with
-  reason; §2.4.1 editorial guidance for skill meta-auditors absorbing the
-  semantic part §3.5 stopped trying to verify mechanically.
-- **v1.1.0** — §1.3 now cites the mechanical mechanism
-  (`instruments.yaml` + §4.5) instead of v1.0.0's unverifiable
-  promise.
-- **v1.0.0** — first version of the contract. Establishes the
-  seven-unit vocabulary, rule vs instrument, evidence schema,
-  file-based collection channel, six-level severity taxonomy, semver
-  compatibility rules, and declarative gate syntax. No migration from
-  a previous version — the `production-quality-ready` plugin is born here.
+**Why.** Running commands declared by a file in the target repo is
+arbitrary execution driven by the target. What the orchestrator sees is
+a file; an owner that wants `build-passes` to reflect the exit code runs
+the command in its own harness and emits the YAML.

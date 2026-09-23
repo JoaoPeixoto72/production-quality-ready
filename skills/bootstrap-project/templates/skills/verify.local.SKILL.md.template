@@ -1,6 +1,6 @@
 ---
-name: verify
-description: Runs {{PROJECT_NAME}} locally and proves changes in the real app. Use for "see this working" or manual verification of a flow, screen or endpoint. Gives the launch command, surfaces, test credentials and artefact paths; driver is {{VERIFY_DRIVER}}. Not for running the test suite (code-review) or auditing (audit-app).
+name: {{ADAPTER_NAME}}
+description: "Run {{PROJECT_NAME}} and prove a change in the real app: launch command, surfaces, test credentials, where it writes. Use to see a flow, screen or endpoint working. Adapter of verify; not for the test suite."
 contract: {{CONTRACT_PATH}}
 extends: "production-quality-ready::verify@2.x"
 requires-adapter: false

@@ -4,7 +4,7 @@ description: "Run first after installing the plugin: detect host, stack and plat
 contract: CONTRACTS.md
 evidence-schema: "1.3.x"
 platforms: [web, desktop]
-version: 2.0.0
+version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
@@ -49,8 +49,15 @@ user before writing anything.
    the user to confirm the *reason* for each.
 4. Test credentials for `verify` (names and where they live — never
    production secrets).
-5. Which owners are `not-applicable` and why (e.g. `drive-app-window`
+5. **Threat model** — where it lives, or that there is none yet.
+   `security-audit` does not run without one; say so now rather than at
+   the first audit.
+6. Which owners are `not-applicable` and why (e.g. `drive-app-window`
    on web, `audit-website` on desktop). Propose from platform; confirm.
+7. **Adapter names** — each adapter gets a local name different from
+   the plugin skill it extends (`<project>-start-work`, or a verb in the
+   project's language). Two skills with one short name leave the host to
+   pick by chance. Record each in `owners.<skill>.adapter`.
 
 ## Phase 2 — Write
 
@@ -64,9 +71,9 @@ All paths below use `<host>` = `.agents` or `.claude`.
    `CONTRACTS.md` with a header "Snapshot of production-quality-ready
    vX.Y.Z at <date>. Do not edit; edit the plugin and re-bootstrap."
    Adapters reference it as `../CONTRACTS.md.snapshot`.
-3. **`<host>/skills/{start-work,review-change,close-work,verify}/SKILL.md`**
-   from `templates/skills/*.template` with every `{{PLACEHOLDER}}`
-   replaced. Pre-fill:
+3. **`<host>/skills/<local-name>/SKILL.md`** for each of start-work,
+   review-change, close-work and verify, from `templates/skills/*.template`
+   with every `{{PLACEHOLDER}}` replaced. Pre-fill:
    - `start-work`: ownership table from detected hotspots.
    - `review-change`: platform line, axes that apply, invariants from
      Phase 1, proof commands in order.
@@ -93,7 +100,8 @@ All paths below use `<host>` = `.agents` or `.claude`.
 5. Every document the adapters reference exists (`ESTADO.md`,
    `docs/decisoes/`, …). If not, create the folder or drop the line.
 
-Refuse to hand off with any of the five failing.
+Refuse to hand off with any of the five failing. Check 3 matters most
+on long project names: the templates leave about 60 characters for them.
 
 ## Hard rule: no number without its command
 
@@ -119,16 +127,22 @@ Tests: 271 asserts (npm test @ HEAD 2d95870, 2026-09-21)
 | Placeholder | Source |
 |---|---|
 | `PROJECT_NAME` | Phase 1 |
-| `HOST` | Phase 0 (`.agents` / `.claude`) |
+| `ADAPTER_NAME` | Phase 1 item 7 — one per template |
+| `HOST`, `HOST_AGENT_FILE` | Phase 0 (`.agents` → `AGENTS.md`; `.claude` → `CLAUDE.md`) |
 | `PLATFORM`, `SALES_MODEL`, `STACK_JSON` | Phase 0 / 1 |
 | `AXES_THAT_APPLY` | derived from `PLATFORM` (review-change A1–A11 tags) |
 | `CONTRACT_PATH` | `../CONTRACTS.md.snapshot` |
 | `BUILD_COMMAND`, `TEST_COMMAND`, `TYPECHECK_COMMAND`, `LINT_COMMAND`, `MIGRATIONS_VERIFY_COMMAND`, `RUN_COMMAND` | Phase 0 |
 | `BASE_URL` | dev-command port, or "n/a" |
-| `PROJECT_INVARIANTS` | Phase 1 (numbered, with reason) |
+| `PROJECT_INVARIANTS`, `INVARIANTS_LIST` | Phase 1 (numbered, with reason) |
+| `AXES_LOOKUP_TABLE` | Phase 0 — concrete file per axis, or drop the section |
 | `PROJECT_SPECIFIC_OWNERSHIP_TABLE` | Phase 0 hotspots |
-| `PROJECT_SURFACES_TABLE`, `PROJECT_ARTIFACTS_TABLE`, `TEST_CREDENTIALS` | Phase 0 / 1 |
+| `DOCS_NOT_TO_REOPEN` | Phase 0 (decision / fact / audit docs that exist) |
+| `PROJECT_SURFACES_TABLE`, `PROJECT_ARTIFACTS_TABLE`, `TEST_CREDENTIALS`, `PROJECT_TRAPS` | Phase 0 / 1 |
+| `VERIFY_DRIVER` | `PLATFORM` (browser automation / `drive-app-window`) |
 | `DOC_OWNERSHIP_TABLE` | Phase 0 (docs that exist) |
+| `ARCH_DESCRIPTION`, `CONVENTIONS`, `CONTRIBUTION_RULES` | Phase 0 / 1, or drop the section |
+| `VERSION`, `HEAD`, `BUILD_STATUS`, `TEST_STATUS`, `TYPECHECK_STATUS` | Phase 3 — the baseline actually run |
 | `VERSION_BUMP_RULES` | Phase 1 (or default semver text) |
 | `OWNERS_JSON`, `ADAPTER_HINTS_JSON` | Phase 0 / 1 |
 | `DATE`, `PLUGIN_VERSION` | runtime |

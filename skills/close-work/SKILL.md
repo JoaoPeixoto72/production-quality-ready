@@ -6,7 +6,7 @@ evidence-schema: "1.3.x"
 requires-adapter: true
 adapter-contract: adapter-contracts/close-work.md
 platforms: [web, desktop]
-version: 2.0.0
+version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
@@ -49,13 +49,24 @@ Fixed structure (the adapter says where it lives):
 
 ## Order
 
-1. Verify before writing (the adapter says what to run).
+1. Verify before writing (the adapter says what to run). A test that
+   failed or did not run goes into `ESTADO.md` as such, with the output.
 2. Route the work through the owners (the adapter has the
    document→subject table).
 3. Delete what stopped being true.
 4. Rewrite `ESTADO.md`.
 5. Read what you wrote, looking for duplication.
 6. Close (commit; pipeline if applicable).
+
+## Rationalisations that do not pass
+
+| Excuse | Answer |
+|---|---|
+| "The document is basically right." | Basically right is wrong with confidence — the next conversation can't tell which part. |
+| "I'll update `ESTADO.md` next time." | Next time has no memory of this one. |
+| "I remember the number." | A number without its command and HEAD doesn't go in. Run it. |
+| "History is useful context." | `git log` keeps it, for free and without drifting. |
+| "I'll summarise and link." | A summary next to a link is a second copy. Keep the link; cut the summary. |
 
 ## Contract for the local adapter
 

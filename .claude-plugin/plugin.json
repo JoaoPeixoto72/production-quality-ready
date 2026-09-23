@@ -1,7 +1,7 @@
 {
   "name": "production-quality-ready",
-  "version": "2.0.1",
-  "description": "Quality plugin for web and desktop apps: 14 independent audit owners, a 4-skill work cycle (start-work, review-change, close-work, verify) instantiated per project by bootstrap-project, and evidence gates where a PASS needs a command and a log.",
+  "version": "2.1.0",
+  "description": "Quality plugin for web and desktop apps: independent audit owners, a read-only orchestrator, a work cycle (start-work, review-change, close-work, verify) adapted per project by bootstrap-project, and gates where a PASS needs a command and a log.",
   "author": {
     "name": "JoaoPeixoto72"
   },

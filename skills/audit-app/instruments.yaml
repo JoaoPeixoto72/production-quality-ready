@@ -1,14 +1,6 @@
 # instruments.yaml — audit-app
-#
-# O audit-app é orquestrador. Não é dono de nenhum tema de produto e não
-# emite verdicts sobre a app. Este manifesto está vazio de propósito:
-# nenhum producer externo é aceite porque não há checks canónicos com
-# owner: audit-app no CONTRACTS §7.4.
-#
-# Subtemas com references próprias (POLICY §1.1) — product/activation.md,
-# product/first-run.md, product/critical-flows.md, product/product-invariants.md
-# — pertencem ao owner apropriado (commercial-readiness, design-pro),
-# não ao audit-app.
-
+# The orchestrator owns no product subject and emits no verdict on the app.
+# Empty on purpose: CONTRACTS §7.4 has no canonical check with
+# owner: audit-app, so no external producer is accepted.
 platforms: [web, desktop]
 accepts: []

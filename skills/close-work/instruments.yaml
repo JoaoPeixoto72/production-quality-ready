@@ -1,6 +1,6 @@
 # instruments.yaml — close-work
-# Contrato universal com adapter local. Aceita evidência do próprio owner
-# (o próprio adapter local).
+# Universal contract with a local adapter; accepts evidence from its own
+# adapter only.
 platforms: [web, desktop]
 accepts:
   - producer: close-work

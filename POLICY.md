@@ -37,10 +37,9 @@ sub-topic that becomes a skill either has its own verb and trigger
 (and then it is a real owner, not a sub-topic) or it doesn't (and then
 it lives as a reference).
 
-The `commercial-readiness` owner ships `references/activation.md`,
-`references/first-run.md`, `references/legal.md`. The `design-pro`
-owner ships 21 domain references. Neither generates a permanent
-context cost beyond its own `description`.
+`commercial-readiness` (activation, first run, legal) and `design-pro`
+(one guide per UX domain) work this way: neither pays permanent context
+beyond its own `description`.
 
 ### 1.2 Bilateral delimitation
 
@@ -92,14 +91,15 @@ manifest or unlisted pair → `NOT_VERIFIED` with reason
 
 ### 2.1 Founding rule
 
-Each skill wakes **only when called**. Never by another skill.
+A skill wakes when its `description` matches the task — the host's model
+picks it, or the user or harness names it. **Never because another skill
+called it.** No skill sets `disable-model-invocation`: the plugin
+publishes nothing and deletes nothing, so there is no skill whose
+automatic trigger costs more than it saves.
 
-Who can call a skill:
-
-- the user, typing something in the prompt that triggers the
-  `description`;
-- the harness (IDE, CI), invoking explicitly;
-- **never** another skill.
+This is why every `description` says *when* (after writing code, at the
+start of a conversation), not only *what*: the trigger is the only
+router.
 
 ### 2.2 `audit-app` — orchestrator that doesn't invoke
 
@@ -116,7 +116,7 @@ If an owner's evidence is missing, the report reports
 activate the owner.** It announces what is missing; the human /
 pipeline is who calls the owner to produce the evidence.
 
-The alternative — an orchestrator that invokes eleven owners on its
+The alternative — an orchestrator that invokes every owner on its
 own — collapses the composability the plugin was built to preserve.
 
 Under strict read-only (`CONTRACTS §7.5`): `audit-app` doesn't run any
@@ -157,7 +157,7 @@ and specific invariants.
 
 The universal skill carries `requires-adapter: true` and
 `adapter-contract: adapter-contracts/<name>.md`. The local adapter
-carries `extends: production-quality-ready::<name>@1.x`. Without an adapter,
+carries `extends: production-quality-ready::<name>@2.x`. Without an adapter,
 the universal skill returns `NOT_VERIFIED/missing-adapter`
 (`CONTRACTS §4.5`).
 
@@ -167,11 +167,17 @@ the adapter does not do.
 
 ### 3.2 Location of the adapter
 
-Local adapter lives in `<host>/skills/<name>/` inside the target repo,
-where `<host>` is `.agents` (OpenCode, Antigravity, Codex…) or `.claude`
-(Claude Code). `bootstrap-project` detects the host. It travels with the
-project's commits. Its version is independent of
-the plugin's; it declares which `extends` it inherits from.
+Local adapter lives in `<host>/skills/<local-name>/` inside the target
+repo, where `<host>` is `.agents` (OpenCode, Antigravity, Codex…) or
+`.claude` (Claude Code). `bootstrap-project` detects the host. It travels
+with the project's commits. Its version is independent of the plugin's;
+it declares which `extends` it inherits from.
+
+**The local name differs from the plugin skill's name** (`<project>-start-work`,
+or a verb in the project's language) and is recorded in
+`gates.json` under `owners.<skill>.adapter`. Two skills with the same
+short name leave the host to pick one by chance — usually the generic
+one, which has no commands.
 
 Two options for the `contract:` path (`bootstrap-project` step 5b):
 
@@ -207,20 +213,13 @@ other projects.
 
 ## 4. Bilateral delimitation (mechanical)
 
-Rule written in POLICY §1.2. Verified by reading: each side of a pair
-names the other.
-
 **Rule 4.1.** For each pair `(A, B)` in the §1.2 table, `A`'s
-`description` mentions `B` and `B`'s mentions `A`. Missing on either
-side = the *pair* fails, not the file.
+`description` or Boundaries names `B`, and `B`'s names `A`. Missing on
+either side = the *pair* fails, not the file.
 
-**Rule 4.2.** The §1.2 table is the declarative source. A reviewer of
-a plugin change enumerates its pairs and checks that the token of the
-other owner appears in the `description` or Boundaries of each side.
-
-**Rule 4.3.** Adding a subject that touches an existing one (or
-splitting an existing owner) adds a row to the table and requires a
-bilateral refactor in the same release as the change.
+**Rule 4.2.** Adding a subject that touches an existing one (or
+splitting an existing owner) adds a row to §1.2 and the bilateral
+refactor ships in the same release.
 
 ---
 
@@ -275,17 +274,7 @@ commands and writes `.audit/code-review/*` with `command:` + `log:`.
 `audit-app` **never reads it**. Not runnable commands from
 `audit-app`'s point of view.
 
-**Rule 5.1.3 (renaming from v1.2.x).** The previous name of this
-section was `preconditions:`. From v1.3.0, it's `adapter-hints:`. The
-old name suggested runnability by the orchestrator, which never
-happened; the new name says exactly what it is (a hint for the
-adapter).
-
-**Rule 5.1.4 (do not read).** Explicit for verbatim reading of this
-POLICY: **the orchestrator does not read `adapter-hints:`.**
-Emphasized here to prevent a future refactor from confusing the fields.
-
-**Rule 5.1.5 (platform).** `platform:` is required. Owners and checks
+**Rule 5.1.3 (platform).** `platform:` is required. Owners and checks
 whose `platforms:` exclude it are `NOT_APPLICABLE/platform` without
 being listed as `not-applicable` by hand (CONTRACTS §3.5). Listing them
 anyway, with a reason, is allowed and clearer.
@@ -332,9 +321,8 @@ When a skill's or the contract's major changes, the plugin ships a
 migration script or migration note. Legacy files remain readable in
 `NOT_VERIFIED` mode with reason `stale-schema`.
 
-Ex: `evidence-schema: 1.2.x` → `1.3.x` — files
-in `1.1.x` become `NOT_VERIFIED` until re-emitted. Documented in the
-skill's migration.
+Ex: a future `evidence-schema: 2.x` — files in `1.x` become
+`NOT_VERIFIED` until re-emitted.
 
 ### 6.4 Project files across majors
 
@@ -346,55 +334,6 @@ plugin locally requires updating the file too; re-running
 
 ## 7. Non-goals
 
-- **Correcting the app.** Audits and announces; correction is another
-  session with another request.
-- **Executing pipelines.** Reads pipeline state (SBOM, signature); does
-  not run publishing.
-- **Product decisions.** Says whether legal clauses exist, not whether
-  they are the right business call.
-- **Replacing human judgment.** Where a check requires seeing the app
-  run and the harness cannot, the owner reports `NOT_VERIFIED` with
-  `needs-human`. It doesn't guess.
-
----
-
-## Appendix A — changes since v1.0.0
-
-- **v2.0.0** — Plugin made platform-agnostic; owners merged 22 → 15
-  (`code-review-runtime` + `code-review-contract` + `performance-audit`
-  → `code-review`; `observability` → `reliability-audit` §2;
-  `seo-audit` → `audit-website/seo`); the three skill meta-auditors
-  removed (tooling, not product). §1.2 pair table rewritten. §2.4.1
-  removed with them. §3.2 and §5.1 become host-agnostic (`.agents` or
-  `.claude`). §5.1 gains `platform`, `sales-model`, Rule 5.1.5.
-  `bootstrap-project` declared the first skill to run.
-- **v1.5.0** — POLICY translated into English (whole plugin now in
-  English); §1.2 recount cross-checked with the pair-check script.
-  No breaking change; `evidence-schema: 1.3.x` unchanged.
-- **v1.4.0** — §1.2 grows with the pairs the pair-check found after
-  the audit-owner bodies were written: `code-review-runtime ↔ verify`,
-  `audit-app ↔ review-change`, and the three of the work-cycle
-  triangle (`start-work ↔ review-change`,
-  `review-change ↔ close-work`, `start-work ↔ close-work`). The
-  editorial adds a paragraph explaining why the work cycle is a
-  triangle, not a chain: a user can type the wrong verb directly, not
-  just the adjacent one.
-- **v1.3.0** — sync with `CONTRACTS.md v1.3.0`. §5.1: the
-  `preconditions:` block of `gates.json` is renamed `adapter-hints:`;
-  new rule 5.1.4 makes explicit that the orchestrator **does not
-  read** that section. Alignment with the founding rule "audit-app
-  doesn't invoke". Compatible with `evidence-schema: 1.3.x`.
-- **v1.2.0** — bilateral delimitation as phase gate. §5.1 corrected
-  from silent PASS ("simply doesn't count") to explicit non-applicability
-  with reason. Inherits the "requested scope, not possible scope"
-  principle from `auditar-app`. §2.4.1 new — editorial guidance for
-  skill meta-auditors absorbing the semantic part `CONTRACTS §3.5` stopped
-  trying to verify mechanically.
-- **v1.1.0** — §1.3 now cites the mechanical mechanism
-  (`instruments.yaml` + `CONTRACTS.md §4.5`) instead of the
-  unverifiable promise of v1.0.0.
-- **v1.0.0** — first version. Establishes the subject-authority table,
-  local-adapter pattern, bilateral delimitation with mechanical
-  pair-check, discovery by gate pack + detection + explicit activation,
-  versioning rules, and non-goals. Compatible with
-  `evidence-schema: 1.x`.
+In `PURPOSE.md §7`. One addition that is policy, not purpose: where a
+check requires seeing the app run and the harness cannot, the owner
+reports `NOT_VERIFIED` with `needs-human`. It doesn't guess.

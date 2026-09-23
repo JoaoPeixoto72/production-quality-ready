@@ -1,6 +1,6 @@
 ---
-name: start-work
-description: Opens a work session on {{PROJECT_NAME}}. Use at the start of every conversation before touching any file, and again mid-session before new code. Reads ESTADO.md, runs the baseline, names the canonical owner of the code about to change. Not for closing (close-work), reviewing (review-change) or auditing (audit-app).
+name: {{ADAPTER_NAME}}
+description: "Open work on {{PROJECT_NAME}} at the start of every conversation, before touching files: read ESTADO.md, run the baseline, find the owner of the code to change. Adapter of start-work; not for review or close."
 contract: {{CONTRACT_PATH}}
 extends: "production-quality-ready::start-work@2.x"
 version: 2.0.0
@@ -9,8 +9,8 @@ allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 
 # start-work in {{PROJECT_NAME}}
 
-Local adapter. Universal contract:
-`{{HOST}}/plugins/production-quality-ready/skills/start-work/SKILL.md`.
+Local adapter of the plugin skill `production-quality-ready:start-work`,
+which holds the rule; this file holds only what is {{PROJECT_NAME}}'s.
 
 ## Where the state is
 

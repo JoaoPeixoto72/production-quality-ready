@@ -2,8 +2,8 @@
 
 Quality plugin that moves an app from *"works"* to *"can be sold"* —
 for **web** (Workers, Next, SvelteKit, SSR…) and **desktop** (Tauri,
-Electron, native) alike. 15 skills, no skill invokes another, every
-verdict is a file with a command and a log behind it.
+Electron, native) alike. No skill invokes another; every verdict is a
+file with a command and a log behind it.
 
 Read first:
 
@@ -56,15 +56,15 @@ invariants you already paid for, test credentials), and writes:
 
 - `<host>/gates.json` — platform, sales model, applicable owners, `adapter-hints`.
 - `<host>/CONTRACTS.md.snapshot` — frozen contract for the adapters.
-- `<host>/skills/{start-work,review-change,close-work,verify}/SKILL.md` — **pre-filled** adapters.
+- `<host>/skills/<local-name>/SKILL.md` × 4 — **pre-filled** adapters of start-work, review-change, close-work and verify, each under a name of its own.
 - `ESTADO.md` (state) and `AGENTS.md`/`CLAUDE.md` (map) if missing.
 
 ## Daily loop
 
 | When | Skill | What it does |
 |---|---|---|
-| Start of a conversation | `start-work` | reads `ESTADO.md`, runs baseline, names the owner of the code you are about to touch |
-| After writing code | `review-change` | full diff → local invariants → adversarial matrix for your platform → proof commands → verdict |
+| Start of a conversation | `start-work` | reads `ESTADO.md`, runs baseline, names the owner of the code you are about to touch; a bug is reproduced first |
+| After writing code | `review-change` | full diff → local invariants → adversarial matrix for your platform → proof commands → argue against the approval → verdict |
 | Need to *see* it | `verify` | launches the app, drives the flow (browser automation or `drive-app-window`), captures before/after |
 | End of session | `close-work` | rewrites `ESTADO.md`; one subject, one owner; numbers carry command + HEAD |
 
@@ -93,7 +93,7 @@ use the audit-app skill
 `docs/auditorias/<date>-<scope>.md`. Owners with no evidence show
 `BLOCKED (n/m)`; that is the honest state, not a bug.
 
-## The 15 skills
+## The skills
 
 | Skill | Role | Platforms | Runs code? |
 |---|---|---|---|
@@ -124,7 +124,7 @@ production-quality-ready/
 ├── scripts/
 │   ├── measure-descriptions.py    # exit 1 if any description > 250 chars
 │   └── run-all-owners.ps1         # runs instruments, writes evidence (PASS ⇒ command+log)
-└── skills/                   # 15 folders, each SKILL.md + instruments.yaml (platforms:)
+└── skills/                   # one folder per skill: SKILL.md + instruments.yaml (platforms:)
     ├── audit-app/scripts/validate_evidence.py   # mechanical evidence validator + tests
     ├── audit-website/{scripts,seo}/             # two engines
     ├── ui-system/{assets,packs/react-components,scripts}/
@@ -134,9 +134,8 @@ production-quality-ready/
 ## Verify the plugin itself
 
 ```bash
-python scripts/measure-descriptions.py skills                     # exit 0, total ≈ 3.7k chars
-python skills/audit-app/scripts/test_validate_evidence.py         # 14 tests
-python skills/audit-app/scripts/test_validate_report.py           # report-form regression
+python scripts/measure-descriptions.py skills                     # exit 1 if any description > 250
+python -m unittest discover -s skills/audit-app/scripts -p "test_*.py"   # evidence + report validators
 pwsh scripts/run-all-owners.ps1 -RepoRoot <repo> -DryRun          # lists owners for the platform
 ```
 

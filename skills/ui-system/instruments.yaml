@@ -1,6 +1,6 @@
 # instruments.yaml — ui-system
-# Este owner é ele próprio o producer canónico: audit_ui.py corre e escreve
-# a evidência dos 10 checks listados no SKILL.md §6.
+# This owner is its own canonical producer: audit_ui.py runs and writes the
+# evidence for the checks listed in SKILL.md §6.
 platforms: [web, desktop]
 accepts:
   - producer: ui-system

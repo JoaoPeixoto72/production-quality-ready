@@ -1,8 +1,6 @@
 # instruments.yaml — design-pro
-#
-# design-pro é dono da régua de UX / a11y / i18n. Aceita instrumentos externos
-# que produzam candidatos para os seus checks canónicos (CONTRACTS §7.4).
-
+# Owner of the UX / a11y / i18n rule. Accepts external instruments that
+# produce candidates for its canonical checks (CONTRACTS §7.4).
 platforms: [web, desktop]
 accepts:
   - producer: ui-system
@@ -10,10 +8,21 @@ accepts:
     for-checks:
       - a11y-critical-flows
     note: |
-      audit_ui.py produz candidatos por ΔL OKLCH sobre tokens.css.
-      NUNCA fecha verdicts de a11y sozinho — pixels renderizados
-      exigem screenshot + amostragem perceptual (instrumento próprio
-      do design-pro).
+      audit_ui.py produces ΔL OKLCH candidates over tokens.css. It never
+      closes an a11y verdict alone — rendered pixels need a screenshot and
+      perceptual sampling (design-pro's own instrument).
+
+  # The keyboard pass on the running app, driven by verify.
+  - producer: verify
+    instrument: browser-driver
+    platforms: [web]
+    for-checks:
+      - a11y-critical-flows
+  - producer: drive-app-window
+    instrument: gui.ps1
+    platforms: [desktop]
+    for-checks:
+      - a11y-critical-flows
 
   - producer: design-pro
     instrument: screenshot-sample

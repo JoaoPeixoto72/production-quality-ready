@@ -13,6 +13,7 @@ accepts:
       - sec.api-surface-declared
       - sec.crypto-primitives-justified
       - sec.transport-tls
+      - sec.data-at-rest
   - producer: code-review
     instrument: test-runner
     for-checks:
@@ -34,7 +35,3 @@ accepts:
     instrument: secret-scanner
     for-checks:
       - sec.secrets-not-committed
-  - producer: security-audit
-    instrument: threat-model-check
-    for-checks:
-      - sec.data-at-rest

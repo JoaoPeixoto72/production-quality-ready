@@ -1,6 +1,6 @@
 ---
-name: close-work
-description: Closes a work session on {{PROJECT_NAME}}. Use at the end of every session, after review-change and before commit. Rewrites ESTADO.md, applies "one subject, one owner; reason stays, history goes", records the proof numbers with command and HEAD. Not for opening (start-work) or reviewing code (review-change).
+name: {{ADAPTER_NAME}}
+description: "Close work on {{PROJECT_NAME}} after review, before commit: rewrite ESTADO.md, one subject per document, reason stays and history goes, numbers with command and HEAD. Adapter of close-work; not for opening."
 contract: {{CONTRACT_PATH}}
 extends: "production-quality-ready::close-work@2.x"
 version: 2.0.0
@@ -9,8 +9,8 @@ allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 
 # close-work in {{PROJECT_NAME}}
 
-Local adapter. Universal contract:
-`{{HOST}}/plugins/production-quality-ready/skills/close-work/SKILL.md`.
+Local adapter of the plugin skill `production-quality-ready:close-work`,
+which holds the rule; this file holds only what is {{PROJECT_NAME}}'s.
 
 ## Document → subject table (one subject, one owner)
 
