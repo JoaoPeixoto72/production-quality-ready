@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Audit code repo-wide and write .audit evidence: build, tests, oracles, races, IPC/API contracts, maintainability budgets (size, nesting, params), perf. For one diff before commit use review-change; CVEs, security-audit."
+description: "Audit code repo-wide and write .audit evidence: build, tests, oracles, races, IPC/API contracts, maintainability budgets (size, nesting, params), perf. Not for one diff before commit (review-change) or CVEs (security-audit)."
 contract: CONTRACTS.md
 platforms: [web, desktop]
 allowed-tools: Read, Glob, Grep, Bash, Write
