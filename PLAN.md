@@ -11,6 +11,17 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 2.3.0
+
+Audited by `skill-auditor` with NVIDIA SkillSpector installed. Three fixes:
+`quality_scan.py --since` passed its ref to `git diff` unguarded, so
+`--since=--output=<file>` made git write a file — now `--end-of-options`,
+with a regression test; tests moved out of the skill bundles to `tests/`
+(a skill ships what it runs, and the scanner read the test suite as the
+skill's own capabilities); ten long references gained a contents list.
+The one scanner finding left on `code-review` is the `git` subprocess
+itself — expected, and an operator's risk acceptance, not a code change.
+
 ### plugin 2.2.0
 
 **Files are referred to by name, never by version.** Every version

@@ -1,5 +1,17 @@
 # Architecture
 
+## Contents
+
+- Purpose
+- Default dependency direction
+- Recommended packages
+- Responsibilities
+- Import policy
+- Cascade layers
+- Public API stability
+- Base UI upgrade policy
+- Escape hatches
+
 ## Purpose
 
 The project owns its public component API, visual language, tokens, CSS,

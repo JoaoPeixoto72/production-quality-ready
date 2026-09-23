@@ -93,19 +93,26 @@ def load_config(repo: Path) -> tuple[dict, list[str], list[str], bool]:
 
 # ------------------------------------------------------------ file selection
 
+def git_lines(repo: Path, *args: str) -> list[str]:
+    """The one place this script runs a program: git, fixed argv, no shell.
+
+    Git answers which files would ship (so ignored output never counts) and
+    which ones a change touched; re-implementing .gitignore would be worse.
+    """
+    out = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
+    return [line for line in out.stdout.splitlines() if line]
+
+
 def changed_files(repo: Path, since: str) -> set[str]:
-    def git(*args: str) -> list[str]:
-        out = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
-        return [line for line in out.stdout.splitlines() if line]
-    return set(git("diff", "--name-only", since)) | set(git("ls-files", "--others", "--exclude-standard"))
+    # `--end-of-options`: a ref like `--output=x` stays a ref, not an option.
+    changed = git_lines(repo, "diff", "--name-only", "--end-of-options", since)
+    return set(changed) | set(git_lines(repo, "ls-files", "--others", "--exclude-standard"))
 
 
 def candidate_paths(repo: Path) -> list[str]:
     """What git would commit — so ignored and generated output never counts."""
     try:
-        out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-                             cwd=repo, capture_output=True, text=True, check=True)
-        return sorted(set(out.stdout.splitlines()))
+        return sorted(set(git_lines(repo, "ls-files", "--cached", "--others", "--exclude-standard")))
     except (OSError, subprocess.CalledProcessError):
         return sorted(p.relative_to(repo).as_posix() for p in repo.rglob("*") if p.is_file())
 
@@ -412,7 +419,11 @@ def main(argv: list[str] | None = None) -> int:
     budgets, ignore_dirs, ignore_globs, declared = load_config(repo)
     host = find_host(repo) or repo / HOSTS[0]
     baseline_path = Path(a.baseline) if a.baseline else host / "quality-baseline.json"
-    only = changed_files(repo, a.since) if a.since else None
+    try:
+        only = changed_files(repo, a.since) if a.since else None
+    except subprocess.CalledProcessError:
+        print(f"--since {a.since!r} is not a git ref in {repo}", file=sys.stderr)
+        return 2
 
     measures = [m for path, rel in source_files(repo, ignore_dirs, ignore_globs, only)
                 for m in measure_file(path, rel)]

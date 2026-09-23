@@ -1,5 +1,20 @@
 # Component Strategy
 
+## Contents
+
+- Escolher o nível de implementação
+- Componentes verificados no Base UI
+- Não existem no Base UI
+- Preferir Base UI mesmo onde o HTML parece suficiente
+- Sempre Base UI
+- Como confirmar a API antes de escrever código
+- Component contract
+- Variant discipline
+- Size discipline
+- Compound components
+- Domain components
+- New dependency policy
+
 ## Escolher o nível de implementação
 
 Usar o nível mais baixo suficiente:

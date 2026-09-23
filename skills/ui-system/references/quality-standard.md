@@ -1,5 +1,18 @@
 # Quality Standard
 
+## Contents
+
+- Definition of done
+- Architecture
+- Interaction
+- Accessibility
+- Responsive design
+- Content states
+- Visual quality
+- Migration quality
+- Profile-specific checks
+- Verification report
+
 ## Definition of done
 
 A substantial UI task is done only when the relevant categories below pass.

@@ -10,10 +10,10 @@ import textwrap
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "skills" / "audit-app" / "scripts"))
 import validate_evidence as ve  # noqa: E402
 
-PLUGIN = Path(__file__).resolve().parents[3]  # <plugin>/skills/audit-app/scripts -> <plugin>
+PLUGIN = Path(__file__).resolve().parents[2]  # <plugin>/tests/audit-app -> <plugin>
 
 
 def write(p: Path, text: str):

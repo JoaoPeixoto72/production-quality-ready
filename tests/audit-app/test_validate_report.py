@@ -7,7 +7,7 @@ estado que conta defeitos, por isso um resumo errado ali e um verdict errado —
 e e um erro inteiramente decidivel a olhar para o documento.
 
 Correr com o Python resolvido na fase 0 do SKILL.md:
-    <python> -m unittest discover -s scripts -p "test_*.py"
+    <python> -m unittest discover -s tests/audit-app -p "test_*.py"
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "skills" / "audit-app" / "scripts"))
 
 import validate_report as vr  # noqa: E402
 
@@ -522,7 +522,7 @@ class AchadosCitados(unittest.TestCase):
 class RegistoV2(unittest.TestCase):
     """Sem `--gates`, o registo vem do próprio plugin: CONTRACTS.md §7.4."""
 
-    REGISTO = vr.registo_v2(Path(__file__).resolve().parents[3])
+    REGISTO = vr.registo_v2(Path(__file__).resolve().parents[2])
 
     def test_canonicos_do_contrato_sao_criticos(self):
         criticos = {k for k, m in self.REGISTO.items() if m["critical"]}

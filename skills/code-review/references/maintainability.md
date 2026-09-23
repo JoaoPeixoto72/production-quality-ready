@@ -1,8 +1,14 @@
 # Maintainability — what code-review looks for
 
+## Contents
+
+- 1. Budgets (measured)
+- 2. Review (the M axes)
+- 3. How to report
+
 Owner: `code-review`. Cited by `review-change` (axes M1–M7).
 
-**Rule: code another person can change without asking its author.** Half
+**Rule: code another person can change on their own.** Half
 of it is measured against budgets; the other half is reviewed, because no
 number sees it.
 

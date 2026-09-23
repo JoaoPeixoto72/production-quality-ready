@@ -3,18 +3,19 @@
 function finder gets wrong if nobody looks: callbacks inside calls,
 destructured props, Rust match arms and lifetimes, Python elif chains.
 
-    python -m unittest discover -s skills/code-review/scripts -p "test_*.py"
+    python -m unittest discover -s tests/code-review -p "test_*.py"
 """
 
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "skills" / "code-review" / "scripts"))
 
 import quality_scan as qs  # noqa: E402
 
@@ -101,6 +102,16 @@ class Ratchet(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             res = self._results(self._repo(tmp, 3))
             self.assertEqual((res["quality.budgets-declared"], res["quality.budgets-met"]), ("FAIL", "PASS"))
+
+
+class Since(unittest.TestCase):
+    def test_a_ref_that_looks_like_an_option_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init", "-q", str(repo)], check=True)
+            trap = repo / "written-by-git"
+            code = qs.main(["--repo", str(repo), f"--since=--output={trap}"])
+            self.assertEqual((code, trap.exists()), (2, False))
 
 
 if __name__ == "__main__":

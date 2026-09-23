@@ -1,5 +1,12 @@
 # Workflows
 
+## Contents
+
+- Create a new application or page
+- Migrate an existing application
+- Extend the component system
+- Create or modify a theme
+
 ## Create a new application or page
 
 ### 1. Inspect

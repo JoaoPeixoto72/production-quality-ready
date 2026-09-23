@@ -1,5 +1,15 @@
 # Playbook de Migração: Transição Suave e Não-Destrutiva
 
+## Contents
+
+- Regra de Ouro: Migração Não-Destrutiva
+- Fase 0: Auditoria e Inventário
+- Fase 1: Fundação de Tokens (Sem Quebras)
+- Fase 2: Migração dos Controles Atómicos
+- Fase 3: Superfícies e Layout Shell
+- Fase 4: Overlays e Componentes Complexos
+- Fase 5: Limpeza e Auditoria Final
+
 Este manual define o procedimento determinístico para transformar uma aplicação existente (com design genérico, Tailwind cru, Radix, Shadcn antigo ou MUI) na arquitetura **Base UI + HeroUI v3 CSS**, sem interromper o funcionamento nem quebrar a compilação do projeto.
 
 ---

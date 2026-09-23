@@ -143,7 +143,7 @@ the report itself, declare it and adjust coverage.
   report. Does not validate whether the evidence is true; validates form.
   Obligation IDs are `owner::check`; the registry is read from
   `CONTRACTS.md` §7.4 (critical) and each owner's `instruments.yaml`.
-- `scripts/test_validate_report.py` — regression.
+- Regression tests: `tests/audit-app/` at the plugin root (tests ship with the repository, not with the skill).
 
 ## Anti-patterns
 

@@ -184,7 +184,7 @@ Falsifiable criteria. The plugin refutes itself if it fails two.
 | Every `description` ≤ 250 chars | `python scripts/measure-descriptions.py skills` — exit 0 |
 | Permanent context cost | same command over the plugin + the project's adapters; total declared in README |
 | No PASS without a trace | `python skills/audit-app/scripts/validate_evidence.py --repo <repo>` — 0 `no-log` downgrades |
-| Manifests coherent | `python skills/audit-app/scripts/test_validate_evidence.py` — every owner has `platforms:`, every accepted producer exists |
+| Manifests coherent | `python -m unittest discover -s tests/audit-app -p "test_validate_evidence.py"` — every owner has `platforms:`, every accepted producer exists |
 | Bilateral pairs complete | every pair in `POLICY §1.2` is named by both sides (description or Boundaries) |
 | Coherent authority chain | every external `producer` listed in the owner's `instruments.yaml` |
 | Every subject owner has canonical checks | `CONTRACTS.md §7.4` against `POLICY.md §1` |
