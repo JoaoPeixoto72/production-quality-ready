@@ -1,6 +1,5 @@
 {
   "plugin": "production-quality-ready",
-  "plugin-version": "{{PLUGIN_VERSION}}",
   "platform": "{{PLATFORM}}",
   "sales-model": "{{SALES_MODEL}}",
   "stack": {{STACK_JSON}},

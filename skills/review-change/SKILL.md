@@ -2,11 +2,9 @@
 name: review-change
 description: "Review a diff before it is called done: local invariants, adversarial matrix for the platform (races, tampered input, IDOR, XSS, WCAG, IPC, atomic files), proof commands. Use after writing code, before close-work. Not for full audits (audit-app)."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web, desktop]
 requires-adapter: true
 adapter-contract: adapter-contracts/review-change.md
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
@@ -47,13 +45,16 @@ purpose, watch the test fail, restore it (`code-review`
    `platform` (from `gates.json`). Each axis gets one of: `not touched`
    (the diff cannot affect it — say why), `preserved` (name the test or
    line), or `VIOLATED` → BLOCKED.
-4. **Proof commands.** Run exactly what the adapter declares (build,
+4. **Maintainability.** Run `code-review`'s `scripts/quality_scan.py
+   --since <base>` and walk M1–M7 below over the diff. A budget grown or
+   crossed is `VIOLATED` unless the change splits it first.
+5. **Proof commands.** Run exactly what the adapter declares (build,
    typecheck, lint, tests, migrations). Report number + command + HEAD.
-5. **Argue against your own approval.** Name the single input or
+6. **Argue against your own approval.** Name the single input or
    sequence most likely to break this change, and point at the line or
    test that handles it. If you cannot name one, you have not read the
    diff as its adversary — go back to step 3.
-6. **Verdict.** `APPROVED`, `APPROVED WITH FOLLOW-UPS` (each with owner
+7. **Verdict.** `APPROVED`, `APPROVED WITH FOLLOW-UPS` (each with owner
    and date), or `BLOCKED` (each violation with axis, line, and the
    test that would have caught it).
 
@@ -65,8 +66,24 @@ purpose, watch the test fail, restore it (`code-review`
 | "It's a one-line change; the matrix is overkill." | One line is where TOCTOU and a dropped escape hide. Marking an axis `not touched` with a reason costs a sentence. |
 | "I read it; it's correct." | Reading is not proof (`CONTRACTS §4.6`). Name the test or the command. |
 | "I'll add the test later." | Then it's `APPROVED WITH FOLLOW-UPS` with owner and date — or `BLOCKED`. Never silent. |
+| "It works; the structure is fine as it is." | Working is the floor. A change that grows an over-budget function or adds a branch to an unrelated flow is `VIOLATED` on M1/M2. |
+| "Fewer lines is simpler." | A dense one-liner is not simpler than five clear lines (M5). |
+| "I'll clean it up in the next commit." | The cleanup goes first, in its own commit; the one after never comes. |
 | "Can't reproduce it any more, so it's fixed." | Unreproduced is unproven. Write the reproduction first (`start-work` step 5). |
 | "The adapter doesn't list this invariant." | The adapter lists what was paid for; a new invariant goes into it now, with its reason. |
+
+## Maintainability axes · `both` · [code-review]
+
+Full text, sources and the reporting rules: `code-review`
+`references/maintainability.md`. One line each here:
+
+- **M1 · Size** — no function or file grows past its budget, or grows while over it.
+- **M2 · Spaghetti** — no branch bolted onto an unrelated flow; repeated conditionals become a model.
+- **M3 · Duplication** — reuse the owner `start-work` found; extract on the third copy.
+- **M4 · Named values** — decisions (limits, colours, spacing, visible text) live in constants, tokens, i18n keys; no inline style for a design decision. Not a variable per expression.
+- **M5 · Indirection** — no pass-through wrappers, speculative abstractions, boolean flag params, nested ternaries.
+- **M6 · Errors** — nothing swallowed: no empty catch, no dropped `Result`, no `?.` or fallback hiding a failure.
+- **M7 · Comments and types** — comments say why and are true; no `any`, no unexplained casts at boundaries.
 
 ## The adversarial matrix
 

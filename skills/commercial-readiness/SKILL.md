@@ -2,9 +2,7 @@
 name: commercial-readiness
 description: "Audit whether the product can be sold and supported: SELL-01..06 paths (checkout/activation, outage, account change, trial→paid, refund, end of payment), first run, licences, GDPR/EULA, support SLA. Use for 'ready to sell?'. Not onboarding UX."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web, desktop]
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---

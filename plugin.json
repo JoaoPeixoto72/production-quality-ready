@@ -1,5 +1,4 @@
 {
   "name": "production-quality-ready",
-  "description": "Quality plugin for web and desktop apps: independent audit owners, a read-only orchestrator, a work cycle (start-work, review-change, close-work, verify) adapted per project by bootstrap-project, and gates where a PASS needs a command and a log.",
-  "version": "2.1.0"
+  "description": "Quality plugin for web and desktop apps: independent audit owners, a read-only orchestrator, a work cycle (start-work, review-change, close-work, verify) adapted per project by bootstrap-project, and gates where a PASS needs a command and a log."
 }

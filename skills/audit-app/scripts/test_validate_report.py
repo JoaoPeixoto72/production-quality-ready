@@ -32,7 +32,7 @@ REGISTO = {
 
 CABECALHO = (
     "# Auditoria\n\n"
-    "Contrato: versao 2.0.0 - SHA-256 "
+    "Contrato: SHA-256 "
     "23bda95fb37c0d72206c336796e59bf0f38d2875e26180280034f82cf9ce4b25\n\n"
 )
 
@@ -189,16 +189,16 @@ class Sondas(unittest.TestCase):
 
 
 class Contrato(unittest.TestCase):
-    def test_major_nao_esta_fixo_no_codigo(self):
-        fonte = Path(vr.__file__).read_text(encoding="utf-8")
-        import re as _re
-        self.assertIsNone(_re.search(r"^MAJOR_SUPORTADO\s*=\s*\d", fonte, _re.M),
-                          "major do contrato fixo no codigo — tem de vir do SKILL.md")
+    def test_le_o_hash_do_contracts_md(self):
+        self.assertRegex(vr.contrato_actual() or "", r"^[0-9a-f]{64}$")
 
-    def test_le_a_versao_do_skill_md(self):
-        versao, digest = vr.contrato_actual()
-        self.assertRegex(versao or "", r"^\d+\.\d+\.\d+$")
-        self.assertRegex(digest or "", r"^[0-9a-f]{64}$")
+    def test_contrato_escreve_o_hash_e_sai(self):
+        import contextlib, io
+        saida = io.StringIO()
+        with contextlib.redirect_stdout(saida):
+            codigo = vr.main(["--contrato"])
+        self.assertEqual(codigo, vr.EXIT_OK)
+        self.assertEqual(saida.getvalue().strip(), vr.contrato_actual())
 
 
 class Verdict(unittest.TestCase):
@@ -221,8 +221,8 @@ class Verdict(unittest.TestCase):
                         problemas)
 
 
-class Versao(unittest.TestCase):
-    def test_sem_versao_e_nao_analisavel(self):
+class ContratoDoRelatorio(unittest.TestCase):
+    def test_sem_hash_e_nao_analisavel(self):
         with tempfile.TemporaryDirectory() as tmp:
             gates = Path(tmp) / "gates.json"
             gates.write_text("{}", encoding="utf-8")
@@ -232,15 +232,9 @@ class Versao(unittest.TestCase):
             codigo = vr.main([str(rel), "--gates", str(gates)])
         self.assertEqual(codigo, vr.EXIT_CANNOT_ANALYSE)
 
-    def test_outro_major_e_nao_analisavel(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            gates = Path(tmp) / "gates.json"
-            gates.write_text("{}", encoding="utf-8")
-            rel = Path(tmp) / "futuro.md"
-            rel.write_text("Contrato: versao 3.0.0 - SHA-256 " + "a" * 64 + "\n",
-                           encoding="utf-8")
-            codigo = vr.main([str(rel), "--gates", str(gates)])
-        self.assertEqual(codigo, vr.EXIT_CANNOT_ANALYSE)
+    def test_outro_hash_e_aviso_nao_recusa(self):
+        _, avisos = _validar(CABECALHO + TABELA + CONTAGENS, hash_actual="b" * 64)
+        self.assertTrue(any("as regras mudaram" in a for a in avisos), avisos)
 
 
 def _finding(fid: str, prioridade: str, area: str | None) -> str:
@@ -314,7 +308,7 @@ class SemTabela(unittest.TestCase):
     def test_os_problemas_ja_encontrados_nao_se_perdem(self):
         """Devolver uma lista nova deitava fora o que ja se sabia: corrigia-se
         a tabela para so entao descobrir os outros dois problemas."""
-        texto = ("# Auditoria\n\nContrato: versao 2.0.0\n\n"
+        texto = ("# Auditoria\n\nContrato:\n\n"
                  "SEC-01 ficou CLEARED (decisao)\n")
         problemas, _ = _validar(texto)
         self.assertTrue(any("tabela de obriga" in p for p in problemas), problemas)
@@ -373,16 +367,16 @@ class HashDoContrato(unittest.TestCase):
     def test_digest_entre_crases(self):
         digest = "a" * 64
         self.assertEqual([], self._sem_hash(
-            f"# Auditoria\n\nContrato: versao 2.0.0 - SHA-256 `{digest}`\n\n"))
+            f"# Auditoria\n\nContrato: SHA-256 `{digest}`\n\n"))
 
     def test_digest_nu(self):
         digest = "a" * 64
         self.assertEqual([], self._sem_hash(
-            f"# Auditoria\n\nContrato: versao 2.0.0 - SHA-256 {digest}\n\n"))
+            f"# Auditoria\n\nContrato: SHA-256 {digest}\n\n"))
 
     def test_sem_digest_nenhum_continua_a_ser_erro(self):
         self.assertNotEqual([], self._sem_hash(
-            "# Auditoria\n\nContrato: versao 2.0.0\n\n"))
+            "# Auditoria\n\nContrato:\n\n"))
 
 
 class AchadosCitados(unittest.TestCase):

@@ -2,9 +2,7 @@
 name: bootstrap-project
 description: "Run first after installing the plugin: detect host, stack and platform, ask only what code cannot tell, write gates.json and the 4 project adapters (start-work, review-change, close-work, verify). Use on a repo without gates.json. Not for audits."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web, desktop]
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
@@ -54,7 +52,12 @@ user before writing anything.
    the first audit.
 6. Which owners are `not-applicable` and why (e.g. `drive-app-window`
    on web, `audit-website` on desktop). Propose from platform; confirm.
-7. **Adapter names** — each adapter gets a local name different from
+7. **Maintainability budgets** — propose the defaults from `code-review`
+   `references/maintainability.md` §1, show what `quality_scan.py
+   --format md` finds with them, and let the user set the numbers
+   (`owners.code-review.budgets`). Existing debt goes into the baseline
+   (`--write-baseline`), never into looser numbers.
+8. **Adapter names** — each adapter gets a local name different from
    the plugin skill it extends (`<project>-start-work`, or a verb in the
    project's language). Two skills with one short name leave the host to
    pick by chance. Record each in `owners.<skill>.adapter`.
@@ -67,23 +70,19 @@ All paths below use `<host>` = `.agents` or `.claude`.
    `platform`, `sales-model`, `stack`, `owners` (applicable +
    `not-applicable` with reason), `adapter-hints` (every detected
    command, including `migrations-verify-command`), `gates`.
-2. **`<host>/CONTRACTS.md.snapshot`** — copy of the plugin's
-   `CONTRACTS.md` with a header "Snapshot of production-quality-ready
-   vX.Y.Z at <date>. Do not edit; edit the plugin and re-bootstrap."
-   Adapters reference it as `../CONTRACTS.md.snapshot`.
-3. **`<host>/skills/<local-name>/SKILL.md`** for each of start-work,
+2. **`<host>/skills/<local-name>/SKILL.md`** for each of start-work,
    review-change, close-work and verify, from `templates/skills/*.template`
    with every `{{PLACEHOLDER}}` replaced. Pre-fill:
    - `start-work`: ownership table from detected hotspots.
    - `review-change`: platform line, axes that apply, invariants from
-     Phase 1, proof commands in order.
+     Phase 1, proof commands in order (including `quality_scan.py --since`).
    - `close-work`: document → subject table from the docs that exist.
    - `verify`: launch command, surfaces table, credentials pointer,
      artefact paths (local DB / object store / logs), driver by platform.
-4. **State document** — if none exists, `ESTADO.md` from
+3. **State document** — if none exists, `ESTADO.md` from
    `templates/ESTADO.md.template`; if one exists, do not overwrite —
    propose additions.
-5. **Agent map** — if no `AGENTS.md`/`CLAUDE.md` exists, write one from
+4. **Agent map** — if no `AGENTS.md`/`CLAUDE.md` exists, write one from
    `templates/AGENTS.md.template` (named for the host: `AGENTS.md` for
    `.agents`, `CLAUDE.md` for `.claude`). If one exists, only propose a
    "Installed skills" block.
@@ -127,11 +126,10 @@ Tests: 271 asserts (npm test @ HEAD 2d95870, 2026-09-21)
 | Placeholder | Source |
 |---|---|
 | `PROJECT_NAME` | Phase 1 |
-| `ADAPTER_NAME` | Phase 1 item 7 — one per template |
+| `ADAPTER_NAME` | Phase 1 item 8 — one per template |
 | `HOST`, `HOST_AGENT_FILE` | Phase 0 (`.agents` → `AGENTS.md`; `.claude` → `CLAUDE.md`) |
 | `PLATFORM`, `SALES_MODEL`, `STACK_JSON` | Phase 0 / 1 |
 | `AXES_THAT_APPLY` | derived from `PLATFORM` (review-change A1–A11 tags) |
-| `CONTRACT_PATH` | `../CONTRACTS.md.snapshot` |
 | `BUILD_COMMAND`, `TEST_COMMAND`, `TYPECHECK_COMMAND`, `LINT_COMMAND`, `MIGRATIONS_VERIFY_COMMAND`, `RUN_COMMAND` | Phase 0 |
 | `BASE_URL` | dev-command port, or "n/a" |
 | `PROJECT_INVARIANTS`, `INVARIANTS_LIST` | Phase 1 (numbered, with reason) |
@@ -145,7 +143,7 @@ Tests: 271 asserts (npm test @ HEAD 2d95870, 2026-09-21)
 | `VERSION`, `HEAD`, `BUILD_STATUS`, `TEST_STATUS`, `TYPECHECK_STATUS` | Phase 3 — the baseline actually run |
 | `VERSION_BUMP_RULES` | Phase 1 (or default semver text) |
 | `OWNERS_JSON`, `ADAPTER_HINTS_JSON` | Phase 0 / 1 |
-| `DATE`, `PLUGIN_VERSION` | runtime |
+| `DATE` | runtime |
 
 ## Does not
 

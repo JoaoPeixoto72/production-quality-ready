@@ -6,10 +6,9 @@ Contract a local `review-change` adapter must provide.
 
 ```yaml
 ---
-name: review-change                       # or local name
-extends: production-quality-ready::review-change@2.x
-contract: ../CONTRACTS.md.snapshot
-version: 2.0.0
+name: <local-name>                        # not the plugin skill's name (POLICY §3.2)
+extends: production-quality-ready:review-change
+contract: production-quality-ready/CONTRACTS.md
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 ```

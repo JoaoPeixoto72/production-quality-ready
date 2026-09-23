@@ -1,19 +1,18 @@
 ---
 name: code-review
-description: "Audit code correctness repo-wide and write .audit evidence: build, tests, test oracles, races, panics, IPC/API timeouts, retries, layer direction, perf budgets. For one diff before commit use review-change; CVEs, security-audit."
+description: "Audit code repo-wide and write .audit evidence: build, tests, oracles, races, IPC/API contracts, maintainability budgets (size, nesting, params), perf. For one diff before commit use review-change; CVEs, security-audit."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web, desktop]
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---
 
 # code-review
 
-Single owner for **correctness of code**: what happens inside a layer
-when it runs, what crosses a boundary between layers or processes, and
-whether the result stays within the budgets the project declared.
+Single owner for **correctness and maintainability of code**: what
+happens inside a layer when it runs, what crosses a boundary between
+layers or processes, whether the next person can change it, and whether
+the result stays within the budgets the project declared.
 It is the plugin's canonical mechanical producer — it runs the pipeline
 (`adapter-hints` in `gates.json`) and writes `.audit/code-review/*`.
 
@@ -39,6 +38,12 @@ It is the plugin's canonical mechanical producer — it runs the pipeline
    that fails a declared budget on a hot path is a `BOTTLENECK`. Without
    budgets in the project, `perf.budgets-declared: FAIL` and no other
    `perf.*` check closes.
+4. **Code another person can change without its author.** Size, nesting
+   and parameters are measured against the project's budgets, with a
+   committed baseline as a ratchet — existing debt may not grow, new debt
+   fails. What no number sees (duplication, spaghetti growth, swallowed
+   errors, inline decisions) is reviewed on the M axes:
+   `references/maintainability.md`.
 
 ## Canonical checks
 
@@ -82,6 +87,22 @@ It is the plugin's canonical mechanical producer — it runs the pipeline
 Web Core Web Vitals are measured by `audit-website` and consumed here as
 `perf.hot-path-met` evidence when the hot path is a public page.
 
+### Maintainability — `platforms: both`
+
+| Check | Predicate |
+|---|---|
+| `quality.budgets-declared` | `owners.code-review.budgets` in `gates.json`; otherwise the plugin defaults apply and this check is `FAIL` (LOW). |
+| `quality.file-size` | No file over `file-lines`, beyond what the baseline records. |
+| `quality.function-size` | No function over `function-lines`, beyond the baseline. |
+| `quality.nesting` | No control-flow depth over `nesting`, beyond the baseline. |
+| `quality.params` | No function over `params`, beyond the baseline. |
+| `quality.budgets-met` | The four above pass. |
+
+Instrument: `scripts/quality_scan.py` (`--since <ref>` for a diff,
+`--write-baseline` to record existing debt, `--format md` to read it). A
+project linter configured with the same numbers is a better instrument
+and replaces it (`references/maintainability.md` §1).
+
 ## Stack references
 
 Loaded by the `stack` in `gates.json`:
@@ -89,6 +110,7 @@ Loaded by the `stack` in `gates.json`:
 - `references/rust.md` — panic, `?`, ownership, `#[should_panic]` semantics.
 - `references/frontend.md` — effects, cancellation, state, bundle analyser.
 - `references/rust-and-frontend.md` — Tauri `invoke`/events are a contract; each side is runtime.
+- `references/maintainability.md` — budgets and their sources, the M axes, how to report. Loaded for every stack.
 
 ## Boundaries
 
@@ -100,5 +122,5 @@ Loaded by the `stack` in `gates.json`:
 ## Accepted instruments
 
 See `instruments.yaml`. This owner runs `build-runner`, `test-runner`,
-`static-analysis` and `measurement-run`. A `PASS` without `command` and
+`static-analysis`, `measurement-run` and `quality-scan`. A `PASS` without `command` and
 `log` is invalid (CONTRACTS §4.6).

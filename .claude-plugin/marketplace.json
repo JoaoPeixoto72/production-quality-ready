@@ -4,14 +4,12 @@
     "name": "JoaoPeixoto72"
   },
   "metadata": {
-    "description": "Production quality audit and readiness plugin marketplace",
-    "version": "2.1.0"
+    "description": "Production quality audit and readiness plugin marketplace"
   },
   "plugins": [
     {
       "name": "production-quality-ready",
       "description": "Quality plugin for web and desktop apps: independent audit owners, a read-only orchestrator, a work cycle (start-work, review-change, close-work, verify) adapted per project by bootstrap-project, and gates where a PASS needs a command and a log.",
-      "version": "2.1.0",
       "source": "./"
     }
   ]

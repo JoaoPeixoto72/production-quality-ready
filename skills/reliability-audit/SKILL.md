@@ -2,9 +2,7 @@
 name: reliability-audit
 description: "Audit that data survives and failures can be diagnosed: atomic writes/transactions, migrations from every version, crash mid-write, resume, structured logs, correlation-id, PII redaction. Use for data loss, migration safety, 'can we debug vX?'."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web, desktop]
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---

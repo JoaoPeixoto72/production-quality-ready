@@ -2,9 +2,7 @@
 name: release-audit
 description: "Audit distribution: clean clone → one command → same artifact, frozen lockfiles, SBOM, CI matrix, changelog from git; signing/updater on desktop, deploy/rollback on web. Use for 'is the release reproducible or rollbackable?'. Not CVEs."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web, desktop]
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---

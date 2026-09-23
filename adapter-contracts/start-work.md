@@ -6,10 +6,9 @@ Contract a local `start-work` adapter must provide.
 
 ```yaml
 ---
-name: start-work                          # or local name
-extends: production-quality-ready::start-work@2.x
-contract: ../CONTRACTS.md.snapshot              # relative to target repo root
-version: 1.0.0
+name: <local-name>                        # not the plugin skill's name (POLICY §3.2)
+extends: production-quality-ready:start-work
+contract: production-quality-ready/CONTRACTS.md
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 ```

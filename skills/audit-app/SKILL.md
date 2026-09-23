@@ -2,9 +2,7 @@
 name: audit-app
 description: "Aggregate owner evidence from .audit/**, apply gates.json gates and write a Product × Coverage verdict. Runs nothing. Use when asked 'audit the app' or 'ready to ship/sell?'. Not for websites (audit-website) or one PR (review-change)."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web, desktop]
-version: 2.1.0
 model: opus
 effort: high
 allowed-tools: Read, Glob, Grep, Bash, Write
@@ -90,15 +88,14 @@ previously by owners.
 Each file passes through:
 
 1. Valid YAML frontmatter.
-2. Compatible `evidence-schema:` major (`1.x`; `CONTRACTS §6.1`).
-3. Required fields present (§3.1 of `CONTRACTS.md`): `check`, `owner`,
+2. Required fields present (§3.1 of `CONTRACTS.md`): `check`, `owner`,
    `producer`, `instrument`, `rule`, `rule-version` (where mandatory),
    `methods`, `evidence`, `result`, `severity` (if FAIL), `confidence`.
-4. Authority chain (§4.5): `owner == producer` or pair declared in
+3. Authority chain (§4.5): `owner == producer` or pair declared in
    `<owner>/instruments.yaml`.
-5. Rules 3.1.2/3/4: `producer:` = `unknown` → `NOT_VERIFIED`; `owner:`
+4. Rules 3.1.2/3/4: `producer:` = `unknown` → `NOT_VERIFIED`; `owner:`
    missing → `NOT_VERIFIED`; `instrument:` missing → `NOT_VERIFIED`.
-6. **Rule 4.6 — PASS needs a trace.** `result: PASS` without both
+5. **Rule 4.6 — PASS needs a trace.** `result: PASS` without both
    `command:` (what was run) and `log:` (path to its captured output,
    existing on disk) → downgraded to `NOT_VERIFIED/no-log`. Reading
    source code is not a command. This is what stops an agent from

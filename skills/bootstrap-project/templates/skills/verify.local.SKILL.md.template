@@ -1,10 +1,9 @@
 ---
 name: {{ADAPTER_NAME}}
 description: "Run {{PROJECT_NAME}} and prove a change in the real app: launch command, surfaces, test credentials, where it writes. Use to see a flow, screen or endpoint working. Adapter of verify; not for the test suite."
-contract: {{CONTRACT_PATH}}
-extends: "production-quality-ready::verify@2.x"
+contract: production-quality-ready/CONTRACTS.md
+extends: "production-quality-ready:verify"
 requires-adapter: false
-version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash
 ---
 

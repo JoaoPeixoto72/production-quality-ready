@@ -157,7 +157,7 @@ and specific invariants.
 
 The universal skill carries `requires-adapter: true` and
 `adapter-contract: adapter-contracts/<name>.md`. The local adapter
-carries `extends: production-quality-ready::<name>@2.x`. Without an adapter,
+carries `extends: production-quality-ready:<name>`. Without an adapter,
 the universal skill returns `NOT_VERIFIED/missing-adapter`
 (`CONTRACTS §4.5`).
 
@@ -179,15 +179,10 @@ or a verb in the project's language) and is recorded in
 short name leave the host to pick one by chance — usually the generic
 one, which has no commands.
 
-Two options for the `contract:` path (`bootstrap-project` step 5b):
-
-- **Plugin installed globally** → absolute path to
-  `production-quality-ready/CONTRACTS.md`. No duplication.
-- **Local snapshot** → `bootstrap-project` copies `CONTRACTS.md` to
-  `<repo>/<host>/CONTRACTS.md.snapshot`; the adapter uses
-  `../CONTRACTS.md.snapshot`. The snapshot carries a header saying
-  which version it is a copy of; editing the snapshot is not editing
-  the contract.
+The adapter's `contract:` names the file, never a copy or a version:
+`production-quality-ready/CONTRACTS.md`. A copy in the project would be
+a second owner of the contract, and it drifts the day the plugin
+updates.
 
 ### 3.3 Division of responsibility
 
@@ -236,7 +231,6 @@ Source: `<repo-root>/.agents/gates.json` or `<repo-root>/.claude/gates.json`
 ```jsonc
 {
   "plugin": "production-quality-ready",
-  "plugin-version": "2.0.0",
   "platform": "web",                       // web | desktop | both — required
   "sales-model": "subscription",           // licensed | subscription | both
   "stack": ["typescript", "hono", "d1"],
@@ -299,36 +293,13 @@ scope in the report.
 
 ## 6. Versioning
 
-### 6.1 Semver per skill
+One version, in `.claude-plugin/plugin.json` — the host reads it to
+offer an update (`CONTRACTS §6`). Skills, adapters, `gates.json` and
+evidence carry none: they name files, and the file is the rule.
 
-Each skill has an independent version in its `SKILL.md` frontmatter.
-Breaking changes bump major.
-
-### 6.2 Plugin version
-
-The plugin has an aggregate version, updated when there is a coherent
-release of the whole. Follows the majority-of-changes semver: a major
-inside a skill can be a minor of the plugin if the rest doesn't
-break.
-
-The plugin's contract (`CONTRACTS.md`) has its own version, quoted at
-the top of that file. `evidence-schema` in each skill's frontmatter
-tracks the major of the contract.
-
-### 6.3 Migration between majors
-
-When a skill's or the contract's major changes, the plugin ships a
-migration script or migration note. Legacy files remain readable in
-`NOT_VERIFIED` mode with reason `stale-schema`.
-
-Ex: a future `evidence-schema: 2.x` — files in `1.x` become
-`NOT_VERIFIED` until re-emitted.
-
-### 6.4 Project files across majors
-
-The project's `gates.json` follows the plugin's major. Bumping the
-plugin locally requires updating the file too; re-running
-`bootstrap-project` proposes the diff.
+When the plugin starts requiring something a project file lacks, the
+absence is the signal — `owner-undeclared`, `platform-undeclared`,
+`missing-*` — and re-running `bootstrap-project` proposes the diff.
 
 ---
 

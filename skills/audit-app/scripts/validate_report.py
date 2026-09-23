@@ -15,7 +15,8 @@ defeitos — um resumo errado ali é um verdict errado.
 Exit codes:
   0  estruturalmente válido
   1  problemas encontrados
-  2  não foi possível analisar (não é um relatório, ou é de outro major)
+  2  não foi possível analisar (não é um relatório, ou não diz sob que contrato
+     foi escrito)
  64  erro de utilização
 """
 
@@ -50,21 +51,17 @@ COLUNAS_USADAS = (("id",), ("estado",), ("gate",),
                   ("evidência", "evidencia"), ("cobertura",))
 
 
-def contrato_actual() -> tuple[str | None, str | None]:
-    """(version, hash) of the plugin's contract.
+def contrato_actual() -> str | None:
+    """SHA-256 of the plugin's `CONTRACTS.md`, normalized to LF.
 
-    The contract lives at the plugin root (`CONTRACTS.md`), not inside this
-    skill (POLICY §1.1). The version comes from the
-    `**Contract version**: X.Y.Z` line (or the legacy Portuguese
-    `**Versão do contrato**: X.Y.Z`, still accepted for compatibility with
-    older reports). The hash is SHA-256 of `CONTRACTS.md` itself, normalized
-    to LF so it is reproducible across machines (Windows delivers CRLF; Git
-    may vary between check-outs — the hash must prove the contract, not the
-    machine).
+    The hash is how a report names the rules it was judged under
+    (CONTRACTS §6): a file, identified by its content, never by a version
+    number written next to it. LF so it is reproducible across machines —
+    the hash must prove the contract, not the check-out.
 
-    Walks up the folders until it finds `CONTRACTS.md`; returns
-    `(None, None)` if the plugin is installed without a contract alongside
-    (in that case the validator says so, doesn't guess).
+    Walks up the folders until it finds `CONTRACTS.md`; returns `None` if
+    the plugin is installed without one (the validator says so, doesn't
+    guess).
     """
     import hashlib
     p = Path(__file__).resolve()
@@ -72,18 +69,13 @@ def contrato_actual() -> tuple[str | None, str | None]:
         contract_path = candidate / "CONTRACTS.md"
         if contract_path.is_file():
             raw = contract_path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-            text = raw.decode("utf-8")
-            m = re.search(r"^\*\*(?:Contract version|Vers[ãa]o do contrato)\*\*:\s*(\d+\.\d+\.\d+)\s*$", text, re.M)
-            version = m.group(1) if m else None
-            digest = hashlib.sha256(raw).hexdigest()
-            return version, digest
-    return None, None
+            return hashlib.sha256(raw).hexdigest()
+    return None
 
 # Um ID de obrigação: `SEC-01` (registo v1) ou `owner::check` (contrato v2).
 RE_ID_OBRIGACAO = re.compile(r"[A-Z0-9]+-\d+|[a-z][a-z0-9-]*::[A-Za-z0-9._-]+")
 RE_CANONICO_V2 = re.compile(r"^\|\s*`([a-z][a-z0-9-]*)`\s*\|\s*`([^`]+)`(?:\s*…\s*`([^`]+)`)?\s*\|", re.M)
 RE_FOR_CHECKS = re.compile(r"^\s+-\s+([A-Za-z0-9._-]+)\s*$", re.M)
-RE_VERSAO = re.compile(r"\*{0,2}Contrato\*{0,2}:\s*vers[ãa]o\s*(\d+)\.(\d+)\.(\d+)", re.I)
 # O digest aparece nu (`SHA-256 66e9…`) ou entre crases, que é como o markdown
 # de um relatório real o escreve. Exigir o primeiro fazia o validador dizer
 # "sem SHA-256 do contrato" a um relatório que o tinha — a mesma validação de
@@ -499,10 +491,24 @@ def validar(texto: str, registo: dict, caminho: Path,
 def main(argv: list[str] | None = None) -> int:
     ap = _Parser(description=__doc__,
                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("relatorio", help="ficheiro .md do relatório")
+    ap.add_argument("relatorio", nargs="?", help="ficheiro .md do relatório")
+    ap.add_argument("--contrato", action="store_true",
+                    help="escreve o SHA-256 do CONTRACTS.md instalado e sai — "
+                         "é o que o cabeçalho do relatório copia")
     ap.add_argument("--gates", default=None,
                     help="registo v1 em JSON; por omissão, o registo v2 do próprio plugin")
     args = ap.parse_args(argv)
+
+    hash_actual = contrato_actual()
+    if hash_actual is None:
+        print("erro: não encontrei o CONTRACTS.md do plugin — "
+              "sem contrato não há por que regras julgar", file=sys.stderr)
+        return EXIT_CANNOT_ANALYSE
+    if args.contrato:
+        print(hash_actual)
+        return EXIT_OK
+    if not args.relatorio:
+        ap.error("falta o relatório")
 
     caminho = Path(args.relatorio)
     if not caminho.is_file():
@@ -523,31 +529,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"erro: sem --gates e sem CONTRACTS.md em {raiz_plugin}", file=sys.stderr)
         return EXIT_CANNOT_ANALYSE
 
-    versao_contrato, hash_actual = contrato_actual()
-    if versao_contrato is None:
-        print("erro: não consegui ler `**Versão do contrato**` do SKILL.md — "
-              "sem contrato não há por que regras julgar", file=sys.stderr)
-        return EXIT_CANNOT_ANALYSE
-    major_suportado = int(versao_contrato.split(".")[0])
-
     texto = caminho.read_text(encoding="utf-8", errors="replace")
-    mv = RE_VERSAO.search(texto)
-    # Sem versão declarada, ou de outro major, não se valida — e não se despeja
-    # uma lista de erros. Um relatório escrito sob outras regras produziria
-    # dezenas de "erros" que são só a diferença entre os dois contratos, e isso
-    # esconderia os defeitos a sério em vez de os mostrar.
-    if not mv:
+    # Sem o hash do contrato não se valida — e não se despeja uma lista de
+    # erros: um documento que não diz sob que regras foi escrito produziria
+    # dezenas de "erros" que esconderiam os defeitos a sério. Um hash diferente
+    # do actual valida-se na mesma, com aviso (CONTRACTS §6.2).
+    if not RE_HASH.search(texto):
         print(f"# Validação de {caminho.name}\n")
-        print("Sem `Contrato: versão X.Y.Z` — não se sabe por que regras julgar isto.")
-        print("Relatórios anteriores ao contrato versionado não se validam por aqui;")
-        print("o estado deles diz-se no índice (`baselines/ultima-auditoria.md`).")
+        print("Sem `Contrato: SHA-256 <digest>` — não se sabe por que regras julgar isto.")
+        print("O digest actual sai de `validate_report.py --contrato`.")
         print("\nNÃO ANALISÁVEL")
-        return EXIT_CANNOT_ANALYSE
-    if int(mv.group(1)) != major_suportado:
-        print(f"# Validação de {caminho.name}\n")
-        print(f"Relatório declara contrato {mv.group(1)}.{mv.group(2)}.{mv.group(3)}; "
-              f"o contrato instalado é {versao_contrato}.")
-        print("\nNÃO ANALISÁVEL — um relatório não se julga por regras que não são as dele.")
         return EXIT_CANNOT_ANALYSE
 
     raiz_skill = Path(__file__).resolve().parent.parent

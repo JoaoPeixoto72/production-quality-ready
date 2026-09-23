@@ -2,10 +2,8 @@
 name: drive-app-window
 description: "Test a change in a running desktop window on Windows: click, type, drag, scroll, full-content screenshot (Win32, WebView2, Tauri, Electron). Use when verify needs a desktop driver. Closes no verdict. Not for web apps (use a browser instead)."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 argument-hint: "-Title <window> -Process <exe without .exe> -Action <content|shot|crop|screen|click|hover|drag|wheel|rawkeys|list>"
 platforms: [desktop]
-version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---

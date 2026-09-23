@@ -2,9 +2,7 @@
 name: audit-website
 description: "Audit a public web surface with two engines: 360º (SEO, CWV, cookies, analytics, CRO, spider, WCAG) and deep SEO/GEO with SARIF. Use for 'audit my website', landing, storefront, SEO or Core Web Vitals. Not for software behind login (audit-app)."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web]
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---

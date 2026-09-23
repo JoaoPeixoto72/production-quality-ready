@@ -1,9 +1,8 @@
 ---
 name: {{ADAPTER_NAME}}
 description: "Close work on {{PROJECT_NAME}} after review, before commit: rewrite ESTADO.md, one subject per document, reason stays and history goes, numbers with command and HEAD. Adapter of close-work; not for opening."
-contract: {{CONTRACT_PATH}}
-extends: "production-quality-ready::close-work@2.x"
-version: 2.0.0
+contract: production-quality-ready/CONTRACTS.md
+extends: "production-quality-ready:close-work"
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 

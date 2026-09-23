@@ -55,7 +55,6 @@ It detects host (`.agents` / `.claude`), platform (`web` / `desktop` /
 invariants you already paid for, test credentials), and writes:
 
 - `<host>/gates.json` — platform, sales model, applicable owners, `adapter-hints`.
-- `<host>/CONTRACTS.md.snapshot` — frozen contract for the adapters.
 - `<host>/skills/<local-name>/SKILL.md` × 4 — **pre-filled** adapters of start-work, review-change, close-work and verify, each under a name of its own.
 - `ESTADO.md` (state) and `AGENTS.md`/`CLAUDE.md` (map) if missing.
 
@@ -101,7 +100,7 @@ use the audit-app skill
 | `start-work` · `review-change` · `close-work` | work cycle (adapters per project) | both | proof commands |
 | `verify` | prove in the running app | both | browser driver / `gui.ps1` |
 | `drive-app-window` | Win32/WebView2 driver for `verify` | desktop | `scripts/gui.ps1` |
-| `code-review` | runtime + contracts + perf budgets; runs build/tests | both | build/test runners |
+| `code-review` | runtime + contracts + maintainability (size, nesting, params, ratchet) + perf budgets | both | build/test runners, `quality_scan.py` |
 | `security-audit` | ASVS 5.0 + threat model; tenants, input, CVEs, secrets | both | dep/secret scanners |
 | `reliability-audit` | persistence, migrations, crash; diagnosability (logs, PII) | both | harnesses (project) |
 | `design-pro` | UX, WCAG 2.2 AA verdict, i18n | both | — (consumes ui-system, verify) |
@@ -136,6 +135,7 @@ production-quality-ready/
 ```bash
 python scripts/measure-descriptions.py skills                     # exit 1 if any description > 250
 python -m unittest discover -s skills/audit-app/scripts -p "test_*.py"   # evidence + report validators
+python -m unittest discover -s skills/code-review/scripts -p "test_*.py" # quality_scan
 pwsh scripts/run-all-owners.ps1 -RepoRoot <repo> -DryRun          # lists owners for the platform
 ```
 

@@ -3,10 +3,8 @@ name: security-audit
 description: "Audit security against OWASP ASVS 5.0 and the project's threat model: untrusted input, auth, sessions, tenant isolation, paths, child processes, capabilities, CSP, CVEs, secrets in history. Use for 'is this input/dependency/endpoint safe?'."
 argument-hint: "[path | endpoint | dependency]"
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 rule-version: owasp-asvs-5.0
 platforms: [web, desktop]
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---

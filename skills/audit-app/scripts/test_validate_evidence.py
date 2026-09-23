@@ -28,7 +28,6 @@ producer: {producer}
 instrument: {instrument}
 rule: some rule
 rule-version: "1.0"
-evidence-schema: 1.3.0
 methods:
   - test-execution
 evidence:
@@ -106,7 +105,6 @@ class TestPassNeedsTrace(unittest.TestCase):
         producer: security-audit
         instrument: dep-scanner
         rule: r
-        evidence-schema: 1.3.0
         result: NOT_VERIFIED
         confidence: UNKNOWN
         reason: |

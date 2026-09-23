@@ -2,11 +2,9 @@
 name: close-work
 description: "Run at the end of every session, after review-change, before commit: rewrite ESTADO.md ('one subject, one owner; reason stays, history goes') and record proof numbers with command and HEAD. Not for opening a session (start-work)."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 requires-adapter: true
 adapter-contract: adapter-contracts/close-work.md
 platforms: [web, desktop]
-version: 2.1.0
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 

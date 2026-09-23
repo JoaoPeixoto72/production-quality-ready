@@ -4,8 +4,6 @@ Plugin mechanical contract. **Authoritative.** Every plugin skill refers
 to this file by its root (`contract: CONTRACTS.md`). A discrepancy
 between this file and a skill is always the skill's defect.
 
-**Contract version**: 2.1.0
-
 This file **does not describe workflows** — it describes *what counts
 as proof* and *how skills speak to each other*. Authority, activation
 and local-adapter rules live in `POLICY.md`.
@@ -85,7 +83,6 @@ producer:         ui-system                        # slug of the skill that WROT
 instrument:       audit_ui.py                      # id of the instrument inside the producer
 rule:             WCAG 2.2 SC 2.4.7                # human-readable rule name
 rule-version:     wcag-2.2-AA                      # see §3.3
-evidence-schema:  1.3.0                            # see §6
 methods:                                           # instruments used; at least one
   - dom-inspection
   - screenshot
@@ -144,7 +141,6 @@ root-cause: RC-focus-outline-suppressed            # see §4.4; optional, requir
 context:                                           # free metadata for the orchestrator
   scope: src/ui/**
   captured-at: 2026-09-14T00:00:00Z
-  captured-by-version: ui-system@1.0.0             # semver of the PRODUCER
 ```
 
 **Rule 3.2.1.** No field beyond those declared in 3.1/3.2 is read by
@@ -165,7 +161,7 @@ external standard; optional for owners with their own rule.
 | `reliability-audit` | optional | idem |
 | `release-audit` | optional | idem |
 | `commercial-readiness` | optional | idem |
-| `ui-system` | no | internal contract is `evidence-schema` |
+| `ui-system` | no | its rule is `audit_ui.py` itself |
 
 **Rule 3.3.1.** Missing where required → the orchestrator reads the
 check as `NOT_VERIFIED` with reason `missing-rule-version`,
@@ -396,7 +392,6 @@ whether to promote it.
 ```jsonc
 {
   "plugin": "production-quality-ready",
-  "plugin-version": "2.0.0",
   "platform": "web",                  // web | desktop | both — required
   "sales-model": "subscription",      // licensed | subscription | both — required if commercial-readiness applies
   "stack": ["typescript", "hono", "d1"],
@@ -414,43 +409,32 @@ whether to promote it.
 
 ## 6. Compatibility
 
-### 6.1 `evidence-schema`
+**Files are referred to by name, never by version.** Skills, adapters,
+`gates.json` and evidence name `CONTRACTS.md`, `instruments.yaml`, a
+script — and whatever that file says today is the rule. A version number
+next to a file name is a second statement of the same fact, and the two
+drift.
 
-Semver of the evidence **file format** (§3), independent of the contract
-version at the top of this file. Current: `1.3.x`. Blocks aggregation
-**across majors**.
+**Rule 6.1.** A file that lacks something the contract now requires is
+not refused by number: it resolves `NOT_VERIFIED` with the reason that
+names what is missing (`missing-producer`, `no-log`,
+`missing-rule-version`, …). The reason says what to fix; a version
+mismatch would only say that something changed.
 
-- **Major (X.0.0)** — parser-breaking change: new required field,
-  rename, semantics swap. `audit-app` on major `X` **refuses** to read
-  evidence with major `Y ≠ X` and emits `NOT_VERIFIED` for the owner
-  with reason `schema-major-mismatch`.
-- **Minor (1.X.0)** — new optional field, or new allowed instrument.
-  Compatible with previous evidence.
-- **Patch (1.0.X)** — text clarification, editorial fix. Zero semantic
-  change.
+**Rule 6.2.** A report names the contract it was judged under by the
+SHA-256 of `CONTRACTS.md` (LF-normalised). A different hash is a warning
+— the rules changed since — never a refusal.
 
-**Rule 6.1.1.** A rule that can only *degrade* a file (§3.1.5, §4.6)
-applies to every schema version and does not bump the major: an old file
-loses its `PASS`; it is never refused for it.
+**Rule 6.3 (`rule-version`).** The exception, and it is not a version of
+a file of ours: `rule-version` names an **external standard**
+(`wcag-2.2-AA`, `owasp-asvs-5.0`), where the number changes the rule
+itself. It does not block aggregation; two checks of one subject under
+different `rule-version` are both counted, and the divergence is
+recorded.
 
-### 6.2 `rule-version`
-
-Semver or external standard identifier. **Does not block**
-aggregation. The orchestrator records divergences (two checks on the
-same subject with different `rule-version:`) but both count for the
-owner's verdict.
-
-**Rule 6.2.1.** An owner that bumps `rule-version` major (SC 1.4.3 →
-SC 1.4.6, i.e. AA → AAA) declares it in the skill's `description`.
-An audit requesting the AA rule still receives AA if the old evidence
-hasn't expired.
-
-### 6.3 Plugin version
-
-`production-quality-ready` has its own semver. A plugin release pins one
-`evidence-schema` version and one minimum-`rule-version` matrix per
-owner. Individual skills keep their own semver and declare
-compatibility with a range of plugin versions.
+**Rule 6.4.** The plugin has one version, in
+`.claude-plugin/plugin.json`, because the host reads it to offer an
+update. Nothing else in the plugin or in a project carries one.
 
 ---
 
@@ -532,6 +516,7 @@ owner must emit every check listed here; a missing check reports as
 | `code-review` | `contract.input-not-trusted` | both | Every boundary receiver validates input; survives bad-faith payloads by test. |
 | `code-review` | `contract.retry-idempotent` | both | Retries only where idempotent; identifier declared. |
 | `code-review` | `perf.budgets-declared` | both | Performance budgets exist in the project. |
+| `code-review` | `quality.budgets-met` | both | File, function, nesting and parameter budgets met; baseline debts not grown. |
 | `verify` | `smoke-test-passes` | both | A manual/automated smoke test of the real app passes. |
 | `security-audit` | `sec.threat-model-declared` | both | Threat model in a versioned file. |
 | `security-audit` | `sec.deps-no-cve` | both | No dependency with a known `HIGH`+ vulnerability without dated waiver. |

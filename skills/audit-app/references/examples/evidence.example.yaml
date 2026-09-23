@@ -9,7 +9,6 @@ owner:            code-review
 producer:         code-review
 instrument:       build-runner
 rule:             release-clean
-evidence-schema:  1.3.0
 methods:
   - build-runner
 evidence:
@@ -30,7 +29,6 @@ producer:         ui-system
 instrument:       audit_ui.py
 rule:             WCAG 2.2 SC 1.4.3
 rule-version:     wcag-2.2-AA
-evidence-schema:  1.3.0
 methods:
   - static-analysis
   - ok-lch-delta

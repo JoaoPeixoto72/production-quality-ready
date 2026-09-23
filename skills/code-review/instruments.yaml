@@ -38,6 +38,15 @@ accepts:
       - perf.memory-floor
       - perf.install-size
       - perf.no-regressions
+  - producer: code-review
+    instrument: quality-scan
+    for-checks:
+      - quality.budgets-declared
+      - quality.file-size
+      - quality.function-size
+      - quality.nesting
+      - quality.params
+      - quality.budgets-met
   # Web CWV measured by audit-website count as hot-path evidence.
   - producer: audit-website
     instrument: run_website_audit.mjs

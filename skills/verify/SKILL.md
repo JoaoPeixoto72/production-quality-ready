@@ -2,11 +2,9 @@
 name: verify
 description: "Test a change in the running app: launch it, drive real actions, capture before/after artefacts and compare. Web via browser automation, desktop via drive-app-window. Use for 'see this working'. Not for running the test suite (code-review)."
 contract: CONTRACTS.md
-evidence-schema: "1.3.x"
 platforms: [web, desktop]
 requires-adapter: true
 adapter-contract: adapter-contracts/verify.md
-version: 2.0.0
 allowed-tools: Read, Glob, Grep, Bash, Write
 disallowed-tools: Edit, MultiEdit, NotebookEdit
 ---

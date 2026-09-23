@@ -37,7 +37,7 @@ Módulos não executados: <lista, com uma razão>
 Interpretação: <só se o pedido era ambíguo — a escolha feita, numa frase>
 
 ## 3. Evidência
-Contrato: versão <X.Y.Z> · SHA-256 <digest>   (copiados do validate_skill.py)
+Contrato: SHA-256 <digest>   (`python scripts/validate_report.py --contrato`)
 Commit: <sha curto>  Árvore no início (t0): limpa | suja (<n> ficheiros)
 Árvore no fim (t1): igual | ALTERADA (<caminhos> — e o que isso invalidou)
 Ambiente: <SO, versões lidas dos lockfiles>

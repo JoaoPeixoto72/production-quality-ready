@@ -3,15 +3,39 @@
 Why the plugin has the shape it has, one entry per version. Nobody reads
 this at runtime. The rules live in `PURPOSE.md`, `POLICY.md`,
 `CONTRACTS.md` and the skills; what ships is mapped in `README.md`; the
-acceptance commands are in `PURPOSE.md §6`. Older rounds (v1.x–v4.0.0:
-the refutation rounds, the extraction from `auditar-app`, the English
+acceptance commands are in `PURPOSE.md §6`. Older rounds (the
+refutation rounds, the extraction from `auditar-app`, the English
 translation) are in git history — `git log -- PLAN.md`.
 
 ---
 
 ## Change log
 
-### v6.0.0 — plugin v2.1.0
+### plugin 2.2.0
+
+**Files are referred to by name, never by version.** Every version
+number next to a file — per-skill `version:`, `evidence-schema`,
+`extends: …@2.x`, `plugin-version` in `gates.json`, the contract's own
+version, the `CONTRACTS.md.snapshot` copy in each project — was a second
+statement of a fact the file already makes, and each one had drifted
+(2.1.0 found skills saying `1.3.x` under a `2.0.0` contract). Now: one
+version, in `.claude-plugin/plugin.json`, because the host reads it; a
+report names its contract by SHA-256 (`validate_report.py --contrato`);
+a missing field resolves by the reason that names it (`CONTRACTS §6`).
+`rule-version` stays — it names an external standard, where the number
+is the rule.
+
+**Maintainability gets an owner.** `PURPOSE §4` had no row for "can the
+next person change this code", so nobody looked. `code-review` owns it
+now: budgets (file, function, nesting, params) declared by the project,
+measured by `scripts/quality_scan.py` with a committed baseline as a
+ratchet, and the M axes in `review-change` for what no number sees
+(`references/maintainability.md`, distilled from Anthropic's
+`code-review` and `pr-review-toolkit`, Cursor's thermo-nuclear review
+and `addyosmani/agent-skills`). First run on a real Tauri + React repo:
+one file over 1000 lines, 198 functions over 50, 15 over nesting 3.
+
+### plugin 2.1.0
 
 **Review of every skill against its own contract.** Six defects where a
 skill could not do what the contract asks of it, and a trim of the
@@ -50,7 +74,7 @@ Also: version appendices removed from `POLICY.md` and `CONTRACTS.md`
 (history is owned here and by git); `PLAN.md` itself cut to this log;
 the anti-injection blocks shortened to one form.
 
-### v5.0.0 — plugin v2.0.0
+### plugin 2.0.0
 
 **Audit of the plugin against a real project (Provo, Cloudflare
 Workers + Hono + D1) found four structural defects.**

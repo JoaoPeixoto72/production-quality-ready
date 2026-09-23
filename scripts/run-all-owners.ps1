@@ -135,7 +135,7 @@ function Write-Evidence {
         [Parameter(Mandatory)][string]$Instrument,
         [Parameter(Mandatory)][string]$Check,
         [Parameter(Mandatory)][string]$Rule,
-        [string]$RuleVersion = "1.0",
+        [string]$RuleVersion = "",
         [Parameter(Mandatory)][ValidateSet("PASS","FAIL","NOT_VERIFIED","NOT_APPLICABLE")][string]$Result,
         [string]$Severity = "",
         [string]$Command = "",
@@ -163,8 +163,7 @@ function Write-Evidence {
     [void]$sb.AppendLine("producer: $Producer")
     [void]$sb.AppendLine("instrument: $Instrument")
     [void]$sb.AppendLine("rule: $Rule")
-    [void]$sb.AppendLine("rule-version: `"$RuleVersion`"")
-    [void]$sb.AppendLine("evidence-schema: 1.3.0")
+    if ($RuleVersion) { [void]$sb.AppendLine("rule-version: `"$RuleVersion`"") }  # external standards only (CONTRACTS §6.3)
     [void]$sb.AppendLine("methods:")
     [void]$sb.AppendLine("  - $Instrument")
     if ($EvidenceLines.Count -gt 0) {
@@ -228,7 +227,7 @@ function Invoke-JsonInstrument {
         [Parameter(Mandatory)][string]$Script,      # absolute path
         [Parameter(Mandatory)][string]$Instrument,  # id declared in instruments.yaml
         [string]$Rule = "declared-by-owner",
-        [string]$RuleVersion = "1.0",
+        [string]$RuleVersion = "",
         [string[]]$ExtraArgs = @()
     )
     if (-not (Test-Path $Script)) {
@@ -336,6 +335,10 @@ function Invoke-CodeReview {
             -Result NOT_VERIFIED -Reason "missing-instrument: requires the code-review owner to run its review against the diff and cite the test that proves it; this runner only executes build/typecheck/tests." | Out-Null
         $ran++; $nv++
     }
+    # Maintainability budgets: the owner's own instrument (references/maintainability.md).
+    $scan = Invoke-JsonInstrument -Owner $owner -Instrument "quality-scan" -Rule "maintainability-budgets" `
+        -Script (Join-Path $PluginRoot "skills/code-review/scripts/quality_scan.py")
+    if ($scan) { $ran += $scan.ran; $passed += $scan.passed; $failed += $scan.failed; $nv += $scan.notVerified }
     Register-Owner -Owner $owner -Ran $ran -Passed $passed -Failed $failed -NotVerified $nv
 }
 

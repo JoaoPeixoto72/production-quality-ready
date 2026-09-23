@@ -126,6 +126,7 @@ the defect to look for.
 | Runtime: concurrency, state, types, panics, test strength | `code-review` | *a test that has never failed proves nothing* |
 | Contracts: IPC, API, layers, integrations | `code-review` | both sides crossed by test, not by reading |
 | Performance budgets | `code-review` | **no measurement, no finding**; no budget, no rule |
+| Maintainability: size, structure, duplication, named values, swallowed errors | `code-review` | *code another person can change without its author* — budgets with a ratchet, plus the M axes |
 | Security: input, auth, tenants, paths, processes, dependencies | `security-audit` | OWASP ASVS 5.0 + the product's threat model |
 | Persistence and recovery | `reliability-audit` | migration from **every** version ever published; crash at the worst moment |
 | Diagnosability in production | `reliability-audit` §2 | *a customer says "doesn't work on version X" — what can you find out?* |
