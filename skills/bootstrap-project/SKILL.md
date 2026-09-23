@@ -52,9 +52,9 @@ user before writing anything.
    the first audit.
 6. Which owners are `not-applicable` and why (e.g. `drive-app-window`
    on web, `audit-website` on desktop). Propose from platform; confirm.
-7. **Maintainability budgets** — propose the defaults from `code-review`
-   `references/maintainability.md` §1, show what `quality_scan.py
-   --format md` finds with them, and let the user set the numbers
+7. **Maintainability budgets** — propose the defaults from
+   `../code-review/references/maintainability.md` §1, show what
+   `../code-review/scripts/quality_scan.py --format md` finds with them, and let the user set the numbers
    (`owners.code-review.budgets`). Existing debt goes into the baseline
    (`--write-baseline`), never into looser numbers.
 8. **Adapter names** — each adapter gets a local name different from

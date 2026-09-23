@@ -45,7 +45,7 @@ purpose, watch the test fail, restore it (`code-review`
    `platform` (from `gates.json`). Each axis gets one of: `not touched`
    (the diff cannot affect it — say why), `preserved` (name the test or
    line), or `VIOLATED` → BLOCKED.
-4. **Maintainability.** Run `code-review`'s `scripts/quality_scan.py
+4. **Maintainability.** Run `../code-review/scripts/quality_scan.py
    --since <base>` and walk M1–M7 below over the diff. A budget grown or
    crossed is `VIOLATED` unless the change splits it first.
 5. **Proof commands.** Run exactly what the adapter declares (build,
@@ -74,8 +74,8 @@ purpose, watch the test fail, restore it (`code-review`
 
 ## Maintainability axes · `both` · [code-review]
 
-Full text, sources and the reporting rules: `code-review`
-`references/maintainability.md`. One line each here:
+Full text, sources and the reporting rules:
+`../code-review/references/maintainability.md`. One line each here:
 
 - **M1 · Size** — no function or file grows past its budget, or grows while over it.
 - **M2 · Spaghetti** — no branch bolted onto an unrelated flow; repeated conditionals become a model.
