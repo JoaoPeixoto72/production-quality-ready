@@ -172,4 +172,4 @@ table does.
 
 ## Licence
 
-Apache-2.0 unless a file states otherwise.
+Apache-2.0 © 2026 Joao Peixoto unless a file states otherwise.

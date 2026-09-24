@@ -3,7 +3,9 @@
   "version": "2.3.1",
   "description": "Quality plugin for web and desktop apps: independent audit owners, a read-only orchestrator, a work cycle (start-work, review-change, close-work, verify) adapted per project by bootstrap-project, and gates where a PASS needs a command and a log.",
   "author": {
-    "name": "JoaoPeixoto72"
+    "name": "Joao Peixoto",
+    "email": "joaopeixoto@hotmail.com",
+    "url": "https://github.com/JoaoPeixoto72"
   },
   "keywords": [
     "audit",

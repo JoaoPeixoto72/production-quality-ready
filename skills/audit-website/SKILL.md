@@ -110,4 +110,4 @@ See `instruments.yaml`. Both engines are canonical producers.
 
 ## Licence
 
-Apache-2.0. Copyright (c) 2026 João Carlos de Sousa Peixoto.
+Apache-2.0. Copyright (c) 2026 João Peixoto.

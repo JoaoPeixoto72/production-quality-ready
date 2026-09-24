@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SEO Audit v1 — evidence-based SEO audit engine.
 //
-// Copyright (c) 2026 João Carlos de Sousa Peixoto
+// Copyright (c) 2026 João Peixoto
 // SPDX-License-Identifier: Apache-2.0
 
 import fs from 'node:fs'
