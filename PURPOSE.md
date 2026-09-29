@@ -146,6 +146,8 @@ the defect to look for.
 | Design questions | `prototype` | throwaway code that answers one question |
 | Intake of external work | `triage` | one category, one state, and the claim verified before any brief |
 | Release execution | `ship` | verified in production, and reversible before it starts |
+| Human-only setup | `wizard` | if an agent can run it, it is not a wizard step |
+| Structural debt | `improve` | no proof of no-change, no refactor |
 
 Every owner declares `platforms:` (web, desktop, both). A project's
 `gates.json` declares `platform:`; checks tagged for the other platform

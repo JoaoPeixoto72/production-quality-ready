@@ -11,6 +11,32 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 3.1.0
+
+**The two owners left over from the comparison, taken deliberately last.**
+
+1. `wizard` — generates the interactive script that walks a person through the
+   steps no agent can do: provisioning, dashboard settings, API keys, CI
+   secrets. Founding rule: if an agent can run it, it is not a wizard step. The
+   secret is read without echo, checked by calling the sandbox, never printed
+   back, and the script ends with a pointer to where each value lives — never
+   the value. It exists because `ESTADO.md §3` ("waiting on money") is exactly
+   this class of blocked work.
+2. `improve` — ranks the places a codebase is hard to change into a refactor
+   plan a `slice` can execute: shallow modules, missing seams, repeated
+   conditionals, pass-through indirection, reachable state. It cites
+   `code-review`'s budgets instead of re-declaring them, and its founding rule
+   is that a refactor with no proof of no-behaviour-change is a rewrite. It
+   closes the gap where debt was measured (M1–M7) and never planned.
+
+Both close no check, so `POLICY §2.4` grew two rows; context cost is now 27
+descriptions.
+
+Not taken, and it stays that way: `retro`, `teach`, `to-questionnaire`,
+`loop-me`, the writing-* family, host-specific setup skills (`setup-pre-commit`,
+`setup-ts-deep-modules`, `git-guardrails`), project-specific migrations
+(`migrate-to-shoehorn`), and the five-bucket taxonomy.
+
 ### plugin 3.0.0
 
 **Scope, not size: the plugin stops being only a gate and covers idea to

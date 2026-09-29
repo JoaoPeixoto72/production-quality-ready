@@ -77,6 +77,8 @@ Pairs that touch:
 | `ship` ↔ `verify` | ship: "proving a change locally — verify"; verify: "running the release — ship" |
 | `ship` ↔ `release-audit` | ship: "owns the release rules — release-audit"; release-audit: "executes them — ship" |
 | `triage` ↔ `diagnose` | triage: "turns a report into a reproduction — diagnose"; diagnose: "decides what enters the queue — triage" |
+| `wizard` ↔ `ship` | wizard: "runs the release — ship"; ship: "clears the human steps — wizard" |
+| `improve` ↔ `code-review` | improve: "owns the budgets and their verdict — code-review"; code-review: "plans against them — improve" |
 
 The work-cycle pairs form a **triangle**, not a chain — a user can type
 the wrong verb directly, not only the adjacent one. Every skill in the
@@ -170,6 +172,8 @@ Consequence: an owner can run alone. Nightly CI running only
 | `prototype` | Design question. Writes a throwaway artefact; closes no check. |
 | `handoff` | Packaging. Writes the pull-request body or the session handoff; closes no check. |
 | `ship` | Release execution. Emits artefacts (deploy log, smoke output) *used* by `verify` and `release-audit`; closes no verdict. |
+| `wizard` | Human-only steps. Writes the wizard script; closes no check. |
+| `improve` | Refactor plan. Writes the ranked plan; closes no check. |
 
 ---
 

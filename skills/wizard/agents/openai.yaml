@@ -1,0 +1,3 @@
+interface:
+  display_name: "Wizard"
+  short_description: "Walk a person through what only they can do"

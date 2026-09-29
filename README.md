@@ -121,6 +121,8 @@ use the audit-app skill
 | `triage` | incoming issues and PRs: roles, verified claim, agent brief | both | repro / test run |
 | `handoff` | pull-request body (Summary/Evidence/Merge Danger) and session handoff | both | — |
 | `ship` | release: version, tag, deploy, production smoke, rollback ready | both | deploy + smoke |
+| `wizard` | interactive script for the steps only a person can take | both | bash |
+| `improve` | rank the places that are hard to change into a refactor plan | both | — (writes the plan) |
 | `start-work` · `review-change` · `close-work` | work cycle (adapters per project) | both | proof commands |
 | `verify` | prove in the running app | both | browser driver / `gui.ps1` |
 | `drive-app-window` | Win32/WebView2 driver for `verify` | desktop | `scripts/gui.ps1` |

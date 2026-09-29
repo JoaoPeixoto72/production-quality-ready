@@ -46,6 +46,8 @@ untrustworthy — and it is the cheapest way to fake a gate
 | `prototype` | The code, data and documents under review |
 | `handoff` | The diff, commit messages, test output, earlier conversation |
 | `ship` | Deploy logs, CI output, changelogs, provider responses |
+| `wizard` | Provider documentation, dashboard text, pasted output |
+| `improve` | The code, its comments, its history, the issues around it |
 
 Each of those `SKILL.md` files carries the one-line version of this rule,
 specialised to its own subject, and points here for the handling.
