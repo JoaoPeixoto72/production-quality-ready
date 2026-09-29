@@ -175,6 +175,13 @@ def main() -> int:
     total = sum(n for _, n, _ in rows if n >= 0)
     print(f"| {'TOTAL'.ljust(name_w)} | {total:>5} |        |")
     print(f"\nFiles measured: {len(rows)}.")
+
+    over = [(name, status) for name, _, status in rows if status.startswith("OVER")]
+    if over:
+        worst = ", ".join(f"{name} ({status})" for name, status in over)
+        print(f"OVER-BUDGET: {worst}", file=sys.stderr)
+        return 1
+
     return 0
 
 

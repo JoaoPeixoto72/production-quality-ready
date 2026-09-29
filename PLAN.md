@@ -11,6 +11,31 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 2.3.2
+
+**The plugin's own gates could not fail, and the installed project had drifted.**
+
+1. `scripts/measure-descriptions.py` printed `OVER-CEILING` and returned 0:
+   the ceiling the README and the generator's Phase 3 both promise was never
+   enforced. It returns 1 on any over-budget `description` now.
+2. The documented acceptance commands were broken:
+   `python -m unittest discover -s tests/audit-app` fails, because the
+   directories contain a hyphen (`Start directory is not importable`).
+   `README` and `PURPOSE §6` now run `python -m pytest tests`; a CI workflow
+   (`.github/workflows/verify.yml`) runs the ceiling and the 76 tests, so the
+   falsifiable criteria of `PURPOSE §6` are executable.
+3. The Provo instance was frozen at 2.0.0 (no bootstrap re-run): its four
+   adapters carried `version:`, `extends: …@2.x` and a `contract:` snapshot
+   path, and `gates.json` a `plugin-version` — fields the current templates no
+   longer emit — and their descriptions were 318–338 chars, over the plugin's
+   own 250. Aligned to the current templates **in place**: the project tables,
+   invariants and surfaces were kept, not regenerated. The missing re-run/merge
+   mode remains the root cause (see Open work).
+4. The version was reachable only through `.claude-plugin/plugin.json`, a path
+   a non-Claude host does not read: the plugin is host-agnostic but its version
+   was not. The root `plugin.json` carries it too now, and `verify.yml` asserts
+   the two manifests agree, so the single value cannot drift.
+
 ### plugin 2.3.0
 
 Audited by `skill-auditor` with NVIDIA SkillSpector installed. Three fixes:
@@ -30,7 +55,9 @@ number next to a file — per-skill `version:`, `evidence-schema`,
 version, the `CONTRACTS.md.snapshot` copy in each project — was a second
 statement of a fact the file already makes, and each one had drifted
 (2.1.0 found skills saying `1.3.x` under a `2.0.0` contract). Now: one
-version, in `.claude-plugin/plugin.json`, because the host reads it; a
+version *value*, carried by the host manifests — `.claude-plugin/plugin.json`
+for Claude Code and the root `plugin.json` for other hosts — and kept
+equal by a CI check (`verify.yml`); a
 report names its contract by SHA-256 (`validate_report.py --contrato`);
 a missing field resolves by the reason that names it (`CONTRACTS §6`).
 `rule-version` stays — it names an external standard, where the number

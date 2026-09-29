@@ -1,0 +1,22 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest
+      - name: Version manifests agree
+        run: python -c "import json; a=json.load(open('.claude-plugin/plugin.json',encoding='utf-8'))['version']; b=json.load(open('plugin.json',encoding='utf-8'))['version']; assert a==b, ('version drift', a, b); print('version', a)"
+      - name: Description ceiling (fails above 250 characters)
+        run: python scripts/measure-descriptions.py skills
+      - name: Unit tests (evidence, report, quality_scan)
+        run: python -m pytest tests -q

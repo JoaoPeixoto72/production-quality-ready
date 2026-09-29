@@ -134,8 +134,7 @@ production-quality-ready/
 
 ```bash
 python scripts/measure-descriptions.py skills                     # exit 1 if any description > 250
-python -m unittest discover -s tests/audit-app -p "test_*.py"     # evidence + report validators
-python -m unittest discover -s tests/code-review -p "test_*.py"   # quality_scan
+python -m pip install pytest && python -m pytest tests -q         # evidence, report and quality_scan tests
 pwsh scripts/run-all-owners.ps1 -RepoRoot <repo> -DryRun          # lists owners for the platform
 ```
 
