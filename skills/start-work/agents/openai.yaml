@@ -1,0 +1,3 @@
+interface:
+  display_name: "Start Work"
+  short_description: "Open a session on the project's real state"

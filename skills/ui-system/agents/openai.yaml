@@ -1,0 +1,3 @@
+interface:
+  display_name: "UI System"
+  short_description: "Build, migrate or audit the design system"

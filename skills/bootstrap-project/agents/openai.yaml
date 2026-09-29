@@ -1,0 +1,6 @@
+interface:
+  display_name: "Bootstrap Project"
+  short_description: "Write gates.json and the four project adapters"
+
+policy:
+  allow_implicit_invocation: false

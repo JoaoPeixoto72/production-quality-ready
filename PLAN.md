@@ -11,6 +11,42 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 2.4.0
+
+**Two host gaps closed, one rule file added.** Compared, mechanism by
+mechanism, against a skills repository that had taken the same ideas further
+(distribution, invocation, authoring discipline), and only what removed a
+real gap was taken.
+
+1. Codex is a first-class host now: every skill carries `agents/openai.yaml`
+   (`interface.display_name`, `interface.short_description`), the file Codex
+   reads for its skill picker. The plugin said host-agnostic while only
+   Claude Code could show a skill's own name. `bootstrap-project` writes the
+   same file beside each adapter it generates, from a new template.
+2. `bootstrap-project` is **user-invoked**: `disable-model-invocation: true`,
+   plus `policy.allow_implicit_invocation: false` beside it. It writes into
+   the repo and a re-run rewrites what an earlier run wrote, so the user
+   names it. `POLICY §2.1` no longer states that no skill sets the field; it
+   names the one skill and the reason.
+3. New `rules/writing-for-agents.md`: the discipline for anything an agent
+   reads. The pointer's wording is the routing; inline what every branch
+   needs and disclose the rest; say the target, not the ban; a step ends on
+   a criterion; delete no-ops and stale caches. `bootstrap-project` and
+   `POLICY §3.1` point at it. It exists because the plugin had evidence rules
+   and no authoring rules.
+4. The anti prompt-injection clause, duplicated across nine owners with only
+   the subject list varying, now has one owner:
+   `rules/anti-prompt-injection.md`. Each owner keeps a one-line guardrail
+   and a pointer. The measured saving is small (~30 characters per skill);
+   the win is that the handling changes in one place.
+5. Drift introduced by 2.3.2 fixed: `POLICY §6` and `CONTRACTS §6.4` still said
+   the version lived only in `.claude-plugin/plugin.json`.
+
+Not taken, and why: changesets plus a release workflow, a docs page per
+skill, a symlink installer and a five-bucket taxonomy all pay for a public
+38-skill product. This plugin serves two projects, and the version assert in
+CI already removes the drift those mechanisms guard against.
+
 ### plugin 2.3.2
 
 **The plugin's own gates could not fail, and the installed project had drifted.**

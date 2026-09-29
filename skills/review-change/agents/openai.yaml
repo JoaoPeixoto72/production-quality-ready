@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review Change"
+  short_description: "Adversarial review of a diff before close"

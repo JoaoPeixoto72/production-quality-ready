@@ -93,9 +93,15 @@ manifest or unlisted pair → `NOT_VERIFIED` with reason
 
 A skill wakes when its `description` matches the task — the host's model
 picks it, or the user or harness names it. **Never because another skill
-called it.** No skill sets `disable-model-invocation`: the plugin
-publishes nothing and deletes nothing, so there is no skill whose
-automatic trigger costs more than it saves.
+called it.**
+
+Every owner is **model-invoked**. `bootstrap-project` is the plugin's
+one **user-invoked** skill: it writes adapters into a repo, and a re-run
+rewrites what an earlier run wrote, so an automatic trigger can cost
+more than it saves. It carries `disable-model-invocation: true`
+(Claude Code) and `policy.allow_implicit_invocation: false` beside it in
+`agents/openai.yaml` (Codex); the user reaches it by name in either
+harness.
 
 This is why every `description` says *when* (after writing code, at the
 start of a conversation), not only *what*: the trigger is the only
@@ -163,7 +169,8 @@ the universal skill returns `NOT_VERIFIED/missing-adapter`
 
 Contract for each adapter lives in `adapter-contracts/<name>.md` at
 the plugin root — required frontmatter, required body sections, what
-the adapter does not do.
+the adapter does not do. The body is prose an agent reads, so
+`rules/writing-for-agents.md` governs how it is written.
 
 ### 3.2 Location of the adapter
 
@@ -293,9 +300,12 @@ scope in the report.
 
 ## 6. Versioning
 
-One version, in `.claude-plugin/plugin.json` — the host reads it to
-offer an update (`CONTRACTS §6`). Skills, adapters, `gates.json` and
-evidence carry none: they name files, and the file is the rule.
+One version **value**, carried by both host manifests: the root
+`plugin.json` (hosts that do not read `.claude-plugin/`) and
+`.claude-plugin/plugin.json` (Claude Code). `scripts/` in CI asserts the
+two are equal, so the value cannot drift (`CONTRACTS §6.4`). Skills,
+adapters, `gates.json` and evidence carry none: they name files, and the
+file is the rule.
 
 When the plugin starts requiring something a project file lacks, the
 absence is the signal — `owner-undeclared`, `platform-undeclared`,

@@ -10,6 +10,7 @@ Read first:
 - [`PURPOSE.md`](PURPOSE.md) — what the plugin is for, what counts as well made.
 - [`POLICY.md`](POLICY.md) — who owns what.
 - [`CONTRACTS.md`](CONTRACTS.md) — what counts as proof.
+- [`rules/writing-for-agents.md`](rules/writing-for-agents.md) — how to write anything an agent reads.
 
 ## The idea in one paragraph
 
@@ -110,6 +111,11 @@ use the audit-app skill
 | `audit-website` | 360º + deep SEO/GEO engines, SARIF | web | `run_website_audit.mjs`, `seo/run_seo_audit.mjs` |
 | `audit-app` | read-only orchestrator | both | `validate_evidence.py` |
 
+Every skill is **model-invoked** except `bootstrap-project`, which the
+user names by hand (`POLICY.md §2.1`) because it writes into the repo.
+Each skill carries `agents/openai.yaml` for Codex's skill picker; Claude
+Code reads `SKILL.md` alone.
+
 Checks tagged for the other platform resolve `NOT_APPLICABLE/platform`
 automatically — a Tauri app is not asked about cookies, a Worker is not
 asked about installer signatures.
@@ -120,10 +126,11 @@ asked about installer signatures.
 production-quality-ready/
 ├── PURPOSE.md · POLICY.md · CONTRACTS.md · PLAN.md · README.md
 ├── adapter-contracts/        # what each project adapter must provide
+├── rules/                    # writing-for-agents.md, anti-prompt-injection.md
 ├── scripts/
 │   ├── measure-descriptions.py    # exit 1 if any description > 250 chars
 │   └── run-all-owners.ps1         # runs instruments, writes evidence (PASS ⇒ command+log)
-└── skills/                   # one folder per skill: SKILL.md + instruments.yaml (platforms:)
+└── skills/                   # SKILL.md + instruments.yaml (platforms:) + agents/openai.yaml (Codex)
     ├── audit-app/scripts/validate_evidence.py   # mechanical evidence validator + tests
     ├── audit-website/{scripts,seo}/             # two engines
     ├── ui-system/{assets,packs/react-components,scripts}/

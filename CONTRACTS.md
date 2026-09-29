@@ -432,9 +432,11 @@ itself. It does not block aggregation; two checks of one subject under
 different `rule-version` are both counted, and the divergence is
 recorded.
 
-**Rule 6.4.** The plugin has one version, in
-`.claude-plugin/plugin.json`, because the host reads it to offer an
-update. Nothing else in the plugin or in a project carries one.
+**Rule 6.4.** The plugin has one version **value**, carried by both host
+manifests — the root `plugin.json` for hosts that do not read
+`.claude-plugin/`, and `.claude-plugin/plugin.json` for Claude Code. CI
+asserts the two are equal, so the value cannot drift. Nothing else in
+the plugin or in a project carries one.
 
 ---
 

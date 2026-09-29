@@ -1,0 +1,3 @@
+interface:
+  display_name: "Drive App Window"
+  short_description: "Test a change in a running desktop window"

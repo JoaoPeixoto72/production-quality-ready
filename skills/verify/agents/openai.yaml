@@ -1,0 +1,3 @@
+interface:
+  display_name: "Verify"
+  short_description: "Prove a change in the running app"

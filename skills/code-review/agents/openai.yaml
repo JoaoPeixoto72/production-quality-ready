@@ -1,0 +1,3 @@
+interface:
+  display_name: "Code Review"
+  short_description: "Repo-wide correctness and maintainability audit"

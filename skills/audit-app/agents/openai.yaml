@@ -1,0 +1,3 @@
+interface:
+  display_name: "Audit App"
+  short_description: "Aggregate owner evidence into a coverage verdict"

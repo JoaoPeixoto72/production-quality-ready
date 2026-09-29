@@ -1,8 +1,9 @@
 ---
 name: bootstrap-project
-description: "Run first after installing the plugin: detect host, stack and platform, ask only what code cannot tell, write gates.json and the 4 project adapters (start-work, review-change, close-work, verify). Use on a repo without gates.json. Not for audits."
+description: "Write the project's gates.json and its four adapters (start-work, review-change, close-work, verify) from what the repo already declares. Run once after installing the plugin, and again after a plugin major upgrade. Not for audits."
 contract: CONTRACTS.md
 platforms: [web, desktop]
+disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
@@ -16,6 +17,10 @@ sales model and stack they are looking at.
 
 Run it first. Run it again after a plugin major upgrade (it re-reads the
 existing adapters and only proposes diffs).
+
+It is the plugin's one **user-invoked** skill (`POLICY.md §2.1`): it writes
+into a repo, and a re-run rewrites what a previous run wrote, so the user
+names it rather than a model trigger firing it.
 
 ## Phase 0 — Detect (never invent)
 
@@ -66,6 +71,10 @@ user before writing anything.
 
 All paths below use `<host>` = `.agents` or `.claude`.
 
+Before writing prose, load `../../rules/writing-for-agents.md`: the pointer
+line is the routing, and a body that restates the manifest is a cache that
+goes stale.
+
 1. **`<host>/gates.json`** — from `templates/gates.json.template`:
    `platform`, `sales-model`, `stack`, `owners` (applicable +
    `not-applicable` with reason), `adapter-hints` (every detected
@@ -79,10 +88,14 @@ All paths below use `<host>` = `.agents` or `.claude`.
    - `close-work`: document → subject table from the docs that exist.
    - `verify`: launch command, surfaces table, credentials pointer,
      artefact paths (local DB / object store / logs), driver by platform.
-3. **State document** — if none exists, `ESTADO.md` from
+3. **`<host>/skills/<local-name>/agents/openai.yaml`** beside each adapter,
+   from `templates/skills/openai.local.yaml.template`. Codex reads it for
+   the skill picker; without it the adapter still loads, but shows no
+   name of its own.
+4. **State document** — if none exists, `ESTADO.md` from
    `templates/ESTADO.md.template`; if one exists, do not overwrite —
    propose additions.
-4. **Agent map** — if no `AGENTS.md`/`CLAUDE.md` exists, write one from
+5. **Agent map** — if no `AGENTS.md`/`CLAUDE.md` exists, write one from
    `templates/AGENTS.md.template` (named for the host: `AGENTS.md` for
    `.agents`, `CLAUDE.md` for `.claude`). If one exists, only propose a
    "Installed skills" block.
@@ -120,6 +133,7 @@ Tests: 271 asserts (npm test @ HEAD 2d95870, 2026-09-21)
 - `templates/skills/review-change.SKILL.md.template`
 - `templates/skills/close-work.SKILL.md.template`
 - `templates/skills/verify.local.SKILL.md.template`
+- `templates/skills/openai.local.yaml.template`
 
 ## Placeholders
 
@@ -127,6 +141,7 @@ Tests: 271 asserts (npm test @ HEAD 2d95870, 2026-09-21)
 |---|---|
 | `PROJECT_NAME` | Phase 1 |
 | `ADAPTER_NAME` | Phase 1 item 8 — one per template |
+| `DISPLAY_NAME`, `SHORT_DESCRIPTION` | adapter's human name and one-line summary (Codex picker) |
 | `HOST`, `HOST_AGENT_FILE` | Phase 0 (`.agents` → `AGENTS.md`; `.claude` → `CLAUDE.md`) |
 | `PLATFORM`, `SALES_MODEL`, `STACK_JSON` | Phase 0 / 1 |
 | `AXES_THAT_APPLY` | derived from `PLATFORM` (review-change A1–A11 tags) |
