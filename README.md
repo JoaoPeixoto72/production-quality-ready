@@ -111,7 +111,16 @@ use the audit-app skill
 |---|---|---|---|
 | `bootstrap-project` | generator — **run first** | both | writes files |
 | `spec` | requirements before code: criteria, out of scope, proof per criterion | both | — (writes the spec) |
-| `diagnose` | cause before fix: reproduction, invariant broken, regression test | both | repro + test |
+| `diagnose` | cause before fix: a tight feedback loop, ranked hypotheses, regression test | both | repro + test |
+| `grill` | interrogate a plan: design tree, rounds, a recommended answer per question | both | — |
+| `spec` | requirements before code: criteria, out of scope, proof per criterion | both | — (writes the spec) |
+| `slice` | tracer-bullet slices with blocking edges, expand–contract for wide refactors | both | — (writes the slices) |
+| `map` | chart work too large for one session: destination, frontier, fog, out of scope | both | — |
+| `research` | answer a question from primary sources, cited and versioned | both | source lookup |
+| `prototype` | throwaway artefact that answers one design question | both | runs one HTML file / route |
+| `triage` | incoming issues and PRs: roles, verified claim, agent brief | both | repro / test run |
+| `handoff` | pull-request body (Summary/Evidence/Merge Danger) and session handoff | both | — |
+| `ship` | release: version, tag, deploy, production smoke, rollback ready | both | deploy + smoke |
 | `start-work` · `review-change` · `close-work` | work cycle (adapters per project) | both | proof commands |
 | `verify` | prove in the running app | both | browser driver / `gui.ps1` |
 | `drive-app-window` | Win32/WebView2 driver for `verify` | desktop | `scripts/gui.ps1` |

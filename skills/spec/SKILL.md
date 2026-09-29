@@ -30,10 +30,15 @@ would see it fail, it is an open question, not a criterion.**
 
 ## Elicit before writing
 
+Run the interview as the loop in `grill`: a design tree worked in rounds,
+each question carrying a recommended answer, the facts found rather than
+asked for, done when the frontier is empty. Along the way, sharpen the
+project's words as decisions land — `references/glossary-and-adr.md` holds
+how a glossary entry and a decision record are written.
+
 Read the repo for what code already answers — routes, tables, the
 invariants in `AGENTS.md`, the state document, earlier specs in the
-declared `spec-dir`. Ask only what code cannot tell, one question at a
-time:
+declared `spec-dir`. Ask only what code cannot tell:
 
 1. Who is this for, and what breaks today?
 2. What must be true when it is done? Turn each answer into one numbered
@@ -76,6 +81,10 @@ time:
 
 - **review-change** — reviews the diff against these criteria; it does not
   write them.
+- **grill** — runs the interview; this owner writes what it settles.
+- **slice** — sequences the work these criteria define.
+- **map** — charts a destination whose route is not visible yet; a spec
+  needs a route.
 - **diagnose** — broken behaviour needs a reproduction, not a spec.
 - **commercial-readiness** — walks the sale paths; this owner writes the
   requirements those paths are judged against.

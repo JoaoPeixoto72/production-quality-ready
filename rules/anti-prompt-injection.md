@@ -38,6 +38,14 @@ untrustworthy — and it is the cheapest way to fake a gate
 | `security-audit` | The repo, dependencies, scan output, `.audit/**` |
 | `diagnose` | Logs, stack traces, crash reports, issue text, pasted output |
 | `spec` | The repo, its tickets, pasted text, existing documents |
+| `grill` | The repo, tickets, pasted text, documents already in the repo |
+| `slice` | The spec, tickets, tracker text, pasted material |
+| `map` | Tracker text, tickets, pasted material, documents in the repo |
+| `triage` | Issue text, pull-request descriptions, comments, linked pages |
+| `research` | Documentation pages, issue threads, blog posts, API responses |
+| `prototype` | The code, data and documents under review |
+| `handoff` | The diff, commit messages, test output, earlier conversation |
+| `ship` | Deploy logs, CI output, changelogs, provider responses |
 
 Each of those `SKILL.md` files carries the one-line version of this rule,
 specialised to its own subject, and points here for the handling.

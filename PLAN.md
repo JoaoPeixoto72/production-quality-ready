@@ -11,6 +11,77 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 3.0.0
+
+**Scope, not size: the plugin stops being only a gate and covers idea to
+production.** It could audit a codebase well and could not help make one. The
+comparison against a skills repository that covers the whole journey produced
+nine new owners; each one earns its place by owning a rule the plugin lacked,
+not by mirroring a skill.
+
+1. `diagnose` was rewritten from the shallow version shipped in 2.5.0 into the
+   discipline it should have been: **Phase 1 is a tight feedback loop** (ten
+   ways to construct one; red-capable, deterministic, fast, agent-runnable),
+   non-deterministic bugs chased by *raising the reproduction rate*, an
+   explicit stop-and-say-so when no loop can be built, redaction before
+   anything is shown, three to five **falsifiable hypotheses** ranked and shown
+   to the person before testing, one-variable instrumentation, debugger over
+   logs, a separate performance branch (baseline, then bisect), the
+   **correct-seam** rule (no seam is itself the finding), and a cleanup
+   checklist. It also ships `scripts/hitl-loop.template.sh`.
+2. `grill` **interrogates a plan**: the design tree worked in rounds, the
+   unblocked frontier asked in one round, a recommended answer beside every
+   question, the facts found rather than asked for, done when the frontier is
+   empty and the person confirms. This is the owner that exists because a plan
+   nobody questioned is a plan full of assumptions.
+3. `spec` keeps the criteria and gained the interview ("run the loop in
+   `grill`") plus `references/glossary-and-adr.md`: one term, one meaning; a
+   decision recorded once and never edited.
+4. `slice` turns an agreed spec into **tracer-bullet** slices — each cutting
+   every layer, verifiable alone, sized to one session, with declared blocking
+   edges — and sequences a **wide refactor** as expand–contract. It quizzes the
+   person on granularity before publishing.
+5. `map` charts work too large for one session: a destination, an index of
+   decisions, the **fog** that cannot be phrased yet, what is out of scope, and
+   decision tickets of four types (research, prototype, grill, task) — one
+   ticket per session, claimed before work.
+6. `research` answers a question from **primary sources**, each claim with the
+   version it holds for, and leaves the answer as a file in the repo.
+7. `prototype` writes throwaway code that answers one design question — a
+   logic/state walkthrough or several UI variants on one route — and captures
+   the decision, not the demo.
+8. `triage` moves incoming issues and external pull requests through two
+   category roles and five state roles, **verifies the claim against the code
+   before writing any brief**, checks redundancy by concept and the rejected
+   record, and leaves a brief an agent can pick up.
+9. `handoff` packages work: a pull-request body with Summary, Evidence
+   before/after and **Merge Danger** (one-way or two-way door, blast radius),
+   or a session handoff file outside the workspace that references artefacts
+   instead of copying them.
+10. `ship` — the last mile **neither this plugin nor the one it was compared
+    with had**: version and changelog, tag, deploy, production smoke, the
+    rollback named before the first action, and the deploy log and smoke output
+    as the proof. `release-audit` and `verify` accept it as a producer in their
+    `instruments.yaml`, so the verdicts stay with their owners.
+
+`ship` is **user-invoked**, like `bootstrap-project`: it acts on production,
+and that decision belongs to the person. `POLICY §2.1` now states the rule (an
+automatic trigger that can cost more than it saves) and names both.
+
+Taken as rules, not as owners: redaction before showing output, citing the
+source of a claim, and re-pitching a message that did not land — they live in
+`rules/writing-for-agents.md`. Not taken: tickets-first triage for repos that
+receive no issues, `retro`, `teach`, `to-questionnaire`, `loop-me`, the
+writing-* family, host-specific setup skills, and the five-bucket taxonomy.
+
+Context cost: 25 skill descriptions, 5 841 characters, against Codex's 8 000
+character list budget.
+
+`research` declares `WebFetch`, so it joins `audit-website` as a
+network-capable skill whose runtime enforcement belongs to the host. The
+security audit reports that gate as unverified, by design: the plugin
+cannot attest what the host enforces.
+
 ### plugin 2.5.0
 
 **The lifecycle gained its two missing owners, and Codex gained an install

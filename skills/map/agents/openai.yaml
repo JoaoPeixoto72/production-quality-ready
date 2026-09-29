@@ -1,0 +1,3 @@
+interface:
+  display_name: "Map"
+  short_description: "Chart work too large for one session"

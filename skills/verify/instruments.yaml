@@ -19,6 +19,10 @@ accepts:
       - verify.action-executed
       - verify.screenshot-captured
       - verify.keyboard-pass
+  - producer: ship
+    instrument: deploy-smoke
+    for-checks:
+      - smoke-test-passes
   - producer: verify
     instrument: adapter-local
     for-checks:

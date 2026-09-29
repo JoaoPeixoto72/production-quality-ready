@@ -20,6 +20,11 @@ accepts:
       - release.rollback-declared
       - release.migrations-in-pipeline
       - release.env-parity
+  - producer: ship
+    instrument: release-run
+    for-checks:
+      - release.deploy-single-command
+      - release.rollback-declared
   - producer: release-audit
     instrument: signature-verifier
     platforms: [desktop]

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Slice"
+  short_description: "Cut a spec into tracer-bullet slices"

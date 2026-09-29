@@ -139,6 +139,13 @@ the defect to look for.
 | Public web surface: SEO, GEO, CWV, cookies, CRO, links | `audit-website` | 7 pillars + deep SEO engine; consent prior to fire |
 | Requirements: problem, acceptance criteria, out of scope | `spec` | a criterion names the observable proof it needs |
 | Diagnosis: reproduction, cause, regression | `diagnose` | *a bug is fixed when a test that failed on it passes* |
+| Project vocabulary and decisions | `spec` | one term, one meaning; a decision recorded once, never edited |
+| Planning: the way when it is not visible | `map` | plan, don't do — the route is clear when nothing is left to decide |
+| Work breakdown | `slice` | a slice cuts every layer and is verifiable alone |
+| Investigation | `research` | the source that owns the claim, with the version it holds for |
+| Design questions | `prototype` | throwaway code that answers one question |
+| Intake of external work | `triage` | one category, one state, and the claim verified before any brief |
+| Release execution | `ship` | verified in production, and reversible before it starts |
 
 Every owner declares `platforms:` (web, desktop, both). A project's
 `gates.json` declares `platform:`; checks tagged for the other platform
@@ -146,9 +153,11 @@ resolve `NOT_APPLICABLE/platform`. This is how one plugin serves a
 Cloudflare Worker and a Tauri binary without inventing rules for either.
 
 Some skills are not owners of a subject: `verify` and
-`drive-app-window` are proof capabilities;
-`start-work`/`review-change`/`close-work` are the work cadence; and
-`bootstrap-project` is the generator — **and the first thing to run**,
+`drive-app-window` are proof capabilities; `ship` executes what
+`release-audit` and `verify` rule on;
+`start-work`/`review-change`/`close-work` are the work cadence; `grill` is
+the interview and `handoff` the package; and `bootstrap-project` is the
+generator — **and the first thing to run**,
 because it writes the four project adapters that make the generic
 owners bite on a concrete codebase.
 

@@ -68,3 +68,17 @@ list" does not. The strongest criteria are both checkable and exhaustive.
   it.
 - Every number comes from a command, with the command and the commit
   beside it (`CONTRACTS.md §4.6`).
+
+## Report to the human
+
+- **Redact before you show.** Commands, outputs and artefacts carry
+  secrets: write `<REDACTED>` in their place, and build loops against
+  environment variables so the credential never enters the transcript.
+- **Cite the source.** A claim about the outside world names the file,
+  the version or the URL it came from (`research`).
+- **Re-pitch when it does not land.** If the person says the last
+  message did not make sense, do not repeat it louder: give a line of
+  context, then the same content in shorter sentences and the project's
+  own vocabulary.
+- **Say what you did, what you found, what you need.** Not the story of
+  getting there.

@@ -69,6 +69,14 @@ Pairs that touch:
 | `diagnose` ↔ `review-change` | diagnose: "reviews the diff — review-change"; review-change: "finds the cause — diagnose" |
 | `spec` ↔ `diagnose` | spec: "broken behaviour — diagnose"; diagnose: "new behaviour — spec" |
 | `reliability-audit` ↔ `diagnose` | reliability: "finding one cause — diagnose"; diagnose: "failure handling in production — reliability-audit" |
+| `grill` ↔ `spec` | grill: "writes what the interview settles — spec"; spec: "runs the interview — grill" |
+| `slice` ↔ `map` | slice: "the route is not visible yet — map"; map: "the route is already clear — slice" |
+| `research` ↔ `grill` | research: "makes the decisions — grill"; grill: "supplies the facts — research" |
+| `prototype` ↔ `spec` | prototype: "turns the answer into criteria — spec"; spec: "answers a design question — prototype" |
+| `handoff` ↔ `close-work` | handoff: "the project state document — close-work"; close-work: "the work package — handoff" |
+| `ship` ↔ `verify` | ship: "proving a change locally — verify"; verify: "running the release — ship" |
+| `ship` ↔ `release-audit` | ship: "owns the release rules — release-audit"; release-audit: "executes them — ship" |
+| `triage` ↔ `diagnose` | triage: "turns a report into a reproduction — diagnose"; diagnose: "decides what enters the queue — triage" |
 
 The work-cycle pairs form a **triangle**, not a chain — a user can type
 the wrong verb directly, not only the adjacent one. Every skill in the
@@ -99,13 +107,13 @@ A skill wakes when its `description` matches the task — the host's model
 picks it, or the user or harness names it. **Never because another skill
 called it.**
 
-Every owner is **model-invoked**. `bootstrap-project` is the plugin's
-one **user-invoked** skill: it writes adapters into a repo, and a re-run
-rewrites what an earlier run wrote, so an automatic trigger can cost
-more than it saves. It carries `disable-model-invocation: true`
-(Claude Code) and `policy.allow_implicit_invocation: false` beside it in
-`agents/openai.yaml` (Codex); the user reaches it by name in either
-harness.
+Every owner is **model-invoked**; two skills are **user-invoked**, because
+an automatic trigger can cost more than it saves: `bootstrap-project`
+writes adapters into a repo and a re-run rewrites what an earlier run
+wrote, and `ship` acts on production, where the person owns that decision.
+Both carry `disable-model-invocation: true` (Claude Code) and
+`policy.allow_implicit_invocation: false` in `agents/openai.yaml` (Codex);
+the user reaches each by name in either harness.
 
 This is why every `description` says *when* (after writing code, at the
 start of a conversation), not only *what*: the trigger is the only
@@ -154,6 +162,14 @@ Consequence: an owner can run alone. Nightly CI running only
 | `start-work` / `close-work` | Work cadence. Read and rewrite the state document. |
 | `spec` | Writer of requirements. Writes the spec file; closes no check. |
 | `diagnose` | Finder of causes. Writes the reproduction and the regression test; closes no check. |
+| `grill` | Interview. Settles decisions in conversation; closes no check. |
+| `slice` | Breakdown. Writes slices and their blocking edges; closes no check. |
+| `map` | Chart. Writes the map and its decision tickets; closes no check. |
+| `triage` | Intake. Moves issues through states and writes briefs; closes no check. |
+| `research` | Investigation. Writes findings with their sources; closes no check. |
+| `prototype` | Design question. Writes a throwaway artefact; closes no check. |
+| `handoff` | Packaging. Writes the pull-request body or the session handoff; closes no check. |
+| `ship` | Release execution. Emits artefacts (deploy log, smoke output) *used* by `verify` and `release-audit`; closes no verdict. |
 
 ---
 
