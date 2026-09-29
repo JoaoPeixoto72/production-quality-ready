@@ -6,6 +6,7 @@ accepts:
   - producer: audit-website
     instrument: run_website_audit.mjs
     for-checks:
+      - web.readiness-clean
       - web.seo-technical
       - web.core-web-vitals
       - web.cookie-prior-consent

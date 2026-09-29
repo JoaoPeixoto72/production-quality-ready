@@ -11,6 +11,17 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 3.1.1
+
+**A pair the runner emitted and the owner did not accept.** `run-all-owners.ps1`
+writes `web.readiness-clean` from the 360 engine, and
+`audit-website/instruments.yaml` did not declare it — an evidence file whose
+`(producer, instrument)` pair is not in the owner's manifest, which
+`CONTRACTS §4.5` resolves as `NOT_VERIFIED/unauthorized-instrument` and would
+have quietly dropped a legitimate PASS. Found by running the runner and
+validating the result against the registry, which is what the pair check is
+for. The manifest now declares it.
+
 ### plugin 3.1.0
 
 **The two owners left over from the comparison, taken deliberately last.**
