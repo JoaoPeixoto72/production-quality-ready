@@ -137,6 +137,8 @@ the defect to look for.
 | Distribution, supply chain, deploy, CI | `release-audit` | clean clone → one command → the same artifact |
 | Sale, activation or checkout, first run, legal | `commercial-readiness` | the failing paths were walked, not just the happy one |
 | Public web surface: SEO, GEO, CWV, cookies, CRO, links | `audit-website` | 7 pillars + deep SEO engine; consent prior to fire |
+| Requirements: problem, acceptance criteria, out of scope | `spec` | a criterion names the observable proof it needs |
+| Diagnosis: reproduction, cause, regression | `diagnose` | *a bug is fixed when a test that failed on it passes* |
 
 Every owner declares `platforms:` (web, desktop, both). A project's
 `gates.json` declares `platform:`; checks tagged for the other platform

@@ -65,6 +65,10 @@ Pairs that touch:
 | `start-work` ↔ `review-change` | start-work: "review code — review-change"; review-change: "open a session — start-work" |
 | `review-change` ↔ `close-work` | review-change: "update documents — close-work"; close-work: "review first — review-change" |
 | `start-work` ↔ `close-work` | start-work: "close — close-work"; close-work: "open — start-work" |
+| `spec` ↔ `review-change` | spec: "reviews the diff against these criteria — review-change"; review-change: "writes the criteria — spec" |
+| `diagnose` ↔ `review-change` | diagnose: "reviews the diff — review-change"; review-change: "finds the cause — diagnose" |
+| `spec` ↔ `diagnose` | spec: "broken behaviour — diagnose"; diagnose: "new behaviour — spec" |
+| `reliability-audit` ↔ `diagnose` | reliability: "finding one cause — diagnose"; diagnose: "failure handling in production — reliability-audit" |
 
 The work-cycle pairs form a **triangle**, not a chain — a user can type
 the wrong verb directly, not only the adjacent one. Every skill in the
@@ -148,6 +152,8 @@ Consequence: an owner can run alone. Nightly CI running only
 | `drive-app-window` | Technical capability (Win32/WebView2). *Used* by `verify` on desktop; emits artefacts, not verdicts. |
 | `bootstrap-project` | Generator. Writes `gates.json` and the four project adapters. Not an auditor. |
 | `start-work` / `close-work` | Work cadence. Read and rewrite the state document. |
+| `spec` | Writer of requirements. Writes the spec file; closes no check. |
+| `diagnose` | Finder of causes. Writes the reproduction and the regression test; closes no check. |
 
 ---
 

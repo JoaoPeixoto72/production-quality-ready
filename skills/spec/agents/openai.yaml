@@ -1,0 +1,3 @@
+interface:
+  display_name: "Spec"
+  short_description: "Write the spec before the code exists"

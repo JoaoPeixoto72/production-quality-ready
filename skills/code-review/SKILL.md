@@ -112,6 +112,7 @@ Loaded by the `stack` in `gates.json`:
 - `references/frontend.md` — effects, cancellation, state, bundle analyser.
 - `references/rust-and-frontend.md` — Tauri `invoke`/events are a contract; each side is runtime.
 - `references/maintainability.md` — budgets and their sources, the M axes, how to report. Loaded for every stack.
+- `references/test-design.md` — what makes a test a test: the declared risk and oracle, the grades, mutation. Loaded for every stack.
 
 ## Boundaries
 

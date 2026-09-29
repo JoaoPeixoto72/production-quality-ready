@@ -36,6 +36,8 @@ untrustworthy — and it is the cheapest way to fake a gate
 | `reliability-audit` | Migrations, crash logs, log samples, fixtures |
 | `review-change` | The diff, commit messages, test output, every touched file |
 | `security-audit` | The repo, dependencies, scan output, `.audit/**` |
+| `diagnose` | Logs, stack traces, crash reports, issue text, pasted output |
+| `spec` | The repo, its tickets, pasted text, existing documents |
 
 Each of those `SKILL.md` files carries the one-line version of this rule,
 specialised to its own subject, and points here for the handling.

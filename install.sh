@@ -3,7 +3,7 @@
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/JoaoPeixoto72/production-quality-ready/main/install.sh | bash
 #   Or:
-#   ./install.sh [--global] [--target-dir <path>] [--force]
+#   ./install.sh [--global] [--target-dir <path>] [--force] [--codex]
 
 set -euo pipefail
 
@@ -11,6 +11,7 @@ REPO_URL="https://github.com/JoaoPeixoto72/production-quality-ready.git"
 PLUGIN_NAME="production-quality-ready"
 GLOBAL=false
 FORCE=false
+CODEX=false
 TARGET_DIR=""
 
 while [[ $# -gt 0 ]]; do
@@ -21,6 +22,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --force|-f)
       FORCE=true
+      shift
+      ;;
+    --codex)
+      CODEX=true
       shift
       ;;
     --target-dir|-t)
@@ -71,6 +76,14 @@ fi
 
 echo ""
 echo -e "\033[32mPlugin successfully installed to: ${DEST}\033[0m"
+echo ""
+
+if [ "$CODEX" = true ]; then
+  bash "${DEST}/scripts/link-skills.sh" --plugin-dir "${DEST}"
+else
+  echo -e "\033[36mFor Codex, run: bash ${DEST}/scripts/link-skills.sh\033[0m"
+  echo "  (Codex reads .agents/skills, not .agents/plugins/)"
+fi
 echo ""
 echo -e "\033[36mTo use with Claude Code:\033[0m"
 echo "  1. In Claude Code terminal:"

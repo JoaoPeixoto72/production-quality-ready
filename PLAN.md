@@ -11,6 +11,41 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 2.5.0
+
+**The lifecycle gained its two missing owners, and Codex gained an install
+path.** The plugin was a quality gate: it could ask *is it well made?* and
+never *is it the right thing?*. Compared against a skills repository that
+covers idea to production, only the gaps that were real were closed.
+
+1. `spec` — requirements before code: problem, numbered acceptance criteria
+   each with the proof that shows it, invariants touched, out of scope, open
+   questions. It exists because `review-change` had nothing to judge intent
+   against, and because a criterion nobody can observe is not a criterion.
+2. `diagnose` — cause before fix: smallest reproduction with its captured
+   log, the assertion that tells right from wrong, narrowing by bisect, the
+   invariant that was broken, the fix at the cause, and the regression test
+   that fails on the pre-fix commit. It exists because `review-change`
+   pointed at a "`start-work` step 5" that does not exist.
+3. `review-change` now judges **two axes that are never merged**: Standards
+   (built right) and Spec (the right thing), each with its own worst issue
+   and no single winner. A project with no spec resolves
+   `NOT_VERIFIED/no-spec` instead of inventing requirements; a spec that
+   exists with a criterion that has no proof is that axis's first `BLOCKED`.
+4. `code-review` gained `references/test-design.md`: the declared risk and
+   oracle, the A/B/C grades, oracles that hold and that do not, determinism,
+   and mutation as the cheap check. It replaces taking `tdd` as a skill.
+5. `scripts/link-skills.ps1` and `scripts/link-skills.sh` make the plugin's
+   skills visible to Codex, which reads `.agents/skills` and never
+   `.agents/plugins/`. 2.4.0 shipped the Codex metadata without an install
+   path; this is that path. `install.ps1 -Codex` / `install.sh --codex` run
+   it. Junctions on Windows need no elevation.
+
+Not taken: tickets, triage, wizard, retro, handoff, teach, `tdd` as a skill,
+and the five-bucket taxonomy. Each either duplicates an owner already here
+(`close-work` owns the state document, `spec` owns the criteria) or pays
+permanent context for a verb nobody types.
+
 ### plugin 2.4.0
 
 **Two host gaps closed, one rule file added.** Compared, mechanism by

@@ -2,7 +2,7 @@
 # Usage:
 #   irm https://raw.githubusercontent.com/JoaoPeixoto72/production-quality-ready/main/install.ps1 | iex
 #   Or locally:
-#   pwsh install.ps1 [-Global] [-TargetDir <path>] [-Force]
+#   pwsh install.ps1 [-Global] [-TargetDir <path>] [-Force] [-Codex]
 
 [CmdletBinding()]
 param(
@@ -13,7 +13,10 @@ param(
     [string]$TargetDir = "",
 
     [Parameter(Mandatory=$false)]
-    [switch]$Force
+    [switch]$Force,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$Codex
 )
 
 $ErrorActionPreference = "Stop"
@@ -69,6 +72,14 @@ if ($LocalScriptRoot -and (Test-Path (Join-Path $LocalScriptRoot "plugin.json"))
 
 Write-Host ""
 Write-Host "Plugin successfully installed to: $Dest" -ForegroundColor Green
+Write-Host ""
+
+if ($Codex) {
+    & (Join-Path $Dest "scripts\link-skills.ps1") -PluginDir $Dest
+} else {
+    Write-Host "For Codex, run: pwsh $Dest\scripts\link-skills.ps1" -ForegroundColor Cyan
+    Write-Host "  (Codex reads .agents/skills, not .agents/plugins/)" -ForegroundColor DarkGray
+}
 Write-Host ""
 Write-Host "To use with Claude Code:" -ForegroundColor Cyan
 Write-Host "  1. In Claude Code terminal:"

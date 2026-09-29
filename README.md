@@ -27,7 +27,7 @@ owners then bite on your codebase instead of on an imagined one.
 Copy or clone into the host's plugin folder of the target repo:
 
 ```bash
-# OpenCode / Antigravity / Codex — .agents
+# OpenCode / Antigravity — .agents
 git clone https://github.com/JoaoPeixoto72/production-quality-ready.git .agents/plugins/production-quality-ready
 
 # Claude Code — .claude, or via marketplace
@@ -36,7 +36,19 @@ git clone https://github.com/JoaoPeixoto72/production-quality-ready.git .claude/
 /plugin install production-quality-ready@JoaoPeixoto72/production-quality-ready
 ```
 
-One-liners (`-Global` / `--global` for machine-wide):
+**Codex reads `.agents/skills`, not `.agents/plugins/`**, so it needs one
+extra step: link the skills into the user scope, which covers every
+repository.
+
+```bash
+pwsh scripts/link-skills.ps1          # or: bash scripts/link-skills.sh
+pwsh scripts/link-skills.ps1 -Remove  # unlink
+```
+
+`install.ps1 -Codex` and `install.sh --codex` do it in the same run.
+
+One-liners (`-Global` / `--global` for machine-wide, `-Codex` / `--codex`
+to link for Codex):
 
 ```powershell
 irm https://raw.githubusercontent.com/JoaoPeixoto72/production-quality-ready/main/install.ps1 | iex
@@ -98,6 +110,8 @@ use the audit-app skill
 | Skill | Role | Platforms | Runs code? |
 |---|---|---|---|
 | `bootstrap-project` | generator — **run first** | both | writes files |
+| `spec` | requirements before code: criteria, out of scope, proof per criterion | both | — (writes the spec) |
+| `diagnose` | cause before fix: reproduction, invariant broken, regression test | both | repro + test |
 | `start-work` · `review-change` · `close-work` | work cycle (adapters per project) | both | proof commands |
 | `verify` | prove in the running app | both | browser driver / `gui.ps1` |
 | `drive-app-window` | Win32/WebView2 driver for `verify` | desktop | `scripts/gui.ps1` |
