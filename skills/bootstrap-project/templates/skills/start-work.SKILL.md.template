@@ -22,7 +22,7 @@ which holds the rule; this file holds only what is {{PROJECT_NAME}}'s.
 {{TEST_COMMAND}}
 ```
 
-Every reported number carries its command and HEAD hash.
+Report pass or fail; store no counts.
 
 ## Where code tends to repeat in this project
 

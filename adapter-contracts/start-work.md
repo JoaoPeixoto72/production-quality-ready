@@ -17,8 +17,8 @@ allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 
 1. **Where the state is** — path to `ESTADO.md` (or equivalent).
 2. **Proof command** — the command that confirms the tree is sound.
-   Format: `<command>` (which HEAD, how many tests) — every number with
-   its command alongside.
+   Report pass or fail in the session; no count is stored in the
+   adapter or in the state document.
 3. **Places where code tends to repeat** — table or list.
 4. **Documents of decisions/facts/audits** — where not to reopen.
 

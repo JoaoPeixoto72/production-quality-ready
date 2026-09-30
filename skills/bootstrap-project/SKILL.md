@@ -110,18 +110,19 @@ goes stale.
 4. `pwsh <plugin>/scripts/run-all-owners.ps1 -RepoRoot . -DryRun` lists
    the expected owners for the platform.
 5. Every document the adapters reference exists (`ESTADO.md`,
-   `docs/decisoes/`, …). If not, create the folder or drop the line.
+   …). If not, drop the line — never create an empty document or folder
+   to satisfy a reference.
 
 Refuse to hand off with any of the five failing. Check 3 matters most
 on long project names: the templates leave about 60 characters for them.
 
-## Hard rule: no number without its command
+## Hard rule: no stored counts
 
-Adapters do not store counts. Counts live in the state document with
-the command and HEAD that produced them:
+Adapters and the state document store no counts — a count is stale at
+the next commit. The state document says pass or fail beside the command:
 
 ```
-Tests: 271 asserts (npm test @ HEAD 2d95870, 2026-09-21)
+Tests: pass (`npm test`)
 ```
 
 ## Templates

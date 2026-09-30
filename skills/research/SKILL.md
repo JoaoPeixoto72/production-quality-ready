@@ -1,6 +1,6 @@
 ---
 name: research
-description: "Answer a question from primary sources and leave it in the repo, each claim with the source and the version it holds for. Use when a decision waits on a fact outside this codebase. Not for interrogating a plan (grill)."
+description: "Answer a question from primary sources and write it down, each claim with the source and the version it holds for. Use when a decision waits on a fact outside this codebase. Not for interrogating a plan (grill)."
 contract: CONTRACTS.md
 platforms: [web, desktop]
 allowed-tools: Read, Glob, Grep, Bash, Write, WebFetch
@@ -40,7 +40,9 @@ conversation. Everything else — the questions that depend on this fact — wai
 ## What the file says
 
 Write **one Markdown file** where the repo already keeps such notes; if the
-repo has no convention, put it somewhere sensible and say where in your reply.
+repo has no convention, put it in a working folder the repo ignores
+(`.work/research/`) and say where. A fact that outlives the decision moves to
+the project's verified-facts document; the note is then deleted.
 It holds:
 
 - **The question**, one line, as it was asked.

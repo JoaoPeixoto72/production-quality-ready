@@ -27,3 +27,6 @@ allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 
 - Rewrite the "reason stays, history goes" rule.
 - Duplicate other project documents (points at them).
+- Store counts, or route a line to a document for every change — the
+  table says where the five kinds of lost-if-unwritten fact go, nothing
+  more.

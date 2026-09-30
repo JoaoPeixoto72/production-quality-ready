@@ -6,8 +6,8 @@ every work session by `{{HOST}}/skills/close-work`.
 ## 1. Where we are
 
 - Version: {{VERSION}}
-- Build: {{BUILD_STATUS}} (`{{BUILD_COMMAND}}` @ HEAD {{HEAD}}, {{DATE}})
-- Tests: {{TEST_STATUS}} (`{{TEST_COMMAND}}` @ HEAD {{HEAD}}, {{DATE}})
+- Build: {{BUILD_STATUS}} (`{{BUILD_COMMAND}}`)
+- Tests: {{TEST_STATUS}} (`{{TEST_COMMAND}}`)
 - Typecheck: {{TYPECHECK_STATUS}} (`{{TYPECHECK_COMMAND}}`)
 - Last audit: none yet — run `run-all-owners.ps1` then `audit-app`.
 

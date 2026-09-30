@@ -91,8 +91,8 @@ shape plus why it cannot be delegated.
 
 `wontfix` closes with the reason: *already implemented* (point to it, do not
 record it as rejected), *rejected bug* (a polite explanation), or *rejected
-enhancement* (write one file under `docs/out-of-scope/`, link it from the
-comment, then close). `ready-for-agent` is where the work exits triage: `slice`
+enhancement* (one file in the rejected-request record if the repo keeps one,
+linked from the comment; otherwise the reason is the comment), then close. `ready-for-agent` is where the work exits triage: `slice`
 and `start-work` take it from there.
 
 ## Rationalisations that do not pass

@@ -111,9 +111,11 @@ before any work** so concurrent sessions skip it.
    decision invalidated. If something turns out to sit past the destination,
    close it and file it under **Out of scope**.
 
-Where the map and its tickets physically live is the project's choice: one file
-plus one file per ticket under `docs/map/<slug>/`, or a real tracker with native
-blocking when the project has one.
+Where the map and its tickets live is the project's choice: a real tracker with
+native blocking when the project has one, else one file plus one file per ticket
+in a working folder the repo ignores (`.work/map/<slug>/`). **The map is working
+material**: when the destination is reached, what outlives it goes to the state
+document, a comment or a test, and the folder is deleted.
 
 ## Rationalisations that do not pass
 

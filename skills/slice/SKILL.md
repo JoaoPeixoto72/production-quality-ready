@@ -68,8 +68,9 @@ on paper costs a round; discovered in code it costs the work.
 - **A tracker configured for the project** — one issue per slice, blockers
   first so the edges can reference real identifiers; use the tracker's native
   blocking relation, else a `Blocked by` section.
-- **No tracker** — one file per slice under `docs/slices/<feature>/NN-<slug>.md`,
-  numbered from `01` in dependency order, never one combined file.
+- **No tracker** — one file per slice in a working folder the repo ignores
+  (`.work/slices/<feature>/NN-<slug>.md`), numbered from `01` in dependency
+  order, never one combined file. Deleted when the feature ships.
 
 Either way: no file paths or code snippets, which go stale. The exception is a
 snippet a `prototype` produced that encodes a decision better than prose can

@@ -11,6 +11,28 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 3.4.0
+
+**Escreve-se só o que o código não diz.** Num projeto a usar o plugin, os
+documentos chegaram a ~160 mil palavras: cada mudança passava por quatro a seis
+donos, e uma IA nova, mandada fazer uma tarefa simples, perdia-se a pesquisar.
+Uma receita escrita («seis sítios») estava errada; um `git grep` deu os dez
+verdadeiros. Os documentos apodrecem, o código não mente sobre si próprio.
+
+1. `close-work` — secção nova, «Write only what the code cannot say»: o estado
+   no `ESTADO.md`, um porquê num comentário ao lado do código, uma regra entre
+   dois sítios num teste, um facto medido numa linha, um defeito numa linha. Mais
+   nada. A descrição deixa de pedir números.
+2. **Sem contagens guardadas** — o `start-work`, o `bootstrap-project` e os
+   templates dizem passa/falha ao lado do comando; um número de testes caduca no
+   commit seguinte.
+3. `bootstrap-project` — nunca cria um documento ou pasta vazios para satisfazer
+   uma referência; tira a referência.
+4. `map`, `slice` e `research` — sem tracker, escrevem numa pasta de trabalho que
+   o repositório ignora (`.work/`), e apagam-na quando o trabalho fecha; o que
+   sobrevive vai para o estado, um comentário ou um teste. O `triage` só escreve
+   o registo de pedidos recusados se o projeto o tiver.
+
 ### plugin 3.3.2
 
 **Uma lição do `ship` a funcionar, escrita no `ship`.** Ao deployar a 0.10.0 do
