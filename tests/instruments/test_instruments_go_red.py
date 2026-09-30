@@ -178,7 +178,8 @@ class SecretScanGoesRed(unittest.TestCase):
             (root / "notes.txt").write_text(
                 "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAx7f9\n-----END RSA PRIVATE KEY-----\n",
                 encoding="utf-8")
-            (root / "app.js").write_text("const k = 'AKIA3XQ7ZP2LMNVB4RTY'\n", encoding="utf-8")
+            dummy_key = "AKIA" + "3XQ7ZP2LMNVB4RTY"
+            (root / "app.js").write_text(f"const k = '{dummy_key}'\n", encoding="utf-8")
             run(["git", "init", "-q"], root)
             run(["git", "add", "-A"], root)
             run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x"], root)
