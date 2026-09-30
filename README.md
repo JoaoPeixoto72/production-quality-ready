@@ -12,6 +12,7 @@ Read first:
 - [`CONTRACTS.md`](CONTRACTS.md) — what counts as proof.
 - [`rules/writing-for-agents.md`](rules/writing-for-agents.md) — how to write anything an agent reads.
 - [`tests/instruments/`](tests/instruments/) — the red case of every instrument: the fixture where it must fail.
+- [`scripts/declared-command.py`](scripts/declared-command.py) — runs the command a project declares as proof of a check it cannot ship (`smoke-command`, `billing-harness-commands`, `tenant-isolation-command`).
 
 ## The idea in one paragraph
 

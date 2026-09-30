@@ -27,6 +27,10 @@ accepts:
       - sec.business-logic-abuse
       - sec.file-uploads-safe
   - producer: security-audit
+    instrument: tenant-isolation
+    for-checks:
+      - sec.tenant-isolation
+  - producer: security-audit
     instrument: dep-scanner
     for-checks:
       - sec.deps-no-cve

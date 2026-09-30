@@ -43,6 +43,9 @@ RED_CASE: dict[str, tuple[str, str]] = {
     "log-inspection": ("skills/reliability-audit/scripts/log_inspection.py", "LogInspectionGoesRed"),
     "ci-inspection": ("skills/release-audit/scripts/ci_inspection.py", "CiInspectionGoesRed"),
     "threat-model-check": ("skills/security-audit/scripts/threat_model.py", "ThreatModelGoesRed"),
+    "tenant-isolation": ("skills/security-audit/scripts/tenant_isolation.py", "TenantIsolationGoesRed"),
+    "adapter-local": ("scripts/declared-command.py", "DeclaredCommandGoesRed"),
+    "billing-harness": ("scripts/declared-command.py", "DeclaredCommandGoesRed"),
     "run_seo_audit.mjs": ("skills/audit-website/seo/run_seo_audit.mjs", "SeoEngineGoesRed"),
     "run_website_audit.mjs": ("skills/audit-website/scripts/run_website_audit.mjs", "WebsiteEngineGoesRed"),
 }
@@ -63,12 +66,10 @@ NO_RED_CASE: dict[str, str] = {
     "screenshot-sample": "capturas do projeto, por ambiente INTERACTIVE",
     "licensing-harness": "harness de licenciamento a escrever no projeto",
     "legal-inspection": "leitura de documentos legais do projeto",
-    "billing-harness": "harness de billing a escrever no projeto",
     "sbom-verifier": "verificação de `sbom.json` escrita inline no runner",
     "signature-verifier": "verificação de assinatura do artefacto, no projeto",
     "browser-driver": "driver de browser (chrome-devtools/Playwright) do host",
     "gui.ps1": "driver de janela do projeto",
-    "adapter-local": "o adapter do projeto; o runner declara a lacuna",
     "deploy-smoke": "o smoke corre contra o ambiente real; o vermelho é o deploy a falhar",
     "release-run": "o release é executado pelo owner `ship`, não por um script nosso",
     "npm-audit": "comando externo",
@@ -227,6 +228,128 @@ class WebsiteEngineGoesRed(unittest.TestCase):
             _, out = node_run("skills/audit-website/scripts/run_website_audit.mjs", [f"--dir={root}"])
             self.assertIn("BLOCKED", out)
             self.assertIn("CRITICAL", out)
+
+
+class DeclaredCommandGoesRed(unittest.TestCase):
+    """O instrumento genérico: o comando é do projeto, a tradução é nossa.
+
+    A regra que estes casos fixam: uma obrigação sem comando declarado é
+    `NOT_VERIFIED` — nunca um PASS herdado das vizinhas do mesmo objecto.
+    """
+
+    def _repo(self, root: Path, hints: dict) -> None:
+        (root / ".agents").mkdir(parents=True, exist_ok=True)
+        (root / ".agents" / "gates.json").write_text(
+            json.dumps({"platform": "web", "adapter-hints": hints}), encoding="utf-8")
+
+    def _run(self, root: Path, hint: str, checks: str) -> dict:
+        _, payload = instrument_json(
+            "scripts/declared-command.py",
+            ["--repo", ".", "--owner", "verify", "--hint", hint, "--checks", checks], root)
+        return by_check(payload)
+
+    def test_a_declared_command_that_passes_is_a_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, {"smoke-command": "node -e \"console.log('smoke ok')\""})
+            r = self._run(root, "smoke-command", "smoke-test-passes")["smoke-test-passes"]
+            self.assertEqual(r["result"], "PASS", r["reason"])
+
+    def test_a_declared_command_that_fails_is_a_blocker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, {"smoke-command": "node -e \"console.log('boom'); process.exit(2)\""})
+            r = self._run(root, "smoke-command", "smoke-test-passes")["smoke-test-passes"]
+            self.assertEqual(r["result"], "FAIL")
+            self.assertEqual(r["severity"], "BLOCKER")
+
+    def test_a_missing_row_in_the_map_does_not_inherit_the_others(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, {"billing-harness-commands": {
+                "sell-01-activation": "node -e \"console.log('ok')\"",
+            }})
+            checks = self._run(root, "billing-harness-commands", "sell-01-activation,sell-03-machine-or-account-change")
+            self.assertEqual(checks["sell-01-activation"]["result"], "PASS")
+            self.assertEqual(checks["sell-03-machine-or-account-change"]["result"], "NOT_VERIFIED")
+            self.assertIn("sell-03", checks["sell-03-machine-or-account-change"]["reason"])
+
+    def test_no_hint_at_all_is_not_verified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, {"tests-command": "npm test"})
+            r = self._run(root, "smoke-command", "smoke-test-passes")["smoke-test-passes"]
+            self.assertEqual(r["result"], "NOT_VERIFIED")
+            self.assertIn("smoke-command", r["reason"])
+
+    def test_a_silent_command_is_not_verified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, {"smoke-command": "node -e \"process.exit(0)\""})
+            r = self._run(root, "smoke-command", "smoke-test-passes")["smoke-test-passes"]
+            self.assertEqual(r["result"], "NOT_VERIFIED")
+            self.assertIn("printed nothing", r["reason"])
+
+
+class TenantIsolationGoesRed(unittest.TestCase):
+    """O instrumento que faz um gate crítico depender do comando do projeto.
+
+    O caso que interessa é o segundo: um comando declarado que **falha** tem de
+    dar FAIL/BLOCKER. Sem isso, o check resolveria pelo simples facto de haver
+    um comando escrito.
+    """
+
+    def _repo(self, root: Path, hint: str | None) -> None:
+        (root / ".agents").mkdir(parents=True, exist_ok=True)
+        hints = {"tenant-isolation-command": hint} if hint else {"tests-command": "npm test"}
+        (root / ".agents" / "gates.json").write_text(
+            json.dumps({"platform": "web", "adapter-hints": hints}), encoding="utf-8")
+
+    def test_no_declared_command_is_not_verified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, None)
+            _, payload = instrument_json(
+                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+            r = by_check(payload)["sec.tenant-isolation"]
+            self.assertEqual(r["result"], "NOT_VERIFIED")
+            self.assertIn("tenant-isolation-command", r["reason"])
+
+    def test_a_failing_command_is_a_blocker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, "node -e \"console.log('Tenant A -> Tenant B 404'); process.exit(1)\"")
+            _, payload = instrument_json(
+                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+            r = by_check(payload)["sec.tenant-isolation"]
+            self.assertEqual(r["result"], "FAIL")
+            self.assertEqual(r["severity"], "BLOCKER")
+
+    def test_a_silent_success_is_not_verified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, "node -e \"process.exit(0)\"")
+            _, payload = instrument_json(
+                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+            self.assertEqual(by_check(payload)["sec.tenant-isolation"]["result"], "NOT_VERIFIED")
+
+    def test_a_proven_command_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, "node -e \"console.log('OK  Tenant A tentar alterar vinho do Tenant B -> 404')\"")
+            _, payload = instrument_json(
+                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+            r = by_check(payload)["sec.tenant-isolation"]
+            self.assertEqual(r["result"], "PASS", r["reason"])
+            self.assertTrue(any("cross-tenant assertions" in e for e in r["evidence"]))
+
+    def test_a_desktop_project_is_not_applicable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, "node -e \"process.exit(1)\"")
+            _, payload = instrument_json(
+                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "desktop"], root)
+            self.assertEqual(by_check(payload)["sec.tenant-isolation"]["result"], "NOT_APPLICABLE")
 
 
 class ThreatModelGoesRed(unittest.TestCase):

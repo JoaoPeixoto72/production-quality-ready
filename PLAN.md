@@ -11,6 +11,49 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 3.3.0
+
+**As obrigações que só o projeto sabe provar passaram a ser provadas.** Havia
+sete gates críticos que o plugin declarava `NOT_VERIFIED` porque o instrumento
+não podia ser escrito por ele: o smoke da app, os seis caminhos de venda e o
+isolamento entre tenants. A resposta não foi inventar instrumentos, foi correr
+o comando que o projeto declara e traduzir o resultado.
+
+1. `scripts/declared-command.py` — instrumento genérico: lê
+   `adapter-hints.<chave>` em `gates.json` e corre o comando declarado. O valor
+   pode ser **string** (um comando para todas as obrigações pedidas) ou
+   **objecto** (um comando por obrigação). Uma linha sem comando é
+   `NOT_VERIFIED` com a razão dita — nunca herda o `PASS` das vizinhas.
+   Veredicto: `!= 0` → `FAIL/BLOCKER`; `0` sem output → `NOT_VERIFIED` (uma
+   corrida silenciosa não prova nada); `0` com output → `PASS`, com o log como
+   evidência. Cinco casos-vermelhos.
+2. `skills/security-audit/scripts/tenant_isolation.py` — o mesmo padrão para o
+   gate crítico `sec.tenant-isolation`, com a particularidade de ser
+   `web`-only: num projeto desktop resolve `NOT_APPLICABLE/platform` em vez de
+   ficar pendente. Cinco casos-vermelhos.
+3. O runner passou a correr os três: `verify` (smoke), `commercial-readiness`
+   (as seis linhas de venda) e `security-audit` (tenant isolation) deixaram de
+   ser `Invoke-DeclaredGap`.
+4. Dois templates para o projeto se declarar: `scripts/smoke.template.ps1` (o
+   smoke no formato que o owner `verify` espera) e
+   `scripts/billing-harness.template.mjs` (os seis cenários de venda, um por
+   linha, com o aviso de que o que fica de fora não herda o `PASS`).
+
+**No Provo, na primeira corrida:** `security-audit` 4/4 (o teste anti-IDOR que
+já existia passa a valer como prova), `verify` 1/1 (o smoke declarado), e
+`commercial-readiness` **5 de 6** — `sell-03-machine-or-account-change` ficou
+`NOT_VERIFIED` porque não existe teste do caminho de mudança de conta. Esse é o
+resultado certo: a lacuna é dita, não preenchida. Gates críticos resolvidos:
+**13 → 20 de 31**.
+
+**Não feito, de propósito:** cortar as cinco descrições mais longas. O catálogo
+está em 6 257 caracteres de 8 000 (78%), média 231 por skill, e as descrições
+*estão* a fazer trabalho — são o mecanismo de encaminhamento. Cortar 20% de
+cada uma para poupar ~275 tokens perderia especificidade de gatilho para ganhar
+nada. Em vez disso, `tests/descriptions/test_budget.py` fixa o orçamento
+(7 200 no total, 250 por skill, verbo de acção na primeira palavra): o número
+passa a ter guarda, e uma skill nova obriga a decidir com ele à frente.
+
 ### plugin 3.2.0
 
 **Um instrumento que nunca ficou vermelho não é um gate.** A regra entrou no

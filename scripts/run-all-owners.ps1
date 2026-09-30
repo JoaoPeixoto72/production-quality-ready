@@ -442,6 +442,14 @@ function Invoke-SecurityAudit {
         Write-Evidence -Owner $owner -Producer $owner -Instrument dep-scanner -Check "sec.deps-no-cve" -Rule "owasp-asvs-5.0 V10" -RuleVersion "owasp-asvs-5.0" -Result NOT_VERIFIED -Reason "missing-instrument: no lockfile-based scanner available (npm audit / cargo audit)" | Out-Null
         $ran++; $nv++
     }
+    # tenant-isolation: o comando que o projeto declara em adapter-hints
+    # (`tenant-isolation-command`) e a prova de que entre tenants e 404. Sem
+    # comando declarado, a lacuna e dita — nao ha PASS por omissao.
+    $ti = Invoke-JsonInstrument -Owner $owner -Instrument tenant-isolation `
+        -Script (Join-Path $PluginRoot "skills/security-audit/scripts/tenant_isolation.py") `
+        -Rule "owasp-asvs-5.0 V8" -RuleVersion "owasp-asvs-5.0" `
+        -ExtraArgs @("--platform", $Platform)
+    if ($ti) { $ran += $ti.ran; $passed += $ti.passed; $failed += $ti.failed; $nv += $ti.notVerified }
     # secret-scanner: secret_scan.py prefers the gitleaks report CI leaves in
     # .audit/ (only if its .head sidecar matches HEAD), then gitleaks on PATH,
     # then its built-in ruleset. The verdict names the engine it used.
@@ -575,9 +583,36 @@ $dispatch = @{
     "release-audit"        = { Invoke-ReleaseAudit }
     "reliability-audit"    = { Invoke-ReliabilityAudit }
     "design-pro"           = { Invoke-DeclaredGap -Owner design-pro           -Instrument screenshot-sample }
-    "verify"               = { Invoke-DeclaredGap -Owner verify               -Instrument adapter-local }
+    "verify"               = { Invoke-Verify }
     "drive-app-window"     = { Invoke-DeclaredGap -Owner drive-app-window     -Instrument gui.ps1 }
-    "commercial-readiness" = { Invoke-DeclaredGap -Owner commercial-readiness -Instrument billing-harness }
+    "commercial-readiness" = { Invoke-CommercialReadiness }
+}
+
+function Invoke-Verify {
+    $owner = "verify"
+    $ran=0; $passed=0; $failed=0; $nv=0
+    # O smoke e do projeto: o plugin corre o comando declarado em
+    # `adapter-hints.smoke-command` e guarda o log. Sem comando, a lacuna e dita.
+    $sv = Invoke-JsonInstrument -Owner $owner -Instrument adapter-local `
+        -Script (Join-Path $PluginRoot "scripts/declared-command.py") `
+        -Rule "smoke-against-the-real-environment" -RuleVersion "contract-4.6" `
+        -ExtraArgs @("--owner", $owner, "--hint", "smoke-command", "--checks", "smoke-test-passes")
+    if ($sv) { $ran += $sv.ran; $passed += $sv.passed; $failed += $sv.failed; $nv += $sv.notVerified }
+    Register-Owner -Owner $owner -Ran $ran -Passed $passed -Failed $failed -NotVerified $nv
+}
+
+function Invoke-CommercialReadiness {
+    $owner = "commercial-readiness"
+    $ran=0; $passed=0; $failed=0; $nv=0
+    # Os seis caminhos de venda: o projeto declara, por linha, o comando que os
+    # exercita. Uma linha sem comando fica NOT_VERIFIED (nao herda o PASS das outras).
+    $sell = "sell-01-activation,sell-02-offline-or-failure,sell-03-machine-or-account-change,sell-04-trial-to-paid,sell-05-refund-cancel,sell-06-end-of-payment"
+    $cr = Invoke-JsonInstrument -Owner $owner -Instrument billing-harness `
+        -Script (Join-Path $PluginRoot "scripts/declared-command.py") `
+        -Rule "sell-paths" -RuleVersion "contract-4.6" `
+        -ExtraArgs @("--owner", $owner, "--hint", "billing-harness-commands", "--checks", $sell)
+    if ($cr) { $ran += $cr.ran; $passed += $cr.passed; $failed += $cr.failed; $nv += $cr.notVerified }
+    Register-Owner -Owner $owner -Ran $ran -Passed $passed -Failed $failed -NotVerified $nv
 }
 
 # ----------------------------------------------------------- 5. run
