@@ -11,6 +11,17 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 3.3.2
+
+**Uma lição do `ship` a funcionar, escrita no `ship`.** Ao deployar a 0.10.0 do
+Provo, o smoke correu imediatamente a seguir ao `wrangler deploy` e deu **404 na
+rota nova** — que existia. Repetido 15 segundos depois, 0 falhas: era a
+propagação de edge a servir a versão anterior. O `ship` passa a dizê-lo na
+letra: **a primeira corrida do smoke pode medir a versão anterior; repetir
+antes de declarar falha.** Um smoke que grita sem razão é um smoke que se
+aprende a ignorar — o mesmo princípio do `secret_scan.py` que não podia passar
+sobre zero ficheiros.
+
 ### plugin 3.3.1
 
 **O único defeito aberto do plugin, fechado — e a lacuna que o deixou passar.**

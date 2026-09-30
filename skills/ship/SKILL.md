@@ -55,7 +55,11 @@ walked through by accident.
    every later question resolves against.
 3. **Deploy** with the project's declared command, capturing stdout and stderr
    to a log. Do not deploy a build that is not the tagged one.
-4. **Smoke the real environment.** Three to five checks nobody can skip: the
+4. **Smoke the real environment** — and expect the first run to lie. A deploy
+   takes a moment to propagate, and an immediate smoke can still answer from the
+   previous version: a 404 on a route that exists, an old page, a missing header.
+   Repeat before declaring failure, and only then write the result. Three to five
+   checks nobody can skip: the
    surface loads, the critical flow completes, the new behaviour is visible,
    the old behaviour still works, errors show in the log as expected. Run them
    with a command, and keep the output — that output is the smoke evidence.
