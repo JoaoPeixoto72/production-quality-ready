@@ -123,7 +123,9 @@ Project gate packs may add; they can't remove these.
 
 Format in `references/relatorio.md`. **New** file in
 `docs/auditorias/YYYY-MM-DD-<scope>.md`. Never overwrite existing
-(suffix `-2`).
+(suffix `-2`). The report is a working artefact — the project's
+`.gitignore` decides whether it is kept; what outlives the session is one
+line per open finding in the project's defects list (`close-work`).
 
 **`t0` vs `t1` comparison** before writing. If anything changed outside
 the report itself, declare it and adjust coverage.

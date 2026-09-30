@@ -17,9 +17,8 @@ SKILL.md, em qualquer profundidade. Excluídas ao percorrer: `fixtures/`,
 Exit 1 se alguma description ultrapassar o teto (250 por omissão) — o CI
 do plugin usa isto como gate.
 
-Regra dura: os números do PLAN.md e das métricas de aceitação vêm daqui.
-Nenhum número escrito nos documentos do plugin fica sem o comando que o
-produz.
+Regra dura: os documentos do plugin não guardam estes números; quem os
+quer corre isto.
 """
 from __future__ import annotations
 

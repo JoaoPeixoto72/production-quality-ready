@@ -117,7 +117,7 @@ Um por causa-raiz. Nunca um por sintoma.
 - **Consequência**: <o que acontece ao utilizador ou ao comprador>
 - **Evidência**: <tipo> — <o que se observou>
 - **Teste existente**: <o que existe hoje, ou SEM_PROVA>
-- **Decisão relacionada**: <entrada em DECISOES.md / riscos-aceites.md>
+- **Decisão relacionada**: <o comentário ao lado do código, ou a linha no mapa do agente, que a decide>
 - **Correcção mínima**: <a mudança mais pequena que resolve>
 - **Verificação necessária**: <como se prova que ficou resolvido>
 - **Esforço**: <ordem de grandeza>

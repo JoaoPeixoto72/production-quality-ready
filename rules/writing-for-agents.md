@@ -57,6 +57,9 @@ list" does not. The strongest criteria are both checkable and exhaustive.
   choice, the unwritten convention, the gotcha no config confesses.
 - **Sediment** — a line that no longer bears on the document's job. Removing
   it is the fix.
+- **History** — a line that tells how the text came to be ("used to",
+  "since 3.2", "was fixed"). `git log` keeps it; the document says the
+  present (`PURPOSE.md §3.5`).
 
 ## In this plugin
 
@@ -66,8 +69,9 @@ list" does not. The strongest criteria are both checkable and exhaustive.
 - The body carries the steps and the reference every branch needs. Detail
   for one branch goes to `references/`, `scripts/`, or the skill that owns
   it.
-- Every number comes from a command, with the command and the commit
-  beside it (`CONTRACTS.md §4.6`).
+- Store no counts in a skill, an adapter or a state document: a count is
+  stale at the next commit. A number that proves something lives in an
+  evidence file, with its `command` and `log` (`CONTRACTS.md §4.6`).
 
 ## Report to the human
 

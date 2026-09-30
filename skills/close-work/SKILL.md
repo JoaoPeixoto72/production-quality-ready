@@ -23,12 +23,12 @@ there's no way to know which is right.
 
 ## Reason stays, proof stays, history goes
 
-- **Reason** — *stays*. Why it is this way, and what breaks if it
-  changes.
+- **Reason** — *stays*, beside the code it explains: why it is this way,
+  and what breaks if it changes.
 - **Proof** — *stays*, and only in the project's "verified facts"
   document.
 - **History** — *goes*. When it was done, in which version it appeared,
-  what was there before.
+  what was there before: `git log` keeps it.
 
 Phrases that are always history: "in 0.2.1 this was fixed", "used to
 be", "resolved on <date>", "what was here no longer applies". A document
@@ -36,8 +36,9 @@ describes the present.
 
 ## Write only what the code cannot say
 
-The change itself is not described anywhere: the diff, the comments and
-`git log` already say it. Written down is only:
+The rule is `PURPOSE.md §3.5`. The change itself is not described
+anywhere: the diff, the comments and `git log` already say it. Written
+down is only:
 
 - **state** — where the work is, what is next, what was not seen — in
   `ESTADO.md`, every time;

@@ -151,7 +151,7 @@ asked about installer signatures.
 
 ```
 production-quality-ready/
-├── PURPOSE.md · POLICY.md · CONTRACTS.md · PLAN.md · README.md
+├── PURPOSE.md · POLICY.md · CONTRACTS.md · README.md
 ├── adapter-contracts/        # what each project adapter must provide
 ├── rules/                    # writing-for-agents.md, anti-prompt-injection.md
 ├── scripts/

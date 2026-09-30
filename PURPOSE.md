@@ -4,9 +4,9 @@ Orientation document. Read **before** evaluating the plugin. Answers one
 question: *what does this exist for, and what counts as being well
 made.*
 
-Doesn't tell the story of how it was designed. Anyone needing the reason
-for a specific choice goes to `PLAN.md`; the rules live in
-`CONTRACTS.md` and `POLICY.md`.
+Doesn't tell the story of how it was designed: the reason for a choice
+sits beside the rule it explains, and the story is `git log`. The rules
+live in `CONTRACTS.md` and `POLICY.md`.
 
 ---
 
@@ -54,7 +54,7 @@ invokes another.
 
 ---
 
-## 3. The four ideas holding it up
+## 3. The five ideas holding it up
 
 Everything else is a consequence of these. Anyone evaluating the plugin
 is, at bottom, checking whether they hold in what is written.
@@ -65,10 +65,10 @@ Every subject has **exactly one** owner, and that owner declares the
 **rule** — the criterion that decides `PASS`/`FAIL`, named and
 versioned. Other owners may *cite* the rule; none rewrites it.
 
-The historical defect this corrects: contrast had three owners with
-three criteria — WCAG 4.5:1, an OKLCH ΔL heuristic, and a gate that
-decided sellability with no number at all. Three answers to the same
-question is not robustness; it is having no answer.
+Contrast shows why: three owners with three criteria — WCAG 4.5:1, an
+OKLCH ΔL heuristic, and a gate that decides sellability with no number
+at all — give three answers to one question. That is not robustness; it
+is having no answer.
 
 ### 3.2 One rule, multiple instruments
 
@@ -112,6 +112,27 @@ and `BLOCKED (7/8)` are the same token but not the same knowledge
 state. An owner missing from the project's `gates.json` is a defect of
 the file, not "doesn't count": non-applicability is declared with an
 auditable reason.
+
+### 3.5 The code is the source; a document holds only what it cannot say
+
+Documents drift and the code cannot lie about itself: a written recipe
+("a tool touches six places") was wrong where one `git grep` found the
+true ten. So the work cycle writes little, and in small pieces:
+
+- **where** comes from searching the code, starting from something that
+  already exists;
+- **why** is a comment beside the line it explains;
+- **a rule between two distant places** is a test;
+- **a document** holds only what no file can say — the state of the
+  work, a measured fact about an external tool, a known defect nobody is
+  fixing — plus the guides written for people;
+- **history** is `git log`: a document describes the present, stores no
+  counts, and never narrates how it got there;
+- **files stay small**, one subject each, under the budgets
+  `code-review` measures.
+
+`close-work` applies this at the end of every session; the plugin applies
+it to itself — it has no change log, only its commits.
 
 ---
 
@@ -179,6 +200,8 @@ Anyone evaluating saves time knowing what has been discussed and why.
 | **No numeric score** | gate ≠ score |
 | Each `description` **≤ 250 characters** | every description is in context on every turn; the platform limit is 1024, and the host drops skills silently above its total budget |
 | Two owners that touch **name each other** in the `description` | unilateral disambiguation lets the other win by accident; it's the pair that fails, not the file |
+| **No change log, no decision records, no glossary file** — neither in the plugin nor asked of a project | each grows with every change and drifts from the code; the reason sits beside the rule (§3.5), the story is `git log` |
+| **Not taken as owners:** `retro`, `teach`, `to-questionnaire`, `loop-me`, the writing-* family, host-specific setup skills, `tdd` as a skill, the five-bucket taxonomy, changesets with a release workflow, a docs page per skill | each duplicates an owner already here or pays permanent context for a verb nobody types |
 
 A decision that **was** reopened, registered as such: the original
 premise was *"a subject is not a skill"*. The plugin allows
@@ -202,7 +225,7 @@ Falsifiable criteria. The plugin refutes itself if it fails two.
 | Coherent authority chain | every external `producer` listed in the owner's `instruments.yaml` |
 | Every subject owner has canonical checks | `CONTRACTS.md §7.4` against `POLICY.md §1` |
 | Generator produces skills that pass the same audit | instantiate the templates in an empty repo and run the linter |
-| No number asserted without a command or an owning file | every count in the docs must be reproducible |
+| No count stored in a document | a number lives in an evidence file with its `command` and `log`, or is not written |
 
 Numbers are not repeated in this document because they change every
 release. The commands above are the source of truth; run them.
@@ -232,7 +255,6 @@ release. The commands above are the source of truth; run them.
 | `PURPOSE.md` | this document — what the plugin is for |
 | `CONTRACTS.md` | what counts as proof, and how proof travels (schema, channel, severity, gates) |
 | `POLICY.md` | who owns what — subject authority, activation, local adapter, discovery |
-| `PLAN.md` | what was proposed, the order, and each correction with its reason |
 | `skills/<name>/SKILL.md` | the verb, the trigger, and that owner's workflow |
 | `skills/<name>/instruments.yaml` | which external `(producer, instrument)` that owner accepts |
 | `adapter-contracts/<name>.md` | what a local adapter must provide |
@@ -243,3 +265,14 @@ it: install the plugin, run `audit-app` against a real project, and
 compare the verdict with a hand-made audit of the same commit. That is
 the gate that separates "the plugin is coherent" from "the plugin is
 right".
+
+Extensions, not missing pieces:
+
+- `audit-app` speaks two vocabularies: `CONTRACTS` (`PASS`/`FAIL`/
+  `NOT_VERIFIED`) and its report format (`PROVEN`/`CLEARED`/`UNPROVEN`).
+  The mapping is in `skills/audit-app/references/contrato-e-evidencia.md`;
+  collapsing to one moves `validate_report.py` and its fixtures together.
+- More instruments the runner can execute without a project harness:
+  Lighthouse for `web.core-web-vitals`, `cargo deny` for
+  `sec.deps-provenance`, a two-build hash compare for
+  `release.reproducible-artifact`.

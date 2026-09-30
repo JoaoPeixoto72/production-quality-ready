@@ -7,7 +7,6 @@ between owners are resolved.
 Cross-references:
 
 - What counts as evidence, gate machinery, schemas → `CONTRACTS.md`.
-- What is proposed and why → `PLAN.md`.
 - Purpose of the plugin, closed decisions, acceptance criteria →
   `PURPOSE.md`.
 

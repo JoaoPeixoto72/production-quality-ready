@@ -46,7 +46,7 @@ the passing axis hide the failing one.
 
 Where the Spec axis reads from: the spec the change claims to implement
 — the path passed in, else `adapter-hints.spec-dir` from `gates.json`,
-else a file under `docs/`, `specs/` or `.scratch/` matching the branch,
+else a file under `.work/`, `docs/` or `specs/` matching the branch,
 else ask. **A project with no spec, and none to be found, reports
 `NOT_VERIFIED/no-spec`** and says so in the report. It does not invent
 requirements, and it does not block for their absence. A spec that exists

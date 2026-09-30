@@ -34,7 +34,7 @@ O script identifica:
 2. Todas as ocorrências de cores hexadecimais soltas (`#1e293b`, `#3b82f6`, etc.).
 3. Classes arbitrárias de Tailwind (`bg-[#...]`, `text-[13px]`).
 
-O agente cria no projeto um ficheiro de controlo `UI_MIGRATION_PLAN.md` com a checklist gerada:
+O agente cria um ficheiro de controlo na pasta de trabalho que o repositório ignora, `.work/ui-migration.md`, com a checklist gerada:
 ```markdown
 # Checklist de Migração de UI
 
@@ -122,4 +122,4 @@ Migração de componentes com estado e acessibilidade:
    ```bash
    npm uninstall @radix-ui/react-dialog
    ```
-4. Eliminar o ficheiro de controlo `UI_MIGRATION_PLAN.md` após confirmação do utilizador.
+4. Eliminar o ficheiro de controlo `.work/ui-migration.md` após confirmação do utilizador.

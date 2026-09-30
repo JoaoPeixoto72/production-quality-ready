@@ -59,7 +59,7 @@ outra vez.
 
 ## Decisão documentada não fecha uma obrigação
 
-Uma decisão, um ADR ou uma entrada de risco provam que a condição é
+Uma decisão escrita (o comentário ao lado do código, a linha no mapa do agente) ou uma entrada de risco provam que a condição é
 **consciente** e, quando aplicável, **aceite**. Não transformam uma obrigação
 tecnicamente incumprida em `CLEARED`: `CLEARED` diz que a condição problemática
 não está presente, e nenhuma decisão a faz desaparecer.
@@ -91,7 +91,7 @@ Do mais forte para o mais fraco:
 | `MEDICAO` | Número obtido com metodologia declarada | Sem baseline e workload, um número não é evidência |
 | `ANALISE_ESTATICA` | Ferramenta que analisa sem correr o código: typecheck, compilador, linter, grep, scanner | Vale pelo que a ferramenta garante e pela [cobertura](#cobertura-do-método) declarada. Com `PARCIAL` ou `AMOSTRA`, **nunca sozinha sustenta um finding** |
 | `LEITURA` | Leitura de código com raciocínio explicado | Válida se o raciocínio for verificável por terceiros |
-| `DOCUMENTO` | `CLAUDE.md`, `DECISOES.md`, comentário no código | Prova intenção, não comportamento |
+| `DOCUMENTO` | `CLAUDE.md`/`AGENTS.md`, comentário no código | Prova intenção, não comportamento |
 | `FONTE_EXTERNA` | Documentação oficial da versão instalada | Ver [regras](#fontes-externas) |
 
 ## Cobertura do método
@@ -208,8 +208,8 @@ Quando um comando previsto não existe ou falha:
   não é usado, procurar: reexports, chamadas dinâmicas, nomes construídos por
   concatenação, uso em macros, testes, e no lado oposto do IPC.
 - **Supressões existentes.** Um `allow`, `eslint-disable` ou baseline de
-  ferramenta pode ser deliberado. Ver `docs/DECISOES.md` e os baselines antes
-  de reportar.
+  ferramenta pode ser deliberado. Ler o comentário ao lado dela e os baselines
+  antes de reportar.
 - **Diferenças de plataforma.** Um problema que só existe em Windows é um
   finding com plataforma declarada, não um finding geral.
 - **Ruído gerado.** Ignorar ficheiros gerados, `target/`, `dist/`,

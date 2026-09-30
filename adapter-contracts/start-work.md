@@ -20,7 +20,8 @@ allowed-tools: Read, Glob, Grep, Bash, Edit, Write
    Report pass or fail in the session; no count is stored in the
    adapter or in the state document.
 3. **Places where code tends to repeat** — table or list.
-4. **Documents of decisions/facts/audits** — where not to reopen.
+4. **What is not reopened** — where the measured facts, the known
+   defects and the closed decisions live.
 
 ## Optional sections
 

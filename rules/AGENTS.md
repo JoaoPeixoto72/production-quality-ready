@@ -12,3 +12,6 @@
 6. **Work cycle**, through the project's adapters: open with
    `start-work`, review with `review-change`, close with `close-work`,
    prove in the running app with `verify`.
+7. **The code is the source.** Why is a comment beside the code, a rule
+   between two places is a test, and a document holds only what no file
+   can say — in the present, with no counts (`PURPOSE.md §3.5`).

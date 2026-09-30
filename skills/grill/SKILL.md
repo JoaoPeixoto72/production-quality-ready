@@ -48,12 +48,10 @@ Q2 — <question title>: ...
 
 ## Capture the words the round settles
 
-Quando um round fixa uma palavra que o projeto usa ("conta", "evento",
-"prova"), escreve a entrada do glossário **na mesma sessão**
-(`../spec/references/glossary-and-adr.md`): a definição e a decisão que a
-escolheu ficam juntas ou separam-se para sempre. É o emparelhamento que o
-`grill-with-docs` de outro conjunto garante por chamada; aqui garante-se por
-instrução, e o custo de falhar é o mesmo — por isso está escrito.
+When a round settles a word the project uses ("account", "event", "proof"),
+write it into the code's name and, where it binds, the reason beside it **in
+the same session** (`../spec/references/vocabulary-and-decisions.md`). The
+word and the decision that chose it stay together, or part for good.
 
 ## Facts are your job
 

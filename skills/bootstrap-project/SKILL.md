@@ -97,8 +97,12 @@ goes stale.
    propose additions.
 5. **Agent map** — if no `AGENTS.md`/`CLAUDE.md` exists, write one from
    `templates/AGENTS.md.template` (named for the host: `AGENTS.md` for
-   `.agents`, `CLAUDE.md` for `.claude`). If one exists, only propose a
-   "Installed skills" block.
+   `.agents`, `CLAUDE.md` for `.claude`). If one exists, propose the
+   "code is the source" paragraph (`PURPOSE.md §3.5`) when it lacks one,
+   and an "Installed skills" block.
+6. **`.gitignore`** — propose `/.work/` (what `map`, `slice`, `research`
+   and `spec` write while working) and the audit output (`/.audit/`,
+   `/docs/auditorias/`), so a skill's working files never reach a commit.
 
 ## Phase 3 — Verify what was written
 
@@ -151,7 +155,7 @@ Tests: pass (`npm test`)
 | `PROJECT_INVARIANTS`, `INVARIANTS_LIST` | Phase 1 (numbered, with reason) |
 | `AXES_LOOKUP_TABLE` | Phase 0 — concrete file per axis, or drop the section |
 | `PROJECT_SPECIFIC_OWNERSHIP_TABLE` | Phase 0 hotspots |
-| `DOCS_NOT_TO_REOPEN` | Phase 0 (decision / fact / audit docs that exist) |
+| `DOCS_NOT_TO_REOPEN` | Phase 0 (the facts and defects documents that exist, and the agent map's closed decisions) |
 | `PROJECT_SURFACES_TABLE`, `PROJECT_ARTIFACTS_TABLE`, `TEST_CREDENTIALS`, `PROJECT_TRAPS` | Phase 0 / 1 |
 | `VERIFY_DRIVER` | `PLATFORM` (browser automation / `drive-app-window`) |
 | `DOC_OWNERSHIP_TABLE` | Phase 0 (docs that exist) |

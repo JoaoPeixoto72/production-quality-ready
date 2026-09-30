@@ -65,7 +65,7 @@ directory), so it never becomes a second source of truth in the repo. It holds:
 - What the session was doing, and **what the next session is for** — the
   argument the caller passes is the focus; tailor the file to it.
 - What is done, what is half-done, and the exact next move.
-- **References, not copies**: specs, slices, ADRs, diffs and commits by path or
+- **References, not copies**: specs, slices, diffs and commits by path or
   URL. Duplicating them here guarantees the two drift.
 - **Suggested skills** for the next session, by name.
 - **No secrets**: redact keys, tokens and personal data, writing `<REDACTED>`

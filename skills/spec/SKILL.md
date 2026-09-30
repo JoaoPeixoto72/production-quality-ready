@@ -33,8 +33,8 @@ would see it fail, it is an open question, not a criterion.**
 Run the interview as the loop in `grill`: a design tree worked in rounds,
 each question carrying a recommended answer, the facts found rather than
 asked for, done when the frontier is empty. Along the way, sharpen the
-project's words as decisions land — `references/glossary-and-adr.md` holds
-how a glossary entry and a decision record are written.
+project's words as decisions land — `references/vocabulary-and-decisions.md`
+says where a settled word and a settled decision are written.
 
 Read the repo for what code already answers — routes, tables, the
 invariants in `AGENTS.md`, the state document, earlier specs in the

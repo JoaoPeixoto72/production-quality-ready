@@ -33,8 +33,8 @@ schema below: `finding` (it's a `FAIL` verdict plus evidence), `score`
 
 ## 2. Rule vs instrument
 
-Distinction that fixes the historical contrast defect (three owners,
-three rules, none cited by name).
+The distinction keeps one subject from growing three rules under three
+owners, none cited by name (`PURPOSE.md §3.1`).
 
 | Role | What it does | Closes the verdict? |
 |---|---|---|

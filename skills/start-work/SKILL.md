@@ -27,11 +27,11 @@ defect, not a shortcut.
 1. **Read the state.** The adapter says where `ESTADO.md` (or equivalent)
    lives, and which part of it decides anything.
 2. **Confirm the tree is sound.** Run the project's proof command
-   (build + tests). Every reported number carries the command that
-   produced it and the HEAD hash. A red baseline is reported before any
-   new work — otherwise the next failure has no owner.
-3. **Look up documents of decisions / facts / audits.** The adapter lists
-   them.
+   (build + tests). Report pass or fail beside the command; store no
+   counts. A red baseline is reported before any new work — otherwise the
+   next failure has no owner.
+3. **Look up what is not reopened** — the measured facts, the known
+   defects and the closed decisions the adapter points at.
 4. **Search for the owner** of the subject about to change.
 5. **If the task is a bug, reproduce it first** — a command, a test, or
    the steps in the running app that show it. A bug nobody reproduced
