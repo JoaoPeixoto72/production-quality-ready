@@ -5,6 +5,7 @@
  * Produces structured Markdown, JSON, and SARIF v2.1.0 output.
  */
 
+import { exitCleanly } from './exit.mjs'
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -885,12 +886,12 @@ Para fechar o veredito para \`READY\`:
 const opts = parseArgs(process.argv.slice(2));
 if (opts.help || (!opts.url && !opts.dir)) {
   printHelp();
-  process.exit(opts.help ? 0 : 1);
+  exitCleanly(opts.help ? 0 : 1);
 }
 
 const auditor = new WebsiteAuditor(opts);
 auditor.run().then(res => {
-  if (res.counts.BLOCKER > 0) process.exit(2);
+  if (res.counts.BLOCKER > 0) exitCleanly(2);
 }).catch(err => {
   console.error('Fatal audit error:', err);
   process.exit(1);

@@ -21,9 +21,12 @@ novo que não esteja aqui nem na lista de excepções com razão.
 
 from __future__ import annotations
 
+import contextlib
+import http.server
 import json
 import re
 import subprocess
+import threading
 import sys
 import tempfile
 import unittest
@@ -100,6 +103,41 @@ def by_check(payload: dict) -> dict[str, dict]:
 def node_run(script: str, args: list[str], cwd: Path | None = None) -> tuple[int, str]:
     p = run(["node", str(PLUGIN / script), *args], cwd or PLUGIN)
     return p.returncode, (p.stdout or "") + (p.stderr or "")
+
+
+# --------------------------------------------------------------- servidor local
+
+@contextlib.contextmanager
+def local_site(files: dict[str, str]):
+    """Serve `files` em 127.0.0.1 e devolve (url, root).
+
+    Existe porque os primeiros casos-vermelhos dos dois motores usavam `--dir` e
+    não exercitavam o caminho de rede — que era exactamente onde eles abortavam
+    (exit 0xC0000409) contra um alvo `http://`. `{url}` nos conteúdos é
+    substituído pelo endereço real.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        root.mkdir(parents=True, exist_ok=True)
+
+        class Handler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *a, **kw):
+                super().__init__(*a, directory=str(root), **kw)
+
+            def log_message(self, *a):
+                pass
+
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        url = f"http://127.0.0.1:{srv.server_address[1]}"
+        for name, text in files.items():
+            target = root / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text.replace("{url}", url), encoding="utf-8")
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            yield url, root
+        finally:
+            srv.shutdown()
 
 
 # --------------------------------------------------------------- os casos
@@ -218,6 +256,51 @@ class SeoEngineGoesRed(unittest.TestCase):
             self.assertIn("[FAIL]", out)
             self.assertIn("FIX_BEFORE_LAUNCH", out)
             self.assertNotEqual(code, 0)
+
+
+class EnginesSurviveANetworkTarget(unittest.TestCase):
+    """O defeito de 2026-09-30, e o contrato que ele deixou.
+
+    Os dois motores imprimiam o relatório inteiro e abortavam a seguir contra um
+    alvo `http://` local: `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING),
+    file src\\win\\async.c, line 94` (exit 0xC0000409). Um instrumento que faz o
+    trabalho e morre parece avariado, e um servidor local é o alvo natural de
+    qualquer verificação antes de um deploy.
+    """
+
+    ABORT = 0xC0000409
+
+    def test_seo_engine_against_a_local_server(self):
+        with local_site({
+            "index.html": "<html><head><title>Um titulo local suficientemente longo</title>"
+                          "<meta name=\"description\" content=\"Uma descricao local com comprimento "
+                          "suficiente para passar o minimo que o motor exige de setenta caracteres.\">"
+                          "<link rel=\"canonical\" href=\"/\"></head><body><h1>Ok</h1></body></html>",
+            "robots.txt": "User-agent: *\nAllow: /\nSitemap: {url}/sitemap.xml\n",
+            "sitemap.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                           "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+                           "  <url><loc>{url}/</loc></url>\n"
+                           "  <url><loc>{url}/nao-existe.html</loc></url>\n</urlset>\n",
+        }) as (url, _):
+            code, out = node_run("skills/audit-website/seo/run_seo_audit.mjs", [f"--url={url}"])
+            self.assertIn("CRAWL-SITEMAP-STATUS-01", out)
+            self.assertIn("[FAIL]", out)
+            self.assertNotEqual(code & 0xFFFFFFFF, self.ABORT,
+                                "o motor abortou em vez de sair com um código")
+            self.assertIn(code, (0, 1), f"exit inesperado: {code}")
+
+    def test_360_engine_against_a_local_server(self):
+        with local_site({
+            "index.html": "<html><head><title>Um titulo local suficientemente longo</title></head>"
+                          "<body><h1>Ok</h1></body></html>",
+            "robots.txt": "User-agent: *\nAllow: /\n",
+        }) as (url, _):
+            code, out = node_run("skills/audit-website/scripts/run_website_audit.mjs",
+                                 [f"--url={url}", "--spider-max=1"])
+            self.assertIn("Veredito", out, "o relatório não foi impresso")
+            self.assertNotEqual(code & 0xFFFFFFFF, self.ABORT,
+                                "o motor abortou em vez de sair com um código")
+            self.assertIn(code, (0, 1, 2), f"exit inesperado: {code}")
 
 
 class WebsiteEngineGoesRed(unittest.TestCase):

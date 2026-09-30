@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import fs from 'node:fs'
+import { exitCleanly } from '../scripts/exit.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -549,4 +550,4 @@ if (wantXml) {
   console.log('</seoAudit>')
 }
 
-process.exit(verdict === 'BLOCKED' || verdict === 'FIX_BEFORE_LAUNCH' ? 1 : 0)
+exitCleanly(verdict === 'BLOCKED' || verdict === 'FIX_BEFORE_LAUNCH' ? 1 : 0)

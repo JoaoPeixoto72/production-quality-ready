@@ -11,6 +11,40 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 3.3.1
+
+**O único defeito aberto do plugin, fechado — e a lacuna que o deixou passar.**
+
+Os dois motores de website imprimiam o relatório inteiro e **abortavam a
+seguir** contra um alvo `http://`:
+
+    Assertion failed: !(handle->flags & UV_HANDLE_CLOSING),
+    file src\win\async.c, line 94        (exit 0xC0000409)
+
+Um instrumento que faz o trabalho e morre a seguir parece avariado, e um
+servidor local é o alvo natural de qualquer verificação antes de um deploy.
+
+1. `skills/audit-website/scripts/exit.mjs` — `exitCleanly(code)` põe o código em
+   `process.exitCode` (o runner lê-o da mesma maneira) e deixa o Node drenar os
+   handles; se algo mantiver o loop vivo (sockets keep-alive do `fetch`), um
+   temporizador *unref'd* fecha-o depois de uma janela de tolerância. Os dois
+   motores passam a usá-lo nas saídas de fim de corrida.
+2. Os casos-vermelhos dos dois motores passaram a exercitar o **caminho de
+   rede**: um servidor `127.0.0.1` servido pelo próprio teste, com um sitemap
+   que aponta para uma página que não existe (o defeito de produção de
+   2026-09-29, reproduzido em hermético) e um segundo caso que exige relatório
+   completo e um código de saída são. Antes disto os casos usavam `--dir` e
+   nunca tocavam no caminho onde o aborto vivia — o que é, por si, a lição: um
+   caso-vermelho que não passa pelo caminho do defeito não o apanha.
+
+**Correcção de uma afirmação minha:** o que falta ao `sell-03` do Provo **não é
+um teste** — é o caminho no produto. Não existe mudança de email, transferência
+de titularidade nem gestão de lugares de utilizador (os `seats` do código são
+mesas de prova, outro conceito). O `DELETE /me` existe, portanto hoje mudar de
+email significa apagar a conta e perder os dados. Fica `NOT_VERIFIED` por
+inexistência, e implementar é decisão de produto (re-verificação, invalidação de
+sessões, anti-apropriação), não trabalho de instrumento.
+
 ### plugin 3.3.0
 
 **As obrigações que só o projeto sabe provar passaram a ser provadas.** Havia
@@ -403,13 +437,6 @@ per-project adapters are where the value lives.
 
 ## Open work
 
-- **Os dois motores de website abortam em alvos `http://`** (exit `0xC0000409`,
-  Windows): `run_seo_audit.mjs --url=http://...` imprime o veredicto e morre
-  depois; `run_website_audit.mjs --url=http://...` morre sem output. Um
-  servidor local é o alvo natural de qualquer verificação antes de um deploy,
-  portanto isto fecha-se com um teste de fumo que corra os dois contra um
-  `127.0.0.1`. Os casos-vermelhos actuais usam `--dir` e não exercitam o
-  caminho de rede.
 
 
 **Run `audit-app` against a real project and cross-check its verdict
