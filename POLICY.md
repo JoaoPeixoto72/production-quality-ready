@@ -198,6 +198,10 @@ the plugin root — required frontmatter, required body sections, what
 the adapter does not do. The body is prose an agent reads, so
 `rules/writing-for-agents.md` governs how it is written.
 
+An instrument this plugin ships carries its own proof of teeth: a red
+case under `tests/instruments/` where it must fail (`CONTRACTS §4.6.4`).
+No red case, no gate.
+
 ### 3.2 Location of the adapter
 
 Local adapter lives in `<host>/skills/<local-name>/` inside the target

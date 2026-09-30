@@ -11,6 +11,7 @@ Read first:
 - [`POLICY.md`](POLICY.md) — who owns what.
 - [`CONTRACTS.md`](CONTRACTS.md) — what counts as proof.
 - [`rules/writing-for-agents.md`](rules/writing-for-agents.md) — how to write anything an agent reads.
+- [`tests/instruments/`](tests/instruments/) — the red case of every instrument: the fixture where it must fail.
 
 ## The idea in one paragraph
 

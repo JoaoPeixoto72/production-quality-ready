@@ -360,6 +360,28 @@ harness) writes `command:` and `log:` itself from what it actually
 executed. It never templates a `PASS`. An owner it cannot run writes
 `NOT_VERIFIED/missing-instrument` — the gap is declared, not filled.
 
+**Rule 4.6.4 (an instrument without a red case is not a gate).** An
+instrument that has never been observed failing cannot be trusted to
+detect what it claims: a scanner reading zero files, or skipping the
+files that matter, returns a `PASS` that means nothing. Every
+executable instrument shipped by the plugin has a **red case** — a
+fixture where it must fail — in `tests/instruments/`, and
+`tests/instruments/test_instruments_go_red.py` fails when a declared
+instrument has neither a red case nor a written reason for not having
+one. The rule paid for itself the day it was written: it found two
+false `PASS`es in `secret_scan.py` (an empty scan passed; a private key
+in a `.txt` was treated as a fixture) and two resolution bugs in
+`threat_model.py`.
+
+**Rule 4.6.5 (existence is not proof).** A critical obligation is never
+resolved by `LEITURA` or `DOCUMENTO` evidence. "The file exists" and "a
+commit touched it" are not observations of the property the check
+names; a critical needs `EXECUCAO` or `TESTE`. Where an artefact is the
+only reasonable surface (a threat model, a retention policy), the
+instrument reads the artefact and verifies what it *claims* — the
+citations resolve, the tests it names exist — which is the difference
+between `sec.threat-model-declared` before and after v3.2.0.
+
 ---
 
 ## 5. Severity taxonomy

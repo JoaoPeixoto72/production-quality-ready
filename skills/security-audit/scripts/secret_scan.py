@@ -81,8 +81,14 @@ EXCLUDED_PATH = re.compile(
     re.IGNORECASE,
 )
 # A fixture or a doc may legitimately show a shaped secret.
+#
+# `.txt` esteve aqui e saiu (2026-09-30, caso-vermelho do instrumento): um
+# ficheiro de notas com uma chave privada dentro era classificado como
+# "fixture" e o resultado era PASS com nota. Um `.md`/`.mdx`/`.rst` numa
+# pasta de docs é uma coisa; um `.txt` no meio da árvore é onde uma chave
+# acaba quando alguém a cola para não a perder.
 SOFT_PATH = re.compile(r"(?:^|/)(?:tests?|__tests__|fixtures?|examples?|docs?|spec)/|"
-                       r"\.(?:md|mdx|rst|txt)$|\.example$|\.sample$|\.template$", re.IGNORECASE)
+                       r"\.(?:md|mdx|rst)$|\.example$|\.sample$|\.template$", re.IGNORECASE)
 
 
 def run(cmd: list[str], cwd: Path, timeout: int = 300) -> tuple[int, str]:
@@ -142,10 +148,18 @@ def scan_text(text: str, path: str) -> list[dict]:
     return hits
 
 
-def scan_worktree(repo: Path) -> list[dict]:
+def scan_worktree(repo: Path) -> tuple[list[dict], list[str]]:
+    """(hits, listed names).
+
+    Os nomes existem para o veredicto poder dizer **quantos ficheiros foram
+    lidos**. Sem isso, um repositório que o git não conhece devolvia zero
+    ficheiros e o scanner respondia PASS: um falso PASS é pior do que um
+    erro, e foi o que o caso-vermelho deste instrumento encontrou.
+    """
     code, out = run(["git", "ls-files"], repo)
     if code != 0:
-        return []
+        return [], []
+    names = [n.strip() for n in out.splitlines() if n.strip()]
     hits: list[dict] = []
     for name in out.splitlines():
         name = name.strip()
@@ -159,7 +173,7 @@ def scan_worktree(repo: Path) -> list[dict]:
         except (UnicodeDecodeError, OSError):
             continue
         hits += scan_text(text, name)
-    return hits
+    return hits, names
 
 
 def scan_history(repo: Path, max_commits: int) -> tuple[list[dict], int]:
@@ -265,7 +279,7 @@ def main() -> int:
         findings = gitleaks_findings(data)
         evidence.append(f"engine: gitleaks (exit {code}), findings: {len(findings)}")
     else:
-        wt = scan_worktree(repo)
+        wt, listed = scan_worktree(repo)
         for h in wt:
             h["commit"] = "HEAD"
         hist, commits = ([], 0) if a.no_history else scan_history(repo, a.max_commits)
@@ -277,13 +291,20 @@ def main() -> int:
             seen.add(key)
             findings.append(h)
         evidence.append(
-            f"engine: builtin ({len(RULES)} rules); worktree files scanned via `git ls-files`; "
+            f"engine: builtin ({len(RULES)} rules); worktree files listed via `git ls-files`: "
+            f"{len(listed)}; "
             f"history: {'skipped' if a.no_history else f'{commits} commit(s) of `git log -p`'}")
 
     hard = [f for f in findings if not f.get("soft")]
     soft = [f for f in findings if f.get("soft")]
 
-    if hard:
+    # Uma varredura que não leu nada não pode passar: o PASS diria "não há
+    # segredos" a partir de zero ficheiros observados.
+    if engine == "builtin" and not listed:
+        result, severity = "NOT_VERIFIED", ""
+        reason = ("nothing was scanned: `git ls-files` listed no file (not a repository, or git "
+                  "missing) — an empty scan cannot pass")
+    elif hard:
         result, severity = "FAIL", "BLOCKER"
         reason = (f"{len(hard)} credential-shaped value(s) found in tracked content or history "
                   f"(engine: {engine}). A secret in history is a secret until it is rotated.")
@@ -291,7 +312,9 @@ def main() -> int:
                      for h in hard[:8]]
     else:
         result, severity = "PASS", ""
-        reason = (f"no credential found in tracked content or history (engine: {engine})"
+        reason = (f"no credential found in tracked content or history (engine: {engine}"
+                  + (f"; {len(listed)} file(s) listed" if engine == "builtin" else "")
+                  + f")"
                   + (f"; {len(soft)} match(es) in test/doc paths treated as fixtures" if soft else ""))
         if soft:
             evidence += [f"fixture-path match: {h['path']}:{h['line']} [{h['rule']}]" for h in soft[:4]]

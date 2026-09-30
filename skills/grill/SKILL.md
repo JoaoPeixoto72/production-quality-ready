@@ -46,6 +46,15 @@ Q1 — <question title>: <the question, with the options you see>
 Q2 — <question title>: ...
 ```
 
+## Capture the words the round settles
+
+Quando um round fixa uma palavra que o projeto usa ("conta", "evento",
+"prova"), escreve a entrada do glossário **na mesma sessão**
+(`../spec/references/glossary-and-adr.md`): a definição e a decisão que a
+escolheu ficam juntas ou separam-se para sempre. É o emparelhamento que o
+`grill-with-docs` de outro conjunto garante por chamada; aqui garante-se por
+instrução, e o custo de falhar é o mesmo — por isso está escrito.
+
 ## Facts are your job
 
 The decisions are the person's; the **facts are yours**. When a question

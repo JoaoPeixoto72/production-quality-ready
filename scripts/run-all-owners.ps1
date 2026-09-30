@@ -452,25 +452,14 @@ function Invoke-SecurityAudit {
         -Script (Join-Path $PluginRoot "skills/security-audit/scripts/secret_scan.py") `
         -Rule "owasp-asvs-5.0 V14" -RuleVersion "owasp-asvs-5.0" -ExtraArgs $glArgs
     if ($sec) { $ran += $sec.ran; $passed += $sec.passed; $failed += $sec.failed; $nv += $sec.notVerified }
-    # threat model presence (file exists = declared; content is the owner's call)
-    $tm = @("docs/threat-model.md","THREAT_MODEL.md","docs/seguranca/threat-model.md") | Where-Object { Test-Path (Join-Path $RepoRoot $_) } | Select-Object -First 1
-    if ($tm) {
-        $logRel = ".audit/$owner/sec.threat-model-declared.log"
-        $cmd = "git log -1 --format=%H -- $tm"
-        $ok = Invoke-Logged -Cmd $cmd -LogRel $logRel
-        $hash = ""
-        if ($ok) { $raw = Get-Content -LiteralPath (Join-Path $RepoRoot $logRel) -Raw -ErrorAction SilentlyContinue; if ($raw) { $hash = ([string]$raw).Trim() } }
-        if ($null -eq $ok) { $nv++ }
-        elseif ($hash -match '^[0-9a-f]{40}$') {
-            Write-Evidence -Owner $owner -Producer $owner -Instrument threat-model-check -Check "sec.threat-model-declared" -Rule "owasp-asvs-5.0 V1" -RuleVersion "owasp-asvs-5.0" -Result PASS -Command $cmd -Log $logRel -EvidenceLines @("$tm@$($hash.Substring(0,12))") | Out-Null; $passed++
-        } else {
-            # file exists but is not committed: the contract says "versioned file, referenced by commit hash"
-            Write-Evidence -Owner $owner -Producer $owner -Instrument threat-model-check -Check "sec.threat-model-declared" -Rule "owasp-asvs-5.0 V1" -RuleVersion "owasp-asvs-5.0" -Result FAIL -Severity MEDIUM -Command $cmd -Log $logRel -Reason "$tm exists but has no commit yet (uncommitted); the threat model must be versioned" | Out-Null; $failed++
-        }
-    } else {
-        Write-Evidence -Owner $owner -Producer $owner -Instrument threat-model-check -Check "sec.threat-model-declared" -Rule "owasp-asvs-5.0 V1" -RuleVersion "owasp-asvs-5.0" -Result FAIL -Severity HIGH -Reason "no threat model file found (docs/threat-model.md or THREAT_MODEL.md)" | Out-Null; $failed++
-    }
-    $ran++
+    # threat model: o documento tem de citar as provas dos controlos e cada
+    # citação tem de resolver (caminho e linha). Antes disto o check era "o
+    # ficheiro existe e um commit tocou-lhe" — um grau de evidência que um
+    # documento vazio satisfazia.
+    $tm = Invoke-JsonInstrument -Owner $owner -Instrument threat-model-check `
+        -Script (Join-Path $PluginRoot "skills/security-audit/scripts/threat_model.py") `
+        -Rule "owasp-asvs-5.0 V1" -RuleVersion "owasp-asvs-5.0"
+    if ($tm) { $ran += $tm.ran; $passed += $tm.passed; $failed += $tm.failed; $nv += $tm.notVerified }
     Register-Owner -Owner $owner -Ran $ran -Passed $passed -Failed $failed -NotVerified $nv
 }
 

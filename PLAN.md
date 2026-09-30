@@ -11,6 +11,45 @@ translation) are in git history — `git log -- PLAN.md`.
 
 ## Change log
 
+### plugin 3.2.0
+
+**Um instrumento que nunca ficou vermelho não é um gate.** A regra entrou no
+contrato (`CONTRACTS §4.6.4`) e, aplicada aos nove instrumentos que o plugin
+executa, encontrou quatro defeitos reais no mesmo dia.
+
+1. `secret_scan.py` tinha **dois falsos PASS**: sem git, `git ls-files` devolvia
+   zero ficheiros e o veredicto era `PASS` ("não há segredos" a partir de zero
+   ficheiros observados); e `.txt` estava na lista de caminhos "fixture", pelo
+   que uma chave privada colada num ficheiro de notas era um `PASS` com nota.
+   Corrigido: uma varredura vazia é `NOT_VERIFIED`, o `PASS` diz quantos
+   ficheiros leu, e `.txt` saiu da lista de fixtures.
+2. `threat_model.py` **substitui** o check de existência do runner ("o ficheiro
+   existe e um commit tocou-lhe", que um documento vazio satisfazia). Agora o
+   threat model tem de citar as provas dos controlos (`caminho:linha`, e o teste
+   que as exercita) e cada citação tem de resolver; um modelo sem uma única
+   citação falha por isso mesmo (`CONTRACTS §4.6.5`). O primeiro resultado foi
+   um **falso positivo do próprio instrumento**: um identificador entre crases
+   (`event.id`) contava como citação, e `routes/x.ts` não era resolvido contra a
+   raiz do código. Corrigido, o threat model do Provo passa com 43 citações (6
+   em testes).
+3. `tests/instruments/test_instruments_go_red.py` — 18 testes: um caso-vermelho
+   por instrumento (repositório mau, instrumento tem de falhar), mais a regra
+   aplicada sozinha (todo o instrumento declarado num `instruments.yaml` tem de
+   estar no registo ou ter uma razão escrita para não ter caso-vermelho).
+   Instrumentos que são comandos externos, harnesses do projeto ou o próprio
+   release têm excepção declarada com a razão, nunca em silêncio.
+4. **Defeito registado, não corrigido**: `run_seo_audit.mjs` e
+   `run_website_audit.mjs` **abortam** (exit `0xC0000409`) quando o alvo é
+   `http://` (servidor local). O motor SEO ainda imprime o veredicto antes de
+   morrer; o 360 não imprime nada. Os casos-vermelhos dos dois usam `--dir`
+   (hermético, sem rede) e o defeito fica aberto em `PLAN → Open work`.
+
+**Um emparelhamento recuperado (item 1):** `grill` passa a dizer que uma palavra
+que um round fixa se escreve no glossário **na mesma sessão**. Era o que o
+`grill-with-docs` de outro conjunto garante por chamada de skill; aqui
+garante-se por instrução, porque a `POLICY §2.1` mantém que nenhuma skill
+invoca outra.
+
 ### plugin 3.1.1
 
 **A pair the runner emitted and the owner did not accept.** `run-all-owners.ps1`
@@ -320,6 +359,15 @@ per-project adapters are where the value lives.
 ---
 
 ## Open work
+
+- **Os dois motores de website abortam em alvos `http://`** (exit `0xC0000409`,
+  Windows): `run_seo_audit.mjs --url=http://...` imprime o veredicto e morre
+  depois; `run_website_audit.mjs --url=http://...` morre sem output. Um
+  servidor local é o alvo natural de qualquer verificação antes de um deploy,
+  portanto isto fecha-se com um teste de fumo que corra os dois contra um
+  `127.0.0.1`. Os casos-vermelhos actuais usam `--dir` e não exercitam o
+  caminho de rede.
+
 
 **Run `audit-app` against a real project and cross-check its verdict
 with a hand-made audit of the same commit** (`PURPOSE.md §8`).

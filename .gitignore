@@ -17,6 +17,12 @@ coverage/
 .audit/
 docs/auditorias/
 
+# Relatorios que os motores de website escrevem no directorio corrente
+seo-audit-report.json
+seo-audit-report.sarif
+website-audit-report.json
+website-audit-report.sarif
+
 # OS & Editor files
 .DS_Store
 Thumbs.db
