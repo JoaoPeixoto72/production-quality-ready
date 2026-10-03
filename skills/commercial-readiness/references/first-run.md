@@ -1,28 +1,27 @@
 # first-run — commercial-readiness
 
-Régua para o check `first-run-timed`.
+Ruler for the `first-run-timed` check.
 
-## Protocolo
+## Protocol
 
-1. **VM virgem.** Windows/Mac limpo, sem nada instalado além do que a app
-   assume que existe (ex: WebView2 no Windows 10 antigo).
-2. **Sem rede em parte do teste.** Testar arranque sem internet — a app não
-   pode ficar presa a esperar por servidor externo.
-3. **Cronómetro.** Do duplo-click no instalador ao primeiro resultado útil
-   (não ao primeiro pixel na tela — ao primeiro momento em que o utilizador
-   consegue fazer o que veio fazer).
+1. **Clean VM.** A fresh Windows/Mac with nothing beyond what the app assumes
+   exists (e.g. WebView2 on older Windows 10).
+2. **No network for part of the test.** Start without internet — the app must
+   not hang waiting for an external server.
+3. **Stopwatch.** From double-clicking the installer to the first useful result
+   (not the first pixel — the first moment the user can do what they came for).
 
-## Registar
+## Record
 
-- Tempo (segundos).
-- O que a app descarregou durante esse tempo (binários, modelos).
-- Que permissões pediu, e em que ordem.
-- Se pediu confirmação de licença antes de servir para alguma coisa
-  (fricção de activação vs valor).
+- Time (seconds).
+- What the app downloaded meanwhile (binaries, models).
+- Which permissions it asked for, and in what order.
+- Whether it asked for licence confirmation before being useful (activation
+  friction vs value).
 
-## Régua
+## Ruler
 
-- Instalador → primeiro resultado útil em < 5 min: `PASS`.
+- Installer → first useful result in < 5 min: `PASS`.
 - 5–15 min: `MEDIUM`.
-- > 15 min ou "não conseguiu" (rede caiu, download falhou, permissão negada
-  a meio sem recovery): `FAIL`.
+- > 15 min or "could not" (network dropped, download failed, permission denied
+  midway with no recovery): `FAIL`.

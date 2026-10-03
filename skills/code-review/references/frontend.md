@@ -1,30 +1,29 @@
 # code-review — Frontend
 
-Régua para código de frontend (React, Vue, Svelte, vanilla; o essencial é
-comum).
+Ruler for frontend code (React, Vue, Svelte, vanilla; the essentials are shared).
 
-## Efeitos
+## Effects
 
-Cada `useEffect` / `onMounted` / `$effect` responde a três perguntas
-respondidas em comentário adjacente ou por óbvio no código:
+Every `useEffect` / `onMounted` / `$effect` answers three questions, in an
+adjacent comment or obviously in the code:
 
-1. **Quando corre?** — dependências enumeradas.
-2. **Como pára?** — função de cleanup ou desregisto.
-3. **O que faz se o componente desmonta a meio?** — cancelamento (Abort
-   Controller, flag) ou justificação de que não pode.
+1. **When does it run?** — dependencies listed.
+2. **How does it stop?** — cleanup or unsubscribe.
+3. **What if the component unmounts midway?** — cancellation (AbortController,
+   flag) or why it cannot happen.
 
-## Estado
+## State
 
-- Estado que sobrevive a re-render vive em `useState`/`ref`/store, não em
-  variáveis de closure.
-- Estado derivável **não** é armazenado — calculado. `useMemo` só depois
-  de medir; senão, cache prematura.
-- Refs (`useRef`) são para valores mutáveis que NÃO disparam re-render.
-  Colocar estado que a UI mostra num ref é bug silencioso.
+- State that survives a re-render lives in `useState`/`ref`/a store, not in
+  closure variables.
+- Derivable state is **not** stored — it is computed. `useMemo` only after
+  measuring; otherwise it is a premature cache.
+- Refs (`useRef`) are for mutable values that must NOT trigger a re-render.
+  State the UI shows kept in a ref is a silent bug.
 
-## Cancelamento
+## Cancellation
 
-`fetch` sem `AbortController` num efeito é bug. Ver:
+A `fetch` without an `AbortController` in an effect is a bug:
 
 ```jsx
 useEffect(() => {
@@ -38,20 +37,20 @@ useEffect(() => {
 
 ## Bundle
 
-Budget declarado no projeto (`perf.budgets-declared`); verificado por este owner com o
-bundle analyser do stack. Nenhum import de biblioteca inteira quando basta
-uma função (lodash, moment, date-fns → tree-shakeable ou substituir).
+Budget declared by the project (`perf.budgets-declared`), checked by this owner
+with the stack's bundle analyser. No whole-library import when one function
+will do (lodash, moment, date-fns → tree-shakeable or replaced).
 
-## Tipos
+## Types
 
-`any` só com comentário justificando; `as` só quando o compilador não pode
-inferir e a invariante está declarada. `strict: true` no tsconfig.
+`any` only with a justifying comment; `as` only when the compiler cannot infer
+and the invariant is stated. `strict: true` in tsconfig.
 
-## Testes
+## Tests
 
-- Teste de comportamento, não de implementação: dispara input, verifica
-  saída visível (Testing Library filosofia).
-- Snapshots só onde o output é canónico e estável; senão viram
-  "aceito tudo".
-- Cada teste declara o risco (comentário no topo). Oráculo é a asserção
-  específica, não "não crashou".
+- Test behaviour, not implementation: fire input, check visible output
+  (Testing Library philosophy).
+- Snapshots only where the output is canonical and stable; otherwise they
+  become "accept everything".
+- Each test states its risk (comment at the top). The oracle is the specific
+  assertion, not "it did not crash".

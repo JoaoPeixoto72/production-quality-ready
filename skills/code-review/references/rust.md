@@ -1,56 +1,50 @@
 # code-review — Rust
 
-Régua específica para código Rust.
+Ruler for Rust code.
 
-## Pânico em produção
+## Panics in production
 
-Nenhum `.unwrap()`, `.expect(...)`, `panic!(...)`, `todo!()`, `unimplemented!()`
-em caminhos que a aplicação consegue atingir em produção. Onde existe,
-imediatamente adjacente:
+No `.unwrap()`, `.expect(...)`, `panic!(...)`, `todo!()`, `unimplemented!()`
+on paths the app can reach in production. Where one exists, right beside it:
 
 ```rust
-// SAFETY / OK: <invariante que garante que isto nunca dispara>
+// SAFETY / OK: <invariant that guarantees this never fires>
 let x = maybe.unwrap();
 ```
 
-Sem esse comentário: `runtime.no-silent-panics` falha.
+Without that comment, `runtime.no-silent-panics` fails.
 
-## Erros
+## Errors
 
-`?` propaga; `Result` no topo do binário fecha com log estruturado
-(`reliability-audit` §2) e código de saída não-zero. Nunca engolir com `let _ =`
-sem justificação — o linter procura isso.
+`?` propagates; a `Result` at the binary's top closes with a structured log
+(`reliability-audit` §2) and a non-zero exit code. Never swallow with `let _ =`
+without a reason — the linter looks for it.
 
-## Concorrência
+## Concurrency
 
-- Estado partilhado entre threads: `Mutex`, `RwLock`, ou canal. `Arc` sozinho
-  não sincroniza nada.
-- `Send`/`Sync` respeitados. `unsafe impl Send/Sync` só com invariante
-  provada em comentário.
-- `async`: cancelamento é cooperativo — `drop` da task tem de deixar
-  recursos consistentes. Testar com `tokio::select!` e branch de timeout
-  que cancela o outro.
+- State shared between threads: `Mutex`, `RwLock`, or a channel. `Arc` alone
+  synchronises nothing.
+- `Send`/`Sync` respected; `unsafe impl Send/Sync` only with the invariant
+  proven in a comment.
+- `async`: cancellation is cooperative — dropping a task leaves resources
+  consistent. Test with `tokio::select!` and a timeout branch cancelling the other.
 
-## Testes
+## Tests
 
-- Um teste por risco enumerado; a matriz risco→teste vive em
-  no documento de estado do projecto (`ESTADO.md` ou equivalente) (é reliability-audit
-  responsibility keeping it live, não deste owner).
-- Property tests (proptest, quickcheck) preferidos onde o input tem
-  espaço estruturado; unit test onde é caso concreto.
-- `#[should_panic]` só quando o pânico é o contrato — a mensagem é o
-  oráculo apenas se o contrato a garantir.
+- One test per enumerated risk; the risk→test matrix lives in the project's
+  state document (`ESTADO.md` or equivalent), kept live by `reliability-audit`.
+- Property tests (proptest, quickcheck) where the input has structured space;
+  unit tests for concrete cases.
+- `#[should_panic]` only when the panic is the contract — its message is the
+  oracle only if the contract guarantees it.
 
 ## Ownership
 
-- Lifetimes explícitos quando o compilador pede; senão, deixar inferir.
-- `.clone()` que é caro (`String`, `Vec`, `Arc<T>` onde `T` é grande)
-  identificado por profiler antes de aceitar como necessário — cruza com
-  `perf.*` deste owner.
+- Explicit lifetimes when the compiler asks; otherwise let it infer.
+- An expensive `.clone()` (`String`, `Vec`, `Arc<T>` with a large `T`) is
+  confirmed by a profiler before being accepted — it crosses `perf.*`.
 
 ## Cargo
 
-- Lock file (`Cargo.lock`) commitado para binários. Feature flags
-  documentadas.
-- `cargo audit` limpo (isso é `security-audit`, mas este owner corre-o no
-  pipeline).
+- `Cargo.lock` committed for binaries. Feature flags documented.
+- `cargo audit` clean (`security-audit`'s, but this owner runs it in the pipeline).

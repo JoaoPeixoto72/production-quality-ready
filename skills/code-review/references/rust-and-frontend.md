@@ -1,34 +1,29 @@
 # code-review — Rust + Frontend (Tauri, Electron-like)
 
-Régua para projectos com Rust no backend e frontend web (Tauri é o caso
-padrão).
+Ruler for projects with a Rust backend and a web frontend (Tauri is the
+default case). Read `rust.md` and `frontend.md` first: this file covers **only**
+what the combination adds inside each layer — the boundary itself (invoke,
+events, IPC permissions) is this owner's *Contract* section.
 
-Ler primeiro `rust.md` e `frontend.md`. Este ficheiro cobre **só** o que
-é específico da combinação, dentro de cada camada — a fronteira entre elas
-(invoke, eventos, permissões IPC) é a secção *Contract* deste owner.
+## Rust side
 
-## Do lado Rust
+- `#[tauri::command]` commands are a boundary (*Contract*). Here: whether the
+  command's *body* copes with already-validated input.
+- `AppHandle`/`Window`/`State<'_, T>` passed to threads: `T: Send + Sync`.
+- A panic in a command does not crash the app (Tauri isolates it) but sends a
+  generic error to the client — log before letting it propagate.
 
-- Comandos `#[tauri::command]` são fronteira, não runtime — vão para
-  a secção *Contract*. Aqui: se o *corpo* do comando aguenta o input
-  já validado.
-- `AppHandle`/`Window`/`State<'_, T>` passados a threads: `T: Send + Sync`
-  respeitado.
-- Painço num comando não crasha a aplicação (Tauri isola), mas emite
-  erro genérico ao cliente — logar antes de deixar propagar.
+## Frontend side
 
-## Do lado frontend
+- `invoke(...)` returns a `Promise` — treat it like any cancellable call
+  (`frontend.md`, "Cancellation").
+- Events from Rust (`listen(...)`) need `unlisten()` in the effect's cleanup.
+- Never assume the backend is ready on first render: wait for
+  `tauri://ready` or the first successful `invoke`.
 
-- `invoke(...)` devolve `Promise` — trata-se como qualquer chamada
-  cancelável (secção "Cancelamento" de `frontend.md`).
-- Eventos vindos do Rust (`listen(...)`) precisam de `unlisten()` no
-  cleanup do efeito.
-- Nada de assumir que o backend está pronto no primeiro render: espera
-  pelo evento `tauri://ready` ou pelo primeiro `invoke` bem-sucedido.
+## Tauri bundle
 
-## Bundle Tauri
-
-- Bundle inclui runtime web + binário Rust. Budget é sobre o instalador
-  final (`perf.bundle-within-budget`).
-- Assets estáticos: `tauri.conf.json → build.distDir`; nada fora dessa
-  pasta chega ao produto.
+- The bundle holds the web runtime plus the Rust binary; the budget is about
+  the final installer (`perf.bundle-within-budget`).
+- Static assets: `tauri.conf.json → build.distDir`; nothing outside that folder
+  reaches the product.

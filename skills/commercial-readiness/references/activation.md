@@ -1,42 +1,42 @@
 # activation — commercial-readiness
 
-Régua para os checks `sell-01-activation` a `sell-06-end-of-payment`.
+Ruler for the checks `sell-01-activation` to `sell-06-end-of-payment`.
 
-## sell-01-activation (feliz e erros)
+## sell-01-activation (happy path and errors)
 
-- Fluxo feliz: comprar → receber chave → activar → app fica activada.
-- Erro 1: chave inválida — mensagem clara, sem revelar se a chave existe (evitar oráculo).
-- Erro 2: chave já usada noutro dispositivo — instrução clara de como desactivar o anterior.
+- Happy path: buy → receive key → activate → app activated.
+- Error 1: invalid key — a clear message that does not reveal whether the key exists (no oracle).
+- Error 2: key already used on another device — clear instructions to deactivate the old one.
 
 ## sell-02-activation-offline
 
-Grace period declarado (ex: 30 dias sem contactar servidor). Revalidação
-declarada (o que acontece no dia 31 sem rede: bloqueio, warning, ou
-degradação para trial?).
+A declared grace period (e.g. 30 days without reaching the server) and a
+declared revalidation (what happens on day 31 offline: block, warning, or
+fall back to trial?).
 
 ## sell-03-machine-change
 
-- O utilizador consegue desactivar máquina antiga a partir da nova?
-- Consegue desactivar a partir da web (se o servidor de licenças tem UI)?
-- Consegue reactivar em máquina nova sem contactar suporte?
+- Can the user deactivate the old machine from the new one?
+- From the web (if the licence server has a UI)?
+- Reactivate on a new machine without contacting support?
 
 ## sell-04-trial-to-paid
 
-- Ficheiros do trial abrem na versão paga sem conversão manual?
-- Contador de trial é honesto (não reinicia com reinstalação)?
+- Do trial files open in the paid version without manual conversion?
+- Is the trial counter honest (not reset by reinstalling)?
 
 ## sell-05-refund-cancel
 
-- Refund tem página, formulário, SLA declarado.
-- Cancelamento não exige contacto humano.
-- Ficheiros do utilizador continuam acessíveis após cancelamento (ver sell-06).
+- Refund has a page, a form, a declared SLA.
+- Cancelling needs no human contact.
+- The user's files stay accessible after cancelling (see sell-06).
 
 ## sell-06-end-of-payment
 
-Quando o pagamento pára, o utilizador **não perde acesso aos ficheiros que
-criou**. Duas opções aceites:
+When payment stops, the user **does not lose access to the files they
+created**. Two accepted options:
 
-1. App fica read-only (abre, mostra, exporta; não edita).
-2. Export garantido para formato aberto ao cancelar.
+1. The app becomes read-only (opens, shows, exports; does not edit).
+2. A guaranteed export to an open format on cancelling.
 
-Dados presos = `BLOCKER`.
+Locked data = `BLOCKER`.

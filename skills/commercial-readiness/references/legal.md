@@ -1,35 +1,34 @@
 # legal — commercial-readiness
 
-Checklist para o check `legal-clean`. Factos verificáveis no repo. **A
-conclusão jurídica é de quem vende**, não desta skill.
+Checklist for the `legal-clean` check: facts verifiable in the repo. **The
+legal conclusion is the seller's**, not this skill's.
 
-## RGPD (GDPR)
+## GDPR
 
-- Política de privacidade escrita, acessível na app e no site.
-- Base legal declarada para cada tipo de dado colectado.
-- Direito ao esquecimento tem caminho documentado.
-- Nenhum tracker de terceiros sem consentimento prévio.
+- A written privacy policy, reachable in the app and on the site.
+- A declared legal basis for each kind of data collected.
+- The right to erasure has a documented path.
+- No third-party tracker without prior consent.
 
 ## CRA (EU Cyber Resilience Act)
 
-- Vulnerabilidades reportáveis a canal declarado (SECURITY.md).
-- Atualizações de segurança separadas de atualizações de feature.
-- Suporte de segurança declarado por N anos após venda.
+- Vulnerabilities reportable to a declared channel (SECURITY.md).
+- Security updates separate from feature updates.
+- Security support declared for N years after sale.
 
 ## EAA (European Accessibility Act)
 
-- WCAG 2.2 AA cumprida (cross-reference `design-pro`).
-- Declaração de conformidade acessível.
+- WCAG 2.2 AA met (cross-reference `design-pro`).
+- An accessible conformance statement.
 
 ## EULA
 
-- Existe. Foi escrita ou revista por advogado.
-- Limitação de responsabilidade coerente com o preço.
-- Cláusulas de garantia claras.
+- It exists, written or reviewed by a lawyer.
+- Limitation of liability consistent with the price.
+- Clear warranty clauses.
 
-## Licenças de dependências
+## Dependency licences
 
-- FFmpeg e codecs comerciais têm licença compatível com o modelo de venda.
-- Cada dependência com licença copyleft (GPL, AGPL) tem carve-out ou
-  substituto planeado.
-- SBOM da release inclui cada licença.
+- FFmpeg and commercial codecs have licences compatible with the sales model.
+- Each copyleft dependency (GPL, AGPL) has a carve-out or a planned replacement.
+- The release SBOM lists every licence.
