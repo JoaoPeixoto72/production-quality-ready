@@ -63,9 +63,10 @@ user before writing anything.
    (`owners.code-review.budgets`). Existing debt goes into the baseline
    (`--write-baseline`), never into looser numbers.
 8. **Adapter names** — each adapter gets a local name different from
-   the plugin skill it extends (`<project>-start-work`, or a verb in the
-   project's language). Two skills with one short name leave the host to
-   pick by chance. Record each in `owners.<skill>.adapter`.
+   the plugin skill it extends: `<project>-<skill>` (`<project>-start-work`).
+   Two skills with one short name leave the host to pick by chance. Record
+   each in `owners.<skill>.adapter`. Adapters are written in English, names
+   and body, whatever the project's language (POLICY §3.2).
 
 ## Phase 2 — Write
 

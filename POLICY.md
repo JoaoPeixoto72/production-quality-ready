@@ -209,11 +209,16 @@ repo, where `<host>` is `.agents` (OpenCode, Antigravity, Codex…) or
 with the project's commits. Its version is independent of the plugin's;
 it declares which `extends` it inherits from.
 
-**The local name differs from the plugin skill's name** (`<project>-start-work`,
-or a verb in the project's language) and is recorded in
+**The local name differs from the plugin skill's name** (`<project>-start-work`)
+and is recorded in
 `gates.json` under `owners.<skill>.adapter`. Two skills with the same
 short name leave the host to pick one by chance — usually the generic
 one, which has no commands.
+
+**The plugin and every adapter are written in English** — names,
+frontmatter and body — whatever the project's language. The project's own
+documents (`ESTADO.md`, its guide for agents, code comments) keep the
+project's language.
 
 The adapter's `contract:` names the file, never a copy or a version:
 `production-quality-ready/CONTRACTS.md`. A copy in the project would be
