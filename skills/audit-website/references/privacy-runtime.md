@@ -1,26 +1,25 @@
-# Auditoria de Privacidade e Cookies em Runtime (`audit-website`)
+# Runtime privacy and cookie audit (`audit-website`)
 
-A conformidade com o RGPD (Regulamento Geral sobre a Proteção de Dados - Regulamento UE 2016/679) e com a Diretiva ePrivacy (Diretiva 2002/58/CE) exige que nenhum cookie ou identificador não essencial seja gravado ou transmitido antes de consentimento livre, específico, informado e explícito.
+The GDPR (Regulation (EU) 2016/679) and the ePrivacy Directive (2002/58/EC)
+require that no non-essential cookie or identifier is stored or sent before
+free, specific, informed and explicit consent.
 
----
+## 1. Golden rule: prior blocking (*consent prior to fire*)
 
-## 1. Regra de Ouro: Bloqueio Prévio (*Consent Prior to Fire*)
+No third-party script in these categories may run or open a connection before
+the user affirmatively clicks "Accept":
+- **Advertising and remarketing:** Meta Pixel, Google Ads, TikTok Pixel, LinkedIn Insight Tag, Criteo, Pinterest Tag.
+- **Analytics and behavioural measurement:** Google Analytics 4 (without Consent Mode v2 set to deny storage), Hotjar, Microsoft Clarity, Mixpanel.
+- **Content personalisation and affiliates:** Awin, Taboola, Outbrain.
 
-Nenhum script de terceiros pertencente às seguintes categorias pode executar ou estabelecer ligação antes de o utilizador clicar afirmativamente em "Aceitar":
-- **Publicidade e Remarketing:** Meta Pixel, Google Ads, TikTok Pixel, LinkedIn Insight Tag, Criteo, Pinterest Tag.
-- **Analytics e Medição Comportamental:** Google Analytics 4 (sem Consent Mode v2 configurado para negar storage), Hotjar, Microsoft Clarity, Mixpanel.
-- **Personalização de Conteúdo e Afiliados:** Awin, Taboola, Outbrain.
+## 2. Detection patterns
 
----
+### 2.1 Static HTML and script analysis
+- `<script src="...">` tags loaded straight in `<head>` or `<body>` without a consent manager (Cookiebot, Didomi, OneTrust, Klaro, Axeptio).
+- Libraries such as `fbevents.js`, `analytics.js`, `gtag/js` or `clarity.js` that make network calls on first load.
 
-## 2. Padrões de Deteção na Auditoria
-
-### 2.1 Análise Estática de HTML e Scripts
-- Deteção de tags `<script src="...">` carregadas diretamente no `<head>` ou `<body>` sem estarem envelopadas por um gestor de consentimento (ex.: Cookiebot, Didomi, OneTrust, Klaro, Axeptio).
-- Deteção de bibliotecas como `fbevents.js`, `analytics.js`, `gtag/js` ou `clarity.js` que iniciem chamadas de rede no carregamento inicial do documento.
-
-### 2.2 Verificação do Consent Mode v2 (Google)
-- Se a página utiliza o Google Consent Mode, deve existir no topo do `<head>` a instrução:
+### 2.2 Google Consent Mode v2
+- A page using Google Consent Mode has, at the top of `<head>`:
   ```javascript
   gtag('consent', 'default', {
     'ad_storage': 'denied',
@@ -29,9 +28,9 @@ Nenhum script de terceiros pertencente às seguintes categorias pode executar ou
     'analytics_storage': 'denied'
   });
   ```
-  Se este comando estiver em falta ou se os valores por omissão forem `granted`, constitui violação de conformidade.
+  Missing, or defaulting to `granted`, is a compliance breach.
 
-### 2.3 Transparência e Facilidade de Recusa
-- O banner de cookies **deve disponibilizar um botão de "Rejeitar" ou "Recusar Todos" no mesmo nível hierárquico e visual** do botão "Aceitar".
-- Não são permitidos botões de rejeição escondidos dentro de submenus com cores esbatidas enquanto o botão "Aceitar" está em destaque.
-- Acesso contínuo para alterar as preferências (ex.: ícone flutuante ou link no rodapé para reabrir as configurações de cookies).
+### 2.3 Transparency and easy refusal
+- The cookie banner **offers "Reject" or "Reject all" at the same hierarchy and visual level** as "Accept".
+- No reject button hidden in a submenu in faded colours while "Accept" stands out.
+- Preferences can be changed at any time (a floating icon or a footer link reopening the cookie settings).

@@ -1,38 +1,37 @@
-# Heurísticas de CRO e Conversão Comercial (`audit-website`)
+# CRO and commercial conversion heuristics (`audit-website`)
 
-A otimização da taxa de conversão (CRO) avalia a capacidade da montra ou landing page de conduzir o utilizador à conclusão de objetivos sem fricção nem enganos.
+Conversion rate optimisation (CRO) judges whether the storefront or landing
+page leads the user to complete a goal without friction or deception.
 
----
+## 1. Conversion principles
 
-## 1. Princípios de Avaliação de Conversão
+### 1.1 Value proposition above the fold
+- In under 5 seconds the visitor understands:
+  1. What the product or service is.
+  2. Who it is for.
+  3. Its concrete benefit or difference.
+- **Typical defect:** auto-rotating carousels (a distraction that lowers CTR) or poetic, vague titles that do not say what the business does.
 
-### 1.1 Proposta de Valor Acima da Dobra (*Above the Fold*)
-- O visitante deve compreender em menos de 5 segundos:
-  1. O que é o produto ou serviço?
-  2. Para quem é?
-  3. Qual é o benefício ou diferenciação concreta?
-- **Defeito Típico:** Sliders em carrossel rotativo automático (distração visual que diminui o CTR) ou títulos poéticos/vagos que não dizem o que o negócio faz.
+### 1.2 Primary call to action (CTA)
+- **One evident primary CTA** per screen ("Start free", "Buy now", "Book a demo").
+- Higher visual contrast than the page background (WCAG AA).
+- The action is in the verb (avoid passive words like "Click here" or "Submit").
 
-### 1.2 Call to Action (CTA) Principal
-- Deve existir **um CTA primário evidente** por ecrã (ex.: "Começar Grátis", "Comprar Agora", "Pedir Demonstração").
-- O botão deve ter contraste visual superior em relação ao fundo da página (cumprindo WCAG AA).
-- Ação claramente expressa no verbo (evitar palavras passivas como "Clique aqui" ou "Submeter").
+### 1.3 Form friction
+- Each extra field in a capture form cuts conversion by 3–10%.
+- **Required fields:** strictly what the first transaction needs (email and name for a newsletter/lead; never a full address or phone for a simple contact).
+- **Usability:**
+  - `autocomplete` for browser autofill (`autocomplete="name"`, `autocomplete="email"`);
+  - the right mobile keyboard (`type="tel"`, `type="email"`, `inputmode="numeric"`);
+  - clear inline validation messages (not a generic "Error").
 
-### 1.3 Minimização de Fricção em Formulários
-- Cada campo adicional num formulário de captação reduz a taxa de conversão entre 3% e 10%.
-- **Campos obrigatórios:** Devem ser estritamente necessários à transação inicial (ex.: apenas Email e Nome para newsletter/lead; nunca exigir morada completa ou telefone num contacto simples).
-- **Usabilidade:**
-  - Uso de `autocomplete` para preenchimento automático pelo browser (`autocomplete="name"`, `autocomplete="email"`).
-  - Teclado adequado em mobile (`type="tel"`, `type="email"`, `inputmode="numeric"`).
-  - Mensagens de validação em linha e claras (não genéricas como "Erro").
+### 1.4 No manipulative patterns (dark patterns)
+- **Pre-ticked checkboxes:** forbidden for marketing consent or add-on subscriptions under the GDPR and the EU Consumer Rights Directive.
+- **Hidden costs:** fees, shipping and VAT shown before the final payment step.
+- **False urgency:** fake countdowns that restart on every reload.
 
-### 1.4 Ausência de Padrões Manipuladores (*Dark Patterns*)
-- **Checkboxes Pré-assinaladas:** Proibidas para consentimento de marketing ou subscrição adicional sob o RGPD e Diretiva dos Direitos dos Consumidores da UE.
-- **Custos Ocultos:** Transparência de taxas, portes e IVA antes da etapa de pagamento final.
-- **Falsa Urgência:** Temporizadores regressivos fictícios que reiniciam em cada reload.
-
-### 1.5 Prova Social e Confiança
-- Presença de sinais verificáveis de autoridade:
-  - Testemunhos com identificação real, logótipos de clientes ou certificações.
-  - Informações de apoio ao cliente (contacto, email, NIF da empresa no rodapé).
-  - Selos de segurança e métodos de pagamento reconhecidos no checkout.
+### 1.5 Social proof and trust
+- Verifiable signs of authority:
+  - testimonials with real identification, client logos or certifications;
+  - customer support details (contact, email, company tax ID in the footer);
+  - security seals and recognised payment methods at checkout.

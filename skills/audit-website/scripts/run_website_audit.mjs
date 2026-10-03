@@ -126,13 +126,13 @@ class WebsiteAuditor {
     } catch (err) {
       this.addFinding({
         check: 'site-reachable',
-        pillar: 'Saúde Técnica',
+        pillar: 'Technical Health',
         severity: 'BLOCKER',
-        title: 'Website inacessível ou falha de ligação',
-        message: `Não foi possível estabelecer ligação ao URL: ${err.message}`,
+        title: 'Website unreachable or connection failed',
+        message: `Could not connect to the URL: ${err.message}`,
         url: targetUrl,
-        impact: 'O site está completamente indisponível para utilizadores e motores de busca.',
-        fix: 'Verificar DNS, certificado SSL/TLS e servidor de alojamento.'
+        impact: 'The site is entirely unavailable to users and search engines.',
+        fix: 'Check DNS, the SSL/TLS certificate and the hosting server.'
       });
       return;
     }
@@ -190,13 +190,13 @@ class WebsiteAuditor {
     if (!fs.existsSync(robotsPath)) {
       this.addFinding({
         check: 'robots-txt-exists',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'HIGH',
-        title: 'Ficheiro robots.txt em falta na raiz',
-        message: 'Não foi encontrado o ficheiro robots.txt no diretório estático.',
+        title: 'robots.txt missing at the root',
+        message: 'No robots.txt in the static directory.',
         url: 'robots.txt',
-        impact: 'Motores de busca não recebem diretrizes claras de rastreio.',
-        fix: 'Criar um robots.txt com declaração do Sitemap e regras de crawling.'
+        impact: 'Search engines get no clear crawling directives.',
+        fix: 'Create a robots.txt declaring the Sitemap and crawling rules.'
       });
     }
 
@@ -204,13 +204,13 @@ class WebsiteAuditor {
     if (!fs.existsSync(sitemapPath)) {
       this.addFinding({
         check: 'sitemap-xml-exists',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'HIGH',
-        title: 'Ficheiro sitemap.xml em falta na raiz',
-        message: 'Não foi encontrado o ficheiro sitemap.xml no diretório estático.',
+        title: 'sitemap.xml missing at the root',
+        message: 'No sitemap.xml in the static directory.',
         url: 'sitemap.xml',
-        impact: 'Dificulta a indexação estruturada de novos conteúdos e páginas secundárias.',
-        fix: 'Configurar o gerador de site estático para emitir sitemap.xml no build.'
+        impact: 'Hinders structured indexing of new content and secondary pages.',
+        fix: 'Have the static site generator emit sitemap.xml at build.'
       });
     }
   }
@@ -220,13 +220,13 @@ class WebsiteAuditor {
     if (!url.startsWith('https://')) {
       this.addFinding({
         check: 'https-enforced',
-        pillar: 'Segurança & SEO',
+        pillar: 'Security & SEO',
         severity: 'BLOCKER',
-        title: 'Website não utiliza HTTPS por omissão',
-        message: 'O site responde em HTTP sem encriptação TLS.',
+        title: 'Website does not use HTTPS by default',
+        message: 'The site answers over HTTP without TLS.',
         url,
-        impact: 'Penalização direta em SEO no Google e risco de interceção de dados dos visitantes.',
-        fix: 'Forçar redirecionamento 301 para HTTPS e configurar HSTS.'
+        impact: 'Direct Google SEO penalty and risk of intercepting visitor data.',
+        fix: 'Force a 301 redirect to HTTPS and configure HSTS.'
       });
     }
 
@@ -234,13 +234,13 @@ class WebsiteAuditor {
     if (!headers['strict-transport-security']) {
       this.addFinding({
         check: 'hsts-header',
-        pillar: 'Segurança',
+        pillar: 'Security',
         severity: 'MEDIUM',
-        title: 'Cabeçalho Strict-Transport-Security (HSTS) em falta',
-        message: 'O cabeçalho Strict-Transport-Security não foi devolvido pelo servidor.',
+        title: 'Strict-Transport-Security (HSTS) header missing',
+        message: 'The server did not return Strict-Transport-Security.',
         url,
-        impact: 'Vulnerável a ataques de downgrade SSL/TLS.',
-        fix: 'Configurar cabeçalho Strict-Transport-Security: max-age=31536000; includeSubDomains.'
+        impact: 'Vulnerable to SSL/TLS downgrade attacks.',
+        fix: 'Set Strict-Transport-Security: max-age=31536000; includeSubDomains.'
       });
     }
 
@@ -248,13 +248,13 @@ class WebsiteAuditor {
     if (headers['x-content-type-options'] !== 'nosniff') {
       this.addFinding({
         check: 'content-type-nosniff',
-        pillar: 'Segurança',
+        pillar: 'Security',
         severity: 'LOW',
-        title: 'Cabeçalho X-Content-Type-Options: nosniff ausente',
-        message: 'Proteção contra MIME-sniffing não declarada.',
+        title: 'X-Content-Type-Options: nosniff header missing',
+        message: 'No MIME-sniffing protection declared.',
         url,
-        impact: 'Browsers antigos podem interpretar ficheiros estáticos como scripts executáveis.',
-        fix: 'Adicionar cabeçalho X-Content-Type-Options: nosniff nas respostas HTTP.'
+        impact: 'Old browsers may run static files as scripts.',
+        fix: 'Add X-Content-Type-Options: nosniff to HTTP responses.'
       });
     }
   }
@@ -270,25 +270,25 @@ class WebsiteAuditor {
         if (text.includes('Disallow: /') && !text.includes('Disallow: /admin')) {
           this.addFinding({
             check: 'robots-disallow-all',
-            pillar: 'SEO Técnico',
+            pillar: 'Technical SEO',
             severity: 'BLOCKER',
-            title: 'robots.txt bloqueia rastreio de todo o website',
-            message: 'Detetada diretiva `Disallow: /` a bloquear todos os bots.',
+            title: 'robots.txt blocks crawling of the whole site',
+            message: 'A `Disallow: /` directive blocks every bot.',
             url: `${origin}/robots.txt`,
-            impact: 'O site será completamente desindexado do Google e outros motores de busca.',
-            fix: 'Remover `Disallow: /` do bloco de User-agent: *.'
+            impact: 'The site will be fully de-indexed from Google and other search engines.',
+            fix: 'Remove `Disallow: /` from the User-agent: * block.'
           });
         }
       } else {
         this.addFinding({
           check: 'robots-status',
-          pillar: 'SEO Técnico',
+          pillar: 'Technical SEO',
           severity: 'HIGH',
-          title: 'robots.txt devolve código HTTP diferente de 200',
-          message: `O pedido a /robots.txt devolveu HTTP ${robotsRes.status}.`,
+          title: 'robots.txt returns an HTTP status other than 200',
+          message: `/robots.txt returned HTTP ${robotsRes.status}.`,
           url: `${origin}/robots.txt`,
-          impact: 'Bots podem assumir permissão total ou restrição arbitrária.',
-          fix: 'Garantir ficheiro /robots.txt acessível com HTTP 200.'
+          impact: 'Bots may assume full permission or arbitrary restriction.',
+          fix: 'Serve /robots.txt with HTTP 200.'
         });
       }
     } catch {
@@ -301,13 +301,13 @@ class WebsiteAuditor {
       if (sitemapRes.status !== 200) {
         this.addFinding({
           check: 'sitemap-status',
-          pillar: 'SEO Técnico',
+          pillar: 'Technical SEO',
           severity: 'HIGH',
-          title: 'sitemap.xml não encontrado na raiz',
-          message: `O pedido a /sitemap.xml devolveu HTTP ${sitemapRes.status}.`,
+          title: 'sitemap.xml not found at the root',
+          message: `/sitemap.xml returned HTTP ${sitemapRes.status}.`,
           url: `${origin}/sitemap.xml`,
-          impact: 'Atraso e ineficiência na descoberta de novas páginas pelo Googlebot.',
-          fix: 'Disponibilizar o sitemap em /sitemap.xml e referenciá-lo no robots.txt.'
+          impact: 'Slow, inefficient discovery of new pages by Googlebot.',
+          fix: 'Serve the sitemap at /sitemap.xml and reference it in robots.txt.'
         });
       }
     } catch {
@@ -317,7 +317,7 @@ class WebsiteAuditor {
 
   async auditHtmlContent(html, pageUrl) {
     // ----------------------------------------------------
-    // PILAR 1: SEO On-Page & Meta Tags
+    // PILLAR 1: on-page SEO & meta tags
     // ----------------------------------------------------
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : '';
@@ -325,24 +325,24 @@ class WebsiteAuditor {
     if (!title) {
       this.addFinding({
         check: 'seo-title-missing',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'CRITICAL',
-        title: 'Tag <title> em falta ou vazia',
-        message: 'A página não possui uma etiqueta <title> no cabeçalho.',
+        title: '<title> missing or empty',
+        message: 'The page has no <title> in its head.',
         url: pageUrl,
-        impact: 'Crítico para posicionamento e apresentação nos resultados de pesquisa (SERP).',
-        fix: 'Adicionar uma tag <title> descritiva com 30 a 60 carateres.'
+        impact: 'Critical for ranking and presentation in search results (SERP).',
+        fix: 'Add a descriptive <title> of 30 to 60 characters.'
       });
     } else if (title.length < 20 || title.length > 70) {
       this.addFinding({
         check: 'seo-title-length',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'LOW',
-        title: `Tag <title> com comprimento não ideal (${title.length} carateres)`,
-        message: `O título "${title}" deve ter entre 30 e 60 carateres para evitar truncagem.`,
+        title: `<title> length not ideal (${title.length} characters)`,
+        message: `The title "${title}" should have 30 to 60 characters to avoid truncation.`,
         url: pageUrl,
-        impact: 'Título truncado nos snippets de pesquisa reduz taxa de clique (CTR).',
-        fix: 'Ajustar o título para ter entre 30 e 60 carateres com a palavra-chave principal.'
+        impact: 'A truncated title in search snippets lowers click-through (CTR).',
+        fix: 'Make the title 30 to 60 characters, with the main keyword.'
       });
     }
 
@@ -353,24 +353,24 @@ class WebsiteAuditor {
     if (!description) {
       this.addFinding({
         check: 'seo-meta-description-missing',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'MEDIUM',
-        title: 'Meta description em falta',
-        message: 'A página não define <meta name="description">.',
+        title: 'Meta description missing',
+        message: 'The page defines no <meta name="description">.',
         url: pageUrl,
-        impact: 'O Google gerará um excerto automático que pode não ter apelo comercial.',
-        fix: 'Adicionar meta description persuasiva com 70 a 160 carateres.'
+        impact: 'Google will generate an automatic snippet that may lack commercial appeal.',
+        fix: 'Add a persuasive meta description of 70 to 160 characters.'
       });
     } else if (description.length < 50 || description.length > 170) {
       this.addFinding({
         check: 'seo-meta-description-length',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'LOW',
-        title: `Meta description com comprimento fora do recomendado (${description.length} carateres)`,
-        message: `A descrição atual tem ${description.length} carateres (recomendado: 70 a 160 carateres).`,
+        title: `Meta description length outside the recommendation (${description.length} characters)`,
+        message: `The current description has ${description.length} characters (recommended: 70 to 160).`,
         url: pageUrl,
-        impact: 'Descrição pode ser cortada com reticências nos resultados de busca.',
-        fix: 'Manter a meta description entre 70 e 160 carateres.'
+        impact: 'The description may be cut with an ellipsis in search results.',
+        fix: 'Keep the meta description between 70 and 160 characters.'
       });
     }
 
@@ -379,13 +379,13 @@ class WebsiteAuditor {
     if (!canonicalMatch) {
       this.addFinding({
         check: 'seo-canonical-missing',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'MEDIUM',
-        title: 'Tag rel="canonical" em falta',
-        message: 'A página não especifica um URL canónico explícito.',
+        title: 'rel="canonical" missing',
+        message: 'The page declares no explicit canonical URL.',
         url: pageUrl,
-        impact: 'Risco de conteúdo duplicado devido a variações de parâmetros de URL e barras finais.',
-        fix: 'Inserir <link rel="canonical" href="..."> com o URL absoluto e limpo da página.'
+        impact: 'Duplicate-content risk from URL parameter and trailing-slash variants.',
+        fix: 'Add <link rel="canonical" href="..."> with the clean absolute URL of the page.'
       });
     }
 
@@ -394,24 +394,24 @@ class WebsiteAuditor {
     if (h1Matches.length === 0) {
       this.addFinding({
         check: 'seo-h1-missing',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'HIGH',
-        title: 'Cabeçalho principal <h1> em falta',
-        message: 'A página não tem nenhum elemento <h1>.',
+        title: 'Main <h1> heading missing',
+        message: 'The page has no <h1> element.',
         url: pageUrl,
-        impact: 'Dificulta a contextualização temática pelos motores de busca e utilizadores de leitores de ecrã.',
-        fix: 'Incluir exatamente um elemento <h1> representativo do tema principal da página.'
+        impact: 'Hinders topical context for search engines and screen-reader users.',
+        fix: 'Include exactly one <h1> stating the main topic of the page.'
       });
     } else if (h1Matches.length > 1) {
       this.addFinding({
         check: 'seo-h1-multiple',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'LOW',
-        title: `Múltiplos cabeçalhos <h1> detetados (${h1Matches.length} encontrados)`,
-        message: 'Recomenda-se apenas um único elemento <h1> por página para uma hierarquia semântica limpa.',
+        title: `Multiple <h1> headings (${h1Matches.length} found)`,
+        message: 'One <h1> per page keeps the semantic hierarchy clean.',
         url: pageUrl,
-        impact: 'Pode diluir o foco semântico da página.',
-        fix: 'Converter os <h1> secundários em <h2>.'
+        impact: 'May dilute the semantic focus of the page.',
+        fix: 'Turn the secondary <h1>s into <h2>.'
       });
     }
 
@@ -421,13 +421,13 @@ class WebsiteAuditor {
     if (!ogTitle || !ogImage) {
       this.addFinding({
         check: 'social-opengraph-missing',
-        pillar: 'SEO & Redes Sociais',
+        pillar: 'SEO & Social',
         severity: 'LOW',
-        title: 'Metatags Open Graph (og:title / og:image) incompletas',
-        message: 'Faltam tags Open Graph para enriquecer a partilha em redes sociais e apps de mensagens.',
+        title: 'Incomplete Open Graph meta tags (og:title / og:image)',
+        message: 'Open Graph tags are missing for rich sharing on social networks and messaging apps.',
         url: pageUrl,
-        impact: 'Partilhas no WhatsApp, LinkedIn, X e Facebook surgem sem imagem ou título atrativo.',
-        fix: 'Configurar og:title, og:description, og:image e og:url no <head>.'
+        impact: 'Shares on WhatsApp, LinkedIn, X and Facebook show no image or attractive title.',
+        fix: 'Set og:title, og:description, og:image and og:url in <head>.'
       });
     }
 
@@ -436,13 +436,13 @@ class WebsiteAuditor {
     if (jsonLdMatches.length === 0) {
       this.addFinding({
         check: 'seo-structured-data-missing',
-        pillar: 'SEO Técnico',
+        pillar: 'Technical SEO',
         severity: 'MEDIUM',
-        title: 'Dados Estruturados Schema.org (JSON-LD) ausentes',
-        message: 'Nenhum bloco de dados estruturados JSON-LD foi encontrado.',
+        title: 'Schema.org structured data (JSON-LD) missing',
+        message: 'No JSON-LD structured-data block found.',
         url: pageUrl,
-        impact: 'A página perde elegibilidade para Rich Snippets no Google (estrelas, preços, FAQ, organização).',
-        fix: 'Implementar Schema.org (ex.: Organization, WebSite ou Product) em formato JSON-LD.'
+        impact: 'The page loses Google rich-snippet eligibility (stars, prices, FAQ, organisation).',
+        fix: 'Add Schema.org (Organization, WebSite or Product) as JSON-LD.'
       });
     } else {
       for (const match of jsonLdMatches) {
@@ -452,27 +452,27 @@ class WebsiteAuditor {
         } catch {
           this.addFinding({
             check: 'seo-structured-data-syntax-error',
-            pillar: 'SEO Técnico',
+            pillar: 'Technical SEO',
             severity: 'HIGH',
-            title: 'Sintaxe JSON-LD inválida nos Dados Estruturados',
-            message: 'O bloco Schema.org contém JSON malformado e não pode ser processado pelo Google.',
+            title: 'Invalid JSON-LD syntax in the structured data',
+            message: 'The Schema.org block holds malformed JSON Google cannot process.',
             url: pageUrl,
-            impact: 'Erros no Google Search Console e perda imediata de Rich Results.',
-            fix: 'Validar o JSON-LD contra o schema validator da Schema.org.'
+            impact: 'Google Search Console errors and immediate loss of rich results.',
+            fix: 'Validate the JSON-LD with the Schema.org validator.'
           });
         }
       }
     }
 
     // ----------------------------------------------------
-    // PILAR 3: Privacidade & Cookies em Runtime (ePrivacy / RGPD)
+    // PILLAR 3: runtime privacy & cookies (ePrivacy / GDPR)
     // ----------------------------------------------------
     const trackingSignatures = [
       { name: 'Meta Pixel (Facebook)', regex: /(fbevents\.js|connect\.facebook\.net|fbq\s*\()/i, category: 'Marketing' },
       { name: 'Google Ads Remarketing', regex: /(googleads\.g\.doubleclick\.net|gtag\(['"]config['"],\s*['"]AW-)/i, category: 'Marketing' },
       { name: 'TikTok Pixel', regex: /(analytics\.tiktok\.com|ttq\.load)/i, category: 'Marketing' },
-      { name: 'Hotjar Behavioral Recording', regex: /(static\.hotjar\.com|hjid)/i, category: 'Analytics Avançado' },
-      { name: 'Microsoft Clarity', regex: /(clarity\.ms\/tag)/i, category: 'Analytics Avançado' },
+      { name: 'Hotjar Behavioral Recording', regex: /(static\.hotjar\.com|hjid)/i, category: 'Advanced Analytics' },
+      { name: 'Microsoft Clarity', regex: /(clarity\.ms\/tag)/i, category: 'Advanced Analytics' },
       { name: 'Criteo Retargeting', regex: /(static\.criteo\.net)/i, category: 'Marketing' }
     ];
 
@@ -493,13 +493,13 @@ class WebsiteAuditor {
     if (detectedTrackers.length > 0 && !hasConsentBannerOrCMP && !hasGoogleConsentMode) {
       this.addFinding({
         check: 'privacy-cookie-consent-violation',
-        pillar: 'Privacidade & Legal',
+        pillar: 'Privacy & Legal',
         severity: 'BLOCKER',
-        title: 'Trackers de publicidade a disparar sem Bloqueio Prévio de Consentimento',
-        message: `Foram detetados scripts de rastreio (${detectedTrackers.map(t => t.name).join(', ')}) diretamente no código sem barreira de consentimento ativa.`,
+        title: 'Advertising trackers firing without prior consent blocking',
+        message: `Tracking scripts (${detectedTrackers.map(t => t.name).join(', ')}) are in the code with no active consent barrier.`,
         url: pageUrl,
-        impact: 'Infração direta ao Regulamento Geral de Proteção de Dados (RGPD) e Diretiva ePrivacy com risco de contraordenação legal.',
-        fix: 'Implementar Bloqueio Prévio (Consent Prior to Fire): os scripts só podem ser injetados após consentimento afirmativo do utilizador.'
+        impact: 'Direct breach of the GDPR and the ePrivacy Directive, with risk of a fine.',
+        fix: 'Implement consent prior to fire: inject the scripts only after affirmative consent from the user.'
       });
     }
 
@@ -508,18 +508,18 @@ class WebsiteAuditor {
     if (!hasPrivacyPolicy) {
       this.addFinding({
         check: 'privacy-policy-link-missing',
-        pillar: 'Privacidade & Legal',
+        pillar: 'Privacy & Legal',
         severity: 'HIGH',
-        title: 'Ligação à Política de Privacidade não detetada',
-        message: 'Não foi encontrada uma ligação para a Política de Privacidade no documento.',
+        title: 'No link to the privacy policy found',
+        message: 'The document has no link to the privacy policy.',
         url: pageUrl,
-        impact: 'Incumprimento das obrigações de transparência do Artigo 13.º do RGPD.',
-        fix: 'Adicionar uma ligação permanente no rodapé da página para a Política de Privacidade.'
+        impact: 'Breach of the GDPR Article 13 transparency duties.',
+        fix: 'Add a permanent footer link to the privacy policy.'
       });
     }
 
     // ----------------------------------------------------
-    // PILAR 4: Web Analytics & Qualidade de Dados
+    // PILLAR 4: web analytics & data quality
     // ----------------------------------------------------
     const gtmMatch = html.match(/GTM-[A-Z0-9]{4,10}/g);
     const ga4Match = html.match(/G-[A-Z0-9]{6,12}/g);
@@ -532,11 +532,11 @@ class WebsiteAuditor {
           check: 'analytics-gtm-multiple',
           pillar: 'Web Analytics',
           severity: 'MEDIUM',
-          title: 'Múltiplos contentores Google Tag Manager detetados',
-          message: `Encontrados contentores GTM distintos: ${uniqueGTM.join(', ')}.`,
+          title: 'Multiple Google Tag Manager containers found',
+          message: `Distinct GTM containers: ${uniqueGTM.join(', ')}.`,
           url: pageUrl,
-          impact: 'Pode causar duplicação de eventos, aumento no tempo de carregamento e dados corrompidos.',
-          fix: 'Consolidar tags num único contentor GTM.'
+          impact: 'May duplicate events, slow loading and corrupt data.',
+          fix: 'Consolidate tags in a single GTM container.'
         });
       }
     }
@@ -551,11 +551,11 @@ class WebsiteAuditor {
           check: 'analytics-ga4-duplicate-script',
           pillar: 'Web Analytics',
           severity: 'HIGH',
-          title: 'Script gtag.js do GA4 carregado em duplicado',
-          message: 'O script da biblioteca gtag.js está inserido múltiplas vezes no HTML.',
+          title: 'GA4 gtag.js script loaded twice',
+          message: 'The gtag.js library is inserted several times in the HTML.',
           url: pageUrl,
-          impact: 'Duplicação de PageViews e distorção das taxas de rejeição e conversão.',
-          fix: 'Manter apenas um carregamento do script gtag.js por página.'
+          impact: 'Duplicated page views and distorted bounce and conversion rates.',
+          fix: 'Load gtag.js once per page.'
         });
       }
     }
@@ -565,18 +565,18 @@ class WebsiteAuditor {
     if (piiMatch) {
       this.addFinding({
         check: 'analytics-pii-in-url',
-        pillar: 'Web Analytics & Segurança',
+        pillar: 'Web Analytics & Security',
         severity: 'CRITICAL',
-        title: 'Dados Pessoais (PII) expostos em parâmetros de URL',
-        message: `Foram encontrados links com parâmetros sensíveis no URL: ${piiMatch.slice(0, 2).join(', ')}.`,
+        title: 'Personal data (PII) exposed in URL parameters',
+        message: `Links carry sensitive URL parameters: ${piiMatch.slice(0, 2).join(', ')}.`,
         url: pageUrl,
-        impact: 'Violação dos Termos de Serviço da Google (suspensão da conta de GA4) e grave infração de segurança.',
-        fix: 'Eliminar parâmetros PII de links e passar dados sensíveis apenas via POST no corpo do pedido.'
+        impact: 'Breach of the Google terms (GA4 account suspension) and a serious security fault.',
+        fix: 'Remove PII parameters from links; send sensitive data only in a POST body.'
       });
     }
 
     // ----------------------------------------------------
-    // PILAR 5: CRO & Eficácia de Conversão
+    // PILLAR 5: CRO & conversion
     // ----------------------------------------------------
     // Detect Forms
     const forms = html.match(/<form[\s\S]*?<\/form>/gi) || [];
@@ -585,13 +585,13 @@ class WebsiteAuditor {
       if (inputs.length > 8) {
         this.addFinding({
           check: 'cro-form-excessive-fields',
-          pillar: 'Conversão & CRO',
+          pillar: 'Conversion & CRO',
           severity: 'MEDIUM',
-          title: `Formulário com excesso de campos (${inputs.length} campos)`,
-          message: 'Formulários longos geram atrito cognitivo e aumentam a taxa de abandono.',
+          title: `Form with too many fields (${inputs.length})`,
+          message: 'Long forms add cognitive friction and raise abandonment.',
           url: pageUrl,
-          impact: 'Redução mensurável na taxa de conclusão e geração de leads.',
-          fix: 'Simplificar o formulário para os campos essenciais ou dividir em etapas (multi-step).'
+          impact: 'Measurable drop in completion and lead generation.',
+          fix: 'Keep only the essential fields, or split into steps (multi-step).'
         });
       }
 
@@ -600,13 +600,13 @@ class WebsiteAuditor {
       if (preTicked) {
         this.addFinding({
           check: 'cro-dark-pattern-preticked-checkbox',
-          pillar: 'Conversão & Legal',
+          pillar: 'Conversion & Legal',
           severity: 'CRITICAL',
-          title: 'Caixa de consentimento pré-selecionada detetada (Dark Pattern)',
-          message: 'Foi detetada uma checkbox de consentimento assinalada por omissão.',
+          title: 'Pre-ticked consent checkbox (dark pattern)',
+          message: 'A consent checkbox is ticked by default.',
           url: pageUrl,
-          impact: 'Ilegal sob o RGPD e rejeitado pelos utilizadores.',
-          fix: 'Remover o atributo `checked` para que o utilizador consinta de forma ativa.'
+          impact: 'Illegal under the GDPR and rejected by users.',
+          fix: 'Remove the `checked` attribute so the user consents actively.'
         });
       }
     }
@@ -616,31 +616,31 @@ class WebsiteAuditor {
     if (ctaMatches.length === 0 && !html.includes('<button') && !html.includes('class="btn"')) {
       this.addFinding({
         check: 'cro-no-clear-cta',
-        pillar: 'Conversão & CRO',
+        pillar: 'Conversion & CRO',
         severity: 'HIGH',
-        title: 'Nenhum Call to Action (CTA) principal evidente detetado',
-        message: 'A página não apresenta botões de ação ou links de conversão destacados.',
+        title: 'No evident primary call to action (CTA)',
+        message: 'The page shows no prominent action buttons or conversion links.',
         url: pageUrl,
-        impact: 'Visitantes navegam sem uma chamada clara para o próximo passo comercial.',
-        fix: 'Incluir um botão de ação primário acima da dobra com verbo acionável.'
+        impact: 'Visitors browse with no clear call to the next commercial step.',
+        fix: 'Add a primary action button above the fold with an actionable verb.'
       });
     }
 
     // ----------------------------------------------------
-    // PILAR 7: Acessibilidade Pública (WCAG 2.2 AA)
+    // PILLAR 7: public accessibility (WCAG 2.2 AA)
     // ----------------------------------------------------
     // html lang attribute
     const htmlLangMatch = html.match(/<html[^>]*lang=["']([^"']+)["']/i);
     if (!htmlLangMatch) {
       this.addFinding({
         check: 'a11y-html-lang-missing',
-        pillar: 'Acessibilidade',
+        pillar: 'Accessibility',
         severity: 'MEDIUM',
-        title: 'Atributo lang ausente na etiqueta <html>',
-        message: 'O documento não declara o idioma principal da página.',
+        title: 'lang attribute missing on <html>',
+        message: 'The document does not declare the main language of the page.',
         url: pageUrl,
-        impact: 'Leitores de ecrã não conseguem ajustar a pronúncia e sintetizadores de voz.',
-        fix: 'Adicionar lang="pt" (ou o código de idioma adequado) na tag <html>.'
+        impact: 'Screen readers cannot adjust pronunciation and speech synthesis.',
+        fix: 'Add lang="en" (or the right language code) to <html>.'
       });
     }
 
@@ -655,13 +655,13 @@ class WebsiteAuditor {
     if (imgMissingAlt > 0) {
       this.addFinding({
         check: 'a11y-img-alt-missing',
-        pillar: 'Acessibilidade',
+        pillar: 'Accessibility',
         severity: 'HIGH',
-        title: `Imagens sem atributo alt (${imgMissingAlt} encontradas)`,
-        message: `Existem ${imgMissingAlt} imagens sem texto alternativo descritivo.`,
+        title: `Images without alt (${imgMissingAlt} found)`,
+        message: `${imgMissingAlt} images have no descriptive alternative text.`,
         url: pageUrl,
-        impact: 'Violação da WCAG 2.2 (Critério 1.1.1 - Conteúdo Não Textual) e perda de relevância em Google Imagens.',
-        fix: 'Adicionar atributos alt descritivos em todas as imagens de conteúdo, ou alt="" em imagens meramente decorativas.'
+        impact: 'Fails WCAG 2.2 (SC 1.1.1 non-text content) and loses Google Images relevance.',
+        fix: 'Add descriptive alt to every content image, or alt="" to purely decorative ones.'
       });
     }
 
@@ -671,13 +671,13 @@ class WebsiteAuditor {
       if (!/aria-label=["'][^"']+["']/i.test(btn) && !/title=["'][^"']+["']/i.test(btn)) {
         this.addFinding({
           check: 'a11y-button-no-label',
-          pillar: 'Acessibilidade',
+          pillar: 'Accessibility',
           severity: 'MEDIUM',
-          title: 'Botões apenas com ícone e sem texto acessível',
-          message: 'Foi encontrado um botão interativo sem texto visível nem aria-label.',
+          title: 'Icon-only buttons without accessible text',
+          message: 'An interactive button has neither visible text nor aria-label.',
           url: pageUrl,
-          impact: 'Utilizadores de leitores de ecrã não sabem que ação o botão despoleta.',
-          fix: 'Adicionar aria-label="Descrição da ação" no elemento <button>.'
+          impact: 'Screen-reader users cannot tell what the button does.',
+          fix: 'Add aria-label="<action>" to the <button>.'
         });
         break; // emit once
       }
@@ -724,25 +724,25 @@ class WebsiteAuditor {
           this.stats.brokenLinks++;
           this.addFinding({
             check: 'spider-broken-link-404',
-            pillar: 'Saúde de Links (Spider)',
+            pillar: 'Link Health (Spider)',
             severity: 'HIGH',
-            title: `Link interno quebrado (HTTP 404 Not Found)`,
-            message: `A página inicial liga para um endereço inexistente: ${link}`,
+            title: `Broken internal link (HTTP 404 Not Found)`,
+            message: `The home page links to a missing address: ${link}`,
             url: link,
-            impact: 'Fricção direta na experiência do utilizador e desperdício de orçamento de rastreio (crawl budget).',
-            fix: 'Corrigir o URL no HTML ou criar um redirecionamento 301 para a página de destino correta.'
+            impact: 'Direct friction for users and wasted crawl budget.',
+            fix: 'Fix the URL in the HTML or add a 301 redirect to the right page.'
           });
         } else if (res.status >= 500) {
           this.stats.brokenLinks++;
           this.addFinding({
             check: 'spider-server-error-500',
-            pillar: 'Saúde Técnica',
+            pillar: 'Technical Health',
             severity: 'CRITICAL',
-            title: `Erro de servidor interno em link (HTTP ${res.status})`,
-            message: `O endereço interno ${link} falha com erro de servidor.`,
+            title: `Internal server error on a link (HTTP ${res.status})`,
+            message: `Internal address ${link} fails with a server error.`,
             url: link,
-            impact: 'Página inacessível com quebra de serviço para os visitantes.',
-            fix: 'Inspecionar logs do servidor de aplicação e tratar a exceção interna.'
+            impact: 'Page unreachable: service broken for visitors.',
+            fix: 'Inspect the application server logs and handle the internal exception.'
           });
         }
       } catch {
@@ -772,11 +772,11 @@ class WebsiteAuditor {
             check: 'cwv-lcp-budget-failed',
             pillar: 'Performance & CWV',
             severity: lcp > 4000 ? 'CRITICAL' : 'HIGH',
-            title: `Largest Contentful Paint (LCP) lento: ${(lcp / 1000).toFixed(2)}s`,
-            message: `O LCP medido excede o limite saudável da Google de 2.5s (${(lcp / 1000).toFixed(2)}s).`,
+            title: `Slow Largest Contentful Paint (LCP): ${(lcp / 1000).toFixed(2)}s`,
+            message: `Measured LCP exceeds Google's healthy 2.5s limit (${(lcp / 1000).toFixed(2)}s).`,
             url: targetUrl,
-            impact: 'Penalização direta na classificação de pesquisa mobile do Google e aumento da taxa de abandono.',
-            fix: 'Otimizar o elemento hero LCP, pré-carregar imagens com <link rel="preload"> e implementar cache e CDN.'
+            impact: 'Direct penalty in Google mobile ranking and higher abandonment.',
+            fix: 'Optimise the LCP hero element, preload images with <link rel="preload">, add caching and a CDN.'
           });
         }
 
@@ -785,11 +785,11 @@ class WebsiteAuditor {
             check: 'cwv-cls-budget-failed',
             pillar: 'Performance & CWV',
             severity: cls > 0.25 ? 'CRITICAL' : 'HIGH',
-            title: `Cumulative Layout Shift (CLS) instável: ${cls.toFixed(3)}`,
-            message: `O CLS medido excede o limiar recomendado de 0.10 (${cls.toFixed(3)}).`,
+            title: `Unstable Cumulative Layout Shift (CLS): ${cls.toFixed(3)}`,
+            message: `Measured CLS exceeds the recommended 0.10 (${cls.toFixed(3)}).`,
             url: targetUrl,
-            impact: 'Elementos visuais saltam no ecrã durante o carregamento, causando cliques acidentais.',
-            fix: 'Definir width e height explícitos em todas as imagens, vídeos e blocos de anúncios.'
+            impact: 'Elements jump while loading, causing accidental clicks.',
+            fix: 'Set explicit width and height on every image, video and ad block.'
           });
         }
       }
@@ -811,45 +811,45 @@ class WebsiteAuditor {
     const isBlocked = counts.BLOCKER > 0 || counts.CRITICAL > 0;
     const verdict = isBlocked ? 'BLOCKED' : (counts.HIGH > 0 ? 'FIX_BEFORE_LAUNCH' : 'READY');
 
-    const markdown = `# Relatório de Auditoria de Website 360º
+    const markdown = `# 360º Website Audit Report
 
-- **Alvo:** \`${this.options.url || this.options.dir}\`
-- **Data:** ${new Date().toISOString().split('T')[0]}
-- **Motor:** \`audit-website@1.0.0\` (\`production-quality-ready\`)
-- **Veredito:** \`${verdict}\` (${counts.BLOCKER} Blocker, ${counts.CRITICAL} Critical, ${counts.HIGH} High, ${counts.MEDIUM} Medium, ${counts.LOW} Low)
+- **Target:** \`${this.options.url || this.options.dir}\`
+- **Date:** ${new Date().toISOString().split('T')[0]}
+- **Engine:** \`audit-website@1.0.0\` (\`production-quality-ready\`)
+- **Verdict:** \`${verdict}\` (${counts.BLOCKER} Blocker, ${counts.CRITICAL} Critical, ${counts.HIGH} High, ${counts.MEDIUM} Medium, ${counts.LOW} Low)
 
 ---
 
-## 1. Resumo Executivo
+## 1. Executive summary
 
-| Métrica | Valor Apurado | Estado |
+| Metric | Value | State |
 | :--- | :---: | :---: |
-| **Páginas e Documentos Auditados** | ${this.stats.pagesAudited} | Completo |
-| **Links Internos Testados (Spider)** | ${this.stats.linksChecked} | ${this.stats.brokenLinks > 0 ? `⚠️ ${this.stats.brokenLinks} quebrados` : '✅ Todos OK'} |
-| **Trackers Detetados** | ${this.stats.trackersFound.length} | ${this.stats.trackersFound.join(', ') || 'Nenhum'} |
-| **Tags de Analytics Ativas** | ${this.stats.analyticsFound.length} | ${this.stats.analyticsFound.join(', ') || 'Nenhum'} |
-| **Falhas Bloqueantes (Blocker / Critical)** | ${counts.BLOCKER + counts.CRITICAL} | ${isBlocked ? '❌ REJEITADO' : '✅ APROVADO'} |
+| **Pages and documents audited** | ${this.stats.pagesAudited} | Complete |
+| **Internal links tested (spider)** | ${this.stats.linksChecked} | ${this.stats.brokenLinks > 0 ? `⚠️ ${this.stats.brokenLinks} broken` : '✅ All OK'} |
+| **Trackers found** | ${this.stats.trackersFound.length} | ${this.stats.trackersFound.join(', ') || 'None'} |
+| **Active analytics tags** | ${this.stats.analyticsFound.length} | ${this.stats.analyticsFound.join(', ') || 'None'} |
+| **Blocking failures (Blocker / Critical)** | ${counts.BLOCKER + counts.CRITICAL} | ${isBlocked ? '❌ REJECTED' : '✅ APPROVED'} |
 
 ---
 
-## 2. Tabela Priorizada de Problemas e Ações
+## 2. Prioritised problems and actions
 
-${this.findings.length === 0 ? '✅ *Nenhum defeito encontrado. O website cumpre integralmente os requisitos dos 7 pilares.*' : ''}
+${this.findings.length === 0 ? '✅ *No defect found. The website meets every requirement of the 7 pillars.*' : ''}
 ${this.findings.map((f, i) => `### ${i + 1}. [${f.severity}] ${f.title}
-- **Pilar:** ${f.pillar} (\`${f.check}\`)
-- **Localização:** \`${f.url}\`
-- **Problema:** ${f.message}
-- **Impacto no Negócio / Utilizador:** ${f.impact}
-- **Ação de Correção Recomendada:** ${f.fix}
+- **Pillar:** ${f.pillar} (\`${f.check}\`)
+- **Location:** \`${f.url}\`
+- **Problem:** ${f.message}
+- **Business / user impact:** ${f.impact}
+- **Recommended fix:** ${f.fix}
 `).join('\n')}
 
 ---
 
-## 3. Critérios de Revalidação
-Para fechar o veredito para \`READY\`:
-1. Todos os apontamentos \`BLOCKER\` e \`CRITICAL\` devem estar remediados no ambiente de testes.
-2. Nenhuma regressão de Core Web Vitals deve ser introduzida nas alterações de layout.
-3. Reexecutar \`node scripts/run_website_audit.mjs --url=<URL>\` até obter 0 falhas críticas.
+## 3. Revalidation criteria
+To close the verdict as \`READY\`:
+1. Every \`BLOCKER\` and \`CRITICAL\` finding is fixed in the test environment.
+2. No Core Web Vitals regression is introduced by layout changes.
+3. Re-run \`node scripts/run_website_audit.mjs --url=<URL>\` until there are 0 critical failures.
 `;
 
     if (this.options.json) {
@@ -875,7 +875,7 @@ Para fechar o veredito para \`READY\`:
 
     if (this.options.out) {
       fs.writeFileSync(path.resolve(process.cwd(), this.options.out), markdown, 'utf-8');
-      console.log(`\n💾 Relatório guardado com sucesso em: ${this.options.out}`);
+      console.log(`\n💾 Report saved to: ${this.options.out}`);
     }
 
     return { verdict, counts, findings: this.findings };
