@@ -374,9 +374,9 @@ in a `.txt` was treated as a fixture) and two resolution bugs in
 `threat_model.py`.
 
 **Rule 4.6.5 (existence is not proof).** A critical obligation is never
-resolved by `LEITURA` or `DOCUMENTO` evidence. "The file exists" and "a
+resolved by `READING` or `DOCUMENT` evidence. "The file exists" and "a
 commit touched it" are not observations of the property the check
-names; a critical needs `EXECUCAO` or `TESTE`. Where an artefact is the
+names; a critical needs `EXECUTION` or `TEST`. Where an artefact is the
 only reasonable surface (a threat model, a retention policy), the
 instrument reads the artefact and verifies what it *claims* — the
 citations resolve, the tests it names exist — which is the difference

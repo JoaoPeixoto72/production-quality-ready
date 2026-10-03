@@ -103,7 +103,7 @@ goes stale.
    and an "Installed skills" block.
 6. **`.gitignore`** — propose `/.work/` (what `map`, `slice`, `research`
    and `spec` write while working) and the audit output (`/.audit/`,
-   `/docs/auditorias/`), so a skill's working files never reach a commit.
+   `/docs/audits/`), so a skill's working files never reach a commit.
 
 ## Phase 3 — Verify what was written
 

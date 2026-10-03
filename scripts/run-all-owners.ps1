@@ -56,7 +56,7 @@ foreach ($rel in @(".agents/gates.json", ".claude/gates.json")) {
     if (Test-Path $p) { $GatesPath = $p; break }
 }
 $AuditRoot  = Join-Path $RepoRoot ".audit"
-$ReportsDir = Join-Path $RepoRoot "docs/auditorias"
+$ReportsDir = Join-Path $RepoRoot "docs/audits"
 
 Write-Host "run-all-owners.ps1 (v2.0)" -ForegroundColor Cyan
 Write-Host "  repo:   $RepoRoot"

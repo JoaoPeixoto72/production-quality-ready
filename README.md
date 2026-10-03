@@ -108,7 +108,7 @@ use the audit-app skill
 `audit-app` reads `.audit/`, validates every file (`validate_evidence.py`
 — a PASS without a trace is downgraded), applies the gates
 (`release-candidate`, `production-ready`, `sellable`) and writes
-`docs/auditorias/<date>-<scope>.md`. Owners with no evidence show
+`docs/audits/<date>-<scope>.md`. Owners with no evidence show
 `BLOCKED (n/m)`; that is the honest state, not a bug.
 
 ## The skills

@@ -39,7 +39,7 @@ user  →  audit-app
            ↓
            phase 5: apply declarative gates
            ↓
-           phase 6: write docs/auditorias/<date>-<scope>.md
+           phase 6: write docs/audits/<date>-<scope>.md
 ```
 
 ## Phase 0 — Bootstrap
@@ -121,8 +121,8 @@ Project gate packs may add; they can't remove these.
 
 ## Phase 6 — Report
 
-Format in `references/relatorio.md`. **New** file in
-`docs/auditorias/YYYY-MM-DD-<scope>.md`. Never overwrite existing
+Format in `references/report.md`. **New** file in
+`docs/audits/YYYY-MM-DD-<scope>.md`. Never overwrite existing
 (suffix `-2`). The report is a working artefact — the project's
 `.gitignore` decides whether it is kept; what outlives the session is one
 line per open finding in the project's defects list (`close-work`).
@@ -132,10 +132,10 @@ the report itself, declare it and adjust coverage.
 
 ## References
 
-- `references/contrato-e-evidencia.md` — operational translation of
+- `references/contract-and-evidence.md` — operational translation of
   `CONTRACTS.md` into the experience of running an audit. Authoritative
   source is the `CONTRACTS.md` at the plugin root.
-- `references/relatorio.md` — output format, required blocks.
+- `references/report.md` — output format, required blocks.
 - `references/gates.spec.yaml` — the three standard gates and the
   platform rule.
 

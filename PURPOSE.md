@@ -273,7 +273,7 @@ Extensions, not missing pieces:
 
 - `audit-app` speaks two vocabularies: `CONTRACTS` (`PASS`/`FAIL`/
   `NOT_VERIFIED`) and its report format (`PROVEN`/`CLEARED`/`UNPROVEN`).
-  The mapping is in `skills/audit-app/references/contrato-e-evidencia.md`;
+  The mapping is in `skills/audit-app/references/contract-and-evidence.md`;
   collapsing to one moves `validate_report.py` and its fixtures together.
 - More instruments the runner can execute without a project harness:
   Lighthouse for `web.core-web-vitals`, `cargo deny` for

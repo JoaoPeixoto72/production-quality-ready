@@ -87,7 +87,7 @@ Profiles in `seo/profiles/`: `content-site`, `spa-app`, `ecommerce`.
 
 ## Outputs
 
-- `docs/auditorias/YYYY-MM-DD-website-<target>.md` — executive report, findings by severity (`BLOCKER`, `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`). A working artefact, like `audit-app`'s: an open finding outlives it as one line in the project's defects list.
+- `docs/audits/YYYY-MM-DD-website-<target>.md` — executive report, findings by severity (`BLOCKER`, `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`). A working artefact, like `audit-app`'s: an open finding outlives it as one line in the project's defects list.
 - `seo-audit-report.json`, `seo-audit-report.sarif` (from the deep engine).
 
 Verdicts: `BLOCKED`, `FIX_BEFORE_LAUNCH`, `READY_WITH_FOLLOWUPS`, `PARTIAL_AUDIT`.
