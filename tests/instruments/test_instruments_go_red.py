@@ -503,6 +503,17 @@ class TrimCheckGoesRed(unittest.TestCase):
             self.assertEqual(r["trim.no-history"]["result"], "FAIL")
             self.assertEqual(r["trim.no-constant-echo"]["result"], "FAIL")
 
+    def test_an_external_test_module_does_not_hide_the_rest_of_the_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo(tmp)
+            (root / "m.rs").write_text(
+                "#[cfg(test)]\nmod testes;\n\nfn a() {}\n/// one\n/// two\n/// three\n/// four\nfn b() {}\n",
+                encoding="utf-8")
+            code, payload = instrument_json(
+                "skills/close-work/scripts/trim_check.py", ["--repo", "."], root)
+            self.assertNotEqual(code, 0)
+            self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "FAIL")
+
     def test_lines_this_work_did_not_touch_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = self._repo(tmp)

@@ -124,7 +124,9 @@ def scan(repo: Path, since: str | None) -> dict[str, list[str]]:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         is_comment = comment_lines(ext, lines)
         new = (lambda k: True) if only is None else (lambda k: k + 1 in only)
-        tests_from = next((k for k, l in enumerate(lines) if TEST_MODULE.search(l)), len(lines))
+        # An inline `#[cfg(test)] mod x {` starts the tests; `#[cfg(test)] mod x;` lives elsewhere.
+        tests_from = next((k for k, l in enumerate(lines) if TEST_MODULE.search(l)
+                           and "{" in " ".join(lines[k:k + 3])), len(lines))
 
         k = 0
         while k < len(lines):
