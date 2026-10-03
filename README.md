@@ -93,7 +93,11 @@ typecheck, tests, `audit_ui.py`, `npm audit`/`cargo audit`, `gitleaks`,
 lockfile/SBOM checks, migration verifier, website engines — and writes
 `.audit/<owner>/*.evidence.yaml`. **A PASS is written only for a check
 it executed, with `command:` and `log:`.** What it cannot run is
-`NOT_VERIFIED/missing-instrument` — declared, not hidden.
+`NOT_VERIFIED/missing-instrument` — declared, not hidden. An owner whose
+instrument only the project can write (e.g. `design-pro`, which needs real
+screens) is wired through a command the project declares in
+`adapter-hints` (`design-pro-capture-command`); without one, the gap stays
+declared. The plugin never names the tool the project uses.
 
 Then:
 

@@ -570,6 +570,22 @@ function Invoke-ReliabilityAudit {
 function Invoke-DeclaredGap { param([string]$Owner, [string]$Instrument)
     Write-MissingInstrument $Owner $Instrument "requires a project-local $Instrument the plugin cannot ship (see skills/$Owner/SKILL.md)" }
 
+function Invoke-DesignPro {
+    $owner = "design-pro"
+    $ran=0; $passed=0; $failed=0; $nv=0
+    # O design-pro julga WCAG 2.2 AA sobre ecrãs a sério: o instrumento é do
+    # projeto (um browser drive, uma captura), não do plugin. O plugin corre o
+    # comando que o projeto declara em `adapter-hints.design-pro-capture-command`
+    # — exit 0 com output é PASS, != 0 é FAIL, sem comando é a lacuna dita.
+    # Não sabe que ferramenta é: node, python ou um script do projeto.
+    $dp = Invoke-JsonInstrument -Owner $owner -Instrument adapter-local `
+        -Script (Join-Path $PluginRoot "scripts/declared-command.py") `
+        -Rule "a11y-critical-flows" -RuleVersion "wcag-2.2-AA" `
+        -ExtraArgs @("--owner", $owner, "--hint", "design-pro-capture-command", "--checks", "a11y-critical-flows")
+    if ($dp) { $ran += $dp.ran; $passed += $dp.passed; $failed += $dp.failed; $nv += $dp.notVerified }
+    Register-Owner -Owner $owner -Ran $ran -Passed $passed -Failed $failed -NotVerified $nv
+}
+
 $dispatch = @{
     "audit-app"            = $null
     "bootstrap-project"    = $null
@@ -582,7 +598,7 @@ $dispatch = @{
     "security-audit"       = { Invoke-SecurityAudit }
     "release-audit"        = { Invoke-ReleaseAudit }
     "reliability-audit"    = { Invoke-ReliabilityAudit }
-    "design-pro"           = { Invoke-DeclaredGap -Owner design-pro           -Instrument screenshot-sample }
+    "design-pro"           = { Invoke-DesignPro }
     "verify"               = { Invoke-Verify }
     "drive-app-window"     = { Invoke-DeclaredGap -Owner drive-app-window     -Instrument gui.ps1 }
     "commercial-readiness" = { Invoke-CommercialReadiness }
