@@ -20,6 +20,7 @@ which holds the rule; this file holds only what is {{PROJECT_NAME}}'s.
 ```bash
 {{BUILD_COMMAND}}
 {{TEST_COMMAND}}
+python <plugin>/skills/close-work/scripts/trim_check.py --repo . --format md   # must say: nothing to trim
 ```
 
 Write pass or fail beside each command in `ESTADO.md` §1 — no counts.

@@ -19,7 +19,8 @@ allowed-tools: Read, Glob, Grep, Bash, Edit, Write
    project. Rule "one subject, one owner" applied here.
 2. **`ESTADO.md` structure** — if it differs from the universal fixed
    structure.
-3. **Pre-commit proof command.**
+3. **Pre-commit proof command** — including
+   `skills/close-work/scripts/trim_check.py`, which must pass.
 4. **When to bump version** — when a task earns a version, when it
    doesn't.
 

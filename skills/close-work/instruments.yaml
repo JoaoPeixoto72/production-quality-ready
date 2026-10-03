@@ -6,3 +6,10 @@ accepts:
   - producer: close-work
     instrument: adapter-local
     for-checks: ["*"]
+  - producer: close-work
+    instrument: trim-check
+    for-checks:
+      - trim.comment-budget
+      - trim.no-history
+      - trim.no-constant-echo
+      - trim.visible-text

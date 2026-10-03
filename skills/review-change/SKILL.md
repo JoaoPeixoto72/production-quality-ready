@@ -114,7 +114,8 @@ Full text, sources and the reporting rules:
 - **M4 · Named values** — decisions (limits, colours, spacing, visible text) live in constants, tokens, i18n keys; no inline style for a design decision. Not a variable per expression.
 - **M5 · Indirection** — no pass-through wrappers, speculative abstractions, boolean flag params, nested ternaries.
 - **M6 · Errors** — nothing swallowed: no empty catch, no dropped `Result`, no `?.` or fallback hiding a failure.
-- **M7 · Comments and types** — comments say why and are true; no `any`, no unexplained casts at boundaries.
+- **M7 · Comments and types** — comments say why, are true, and are short
+  (a line, at most three; the code says the rest); no `any`, no unexplained casts at boundaries.
 
 ## The adversarial matrix
 

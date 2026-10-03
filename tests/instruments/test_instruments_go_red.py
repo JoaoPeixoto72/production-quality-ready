@@ -48,6 +48,7 @@ RED_CASE: dict[str, tuple[str, str]] = {
     "threat-model-check": ("skills/security-audit/scripts/threat_model.py", "ThreatModelGoesRed"),
     "tenant-isolation": ("skills/security-audit/scripts/tenant_isolation.py", "TenantIsolationGoesRed"),
     "adapter-local": ("scripts/declared-command.py", "DeclaredCommandGoesRed"),
+    "trim-check": ("skills/close-work/scripts/trim_check.py", "TrimCheckGoesRed"),
     "billing-harness": ("scripts/declared-command.py", "DeclaredCommandGoesRed"),
     "run_seo_audit.mjs": ("skills/audit-website/seo/run_seo_audit.mjs", "SeoEngineGoesRed"),
     "run_website_audit.mjs": ("skills/audit-website/scripts/run_website_audit.mjs", "WebsiteEngineGoesRed"),
@@ -510,6 +511,40 @@ class EvidenceValidatorGoesRed(unittest.TestCase):
                      "--repo", str(root)], root)
             self.assertNotEqual(p.returncode, 0, "o validador tem de rebaixar um PASS sem comando")
             self.assertIn("no-log", (p.stdout + p.stderr))
+
+
+class TrimCheckGoesRed(unittest.TestCase):
+    def _repo(self, tmp: str) -> Path:
+        root = Path(tmp)
+        run(["git", "init", "-q"], root)
+        (root / "a.ts").write_text("export const x = 1;\n", encoding="utf-8")
+        run(["git", "add", "-A"], root)
+        run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x"], root)
+        return root
+
+    def test_a_long_comment_history_and_an_echoed_constant_fail(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo(tmp)
+            (root / "a.ts").write_text(
+                "export const x = 1;\n\nfunction f() {}\n"
+                "// one\n// two\n// three\n// four\nfunction g() {}\n"
+                "// It previously ran twice.\nfunction h() {}\n"
+                "// Wait 250 ms.\nconst WAIT_MS = 250;\n", encoding="utf-8")
+            code, payload = instrument_json(
+                "skills/close-work/scripts/trim_check.py", ["--repo", "."], root)
+            r = by_check(payload)
+            self.assertNotEqual(code, 0)
+            self.assertEqual(r["trim.comment-budget"]["result"], "FAIL")
+            self.assertEqual(r["trim.no-history"]["result"], "FAIL")
+            self.assertEqual(r["trim.no-constant-echo"]["result"], "FAIL")
+
+    def test_lines_this_work_did_not_touch_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo(tmp)
+            code, payload = instrument_json(
+                "skills/close-work/scripts/trim_check.py", ["--repo", "."], root)
+            self.assertEqual(code, 0)
+            self.assertTrue(all(x["result"] == "PASS" for x in payload["results"]))
 
 
 class EveryInstrumentHasARedCase(unittest.TestCase):

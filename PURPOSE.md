@@ -121,7 +121,10 @@ true ten. So the work cycle writes little, and in small pieces:
 
 - **where** comes from searching the code, starting from something that
   already exists;
-- **why** is a comment beside the line it explains;
+- **why** is a comment beside the line it explains — only when the code
+  cannot say it and the next agent would undo the line without it; one
+  line, never more than three. Its reader is an agent that reads it on
+  every visit: a line it does not need costs tokens each time and drifts;
 - **a rule between two distant places** is a test;
 - **a document** holds only what no file can say — the state of the
   work, a measured fact about an external tool, a known defect nobody is
