@@ -80,13 +80,7 @@ EXCLUDED_PATH = re.compile(
     r"\.(?:min\.js|map|lock|png|jpe?g|gif|webp|avif|ico|pdf|zip|gz|woff2?|ttf|eot)$",
     re.IGNORECASE,
 )
-# A fixture or a doc may legitimately show a shaped secret.
-#
-# `.txt` esteve aqui e saiu (2026-09-30, caso-vermelho do instrumento): um
-# ficheiro de notas com uma chave privada dentro era classificado como
-# "fixture" e o resultado era PASS com nota. Um `.md`/`.mdx`/`.rst` numa
-# pasta de docs é uma coisa; um `.txt` no meio da árvore é onde uma chave
-# acaba quando alguém a cola para não a perder.
+# A fixture or a doc may show a shaped secret; a `.txt` in the tree is where a pasted key ends up.
 SOFT_PATH = re.compile(r"(?:^|/)(?:tests?|__tests__|fixtures?|examples?|docs?|spec)/|"
                        r"\.(?:md|mdx|rst)$|\.example$|\.sample$|\.template$", re.IGNORECASE)
 
@@ -149,12 +143,8 @@ def scan_text(text: str, path: str) -> list[dict]:
 
 
 def scan_worktree(repo: Path) -> tuple[list[dict], list[str]]:
-    """(hits, listed names).
-
-    Os nomes existem para o veredicto poder dizer **quantos ficheiros foram
-    lidos**. Sem isso, um repositório que o git não conhece devolvia zero
-    ficheiros e o scanner respondia PASS: um falso PASS é pior do que um
-    erro, e foi o que o caso-vermelho deste instrumento encontrou.
+    """(hits, listed names). The names let the verdict say how many files were read:
+    zero files read must never be a PASS.
     """
     code, out = run(["git", "ls-files"], repo)
     if code != 0:
@@ -298,8 +288,7 @@ def main() -> int:
     hard = [f for f in findings if not f.get("soft")]
     soft = [f for f in findings if f.get("soft")]
 
-    # Uma varredura que não leu nada não pode passar: o PASS diria "não há
-    # segredos" a partir de zero ficheiros observados.
+    # A scan that read nothing cannot pass.
     if engine == "builtin" and not listed:
         result, severity = "NOT_VERIFIED", ""
         reason = ("nothing was scanned: `git ls-files` listed no file (not a repository, or git "

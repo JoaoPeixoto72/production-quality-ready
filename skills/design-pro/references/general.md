@@ -28,13 +28,11 @@ Priorities in the checklist:
 | In-app operation status | Required | Progress of ongoing actions visible while they run. |
 | Cancel any async action | Recommended | Every async operation shows a cancel option while in progress. |
 
-> **Escopo.** Linhas específicas de loja móvel — PWA icon, ASO metadata,
-> Cloud sync, Background mode, Widget support, Storage location (SD card),
-> In-app rating prompt, Status bar activity, Multitasking split-screen,
-> Orientation, Pull-to-refresh, Ad removal, IAPs — foram removidas em
-> `production-quality-ready` v1.3.0 do plano. Se o produto é uma app móvel de loja,
-> re-adicionar por referência local do projecto. Para desktop, "Ship-ready
-> baseline" desktop está coberto por `commercial-readiness` e este `general.md`.
+> **Scope.** Mobile-store rows (PWA icon, ASO metadata, cloud sync, background
+> mode, widgets, storage location, in-app rating, status bar, split screen,
+> orientation, pull-to-refresh, ad removal, IAPs) are out of this list; a store app
+> adds them through a project-local reference. Desktop ship-readiness is covered by
+> `commercial-readiness` and this `general.md`.
 
 ## Key principles
 

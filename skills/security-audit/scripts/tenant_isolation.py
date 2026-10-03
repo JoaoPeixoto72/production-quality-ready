@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
-"""tenant-isolation — o isolamento entre tenants provado pelo comando do projeto.
+"""tenant-isolation — isolation between tenants, proven by the project's command.
 
-`sec.tenant-isolation` é um gate crítico: "recursos privados isolados pelo
-principal; entre tenants é 404, provado por teste". Um instrumento do plugin
-não sabe que teste do projeto é esse — sabe que *tem* de ser um comando que
-corre e falha quando o isolamento parte.
-
-Portanto o projeto declara-o em `<host>/gates.json`:
+`sec.tenant-isolation` is a critical gate ("private resources isolated by
+principal; across tenants it is 404, proven by a test"). The plugin cannot know
+that test, so the project declares it in `<host>/gates.json`:
 
     "adapter-hints": {
       "tenant-isolation-command": "node tests/security_and_invitations.test.mjs"
     }
 
-O instrumento corre esse comando e lê o resultado:
-  - sem comando declarado      → NOT_VERIFIED/missing-instrument (a lacuna é dita)
-  - comando sai != 0           → FAIL/BLOCKER (o isolamento partiu)
-  - comando sai 0 sem output   → NOT_VERIFIED/no-output (nada prova que correu)
-  - comando sai 0 com output   → PASS (o log é a evidência)
-  - plataforma != web          → NOT_APPLICABLE/platform
+Outcomes:
+  - no command declared       → NOT_VERIFIED/missing-instrument
+  - command exits != 0        → FAIL/BLOCKER (isolation broke)
+  - command exits 0, no output → NOT_VERIFIED/no-output (nothing proves it ran)
+  - command exits 0 with output → PASS (the log is the evidence)
+  - platform != web           → NOT_APPLICABLE/platform
 
     python tenant_isolation.py --repo . --platform web
 
-Saída: JSON no stdout, resumo no stderr, exit 0 (o veredicto vai no JSON).
+JSON on stdout, summary on stderr, exit 0 (the verdict is in the JSON).
 """
 
 from __future__ import annotations
@@ -60,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--repo", default=".")
     ap.add_argument("--platform", default="web")
-    ap.add_argument("--command", help="sobrepõe o comando declarado em gates.json")
+    ap.add_argument("--command", help="overrides the command declared in gates.json")
     a = ap.parse_args(argv)
 
     repo = Path(a.repo).resolve()

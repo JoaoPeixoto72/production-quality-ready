@@ -1,9 +1,7 @@
-# Exemplo mínimo de ficheiro de evidência conforme CONTRACTS.md v2.0.0.
-#
-# Local: <repo-root>/.audit/<owner>/<producer>--<check-id>.evidence.yaml
-# Este ficheiro é exemplo — não é auditado.
+# Minimal evidence file per CONTRACTS.md v2.0.0 — an example, not audited.
+# Location: <repo-root>/.audit/<owner>/<producer>--<check-id>.evidence.yaml
 
-# ---- caso 1: owner corre o seu próprio instrumento (comum) ----
+# ---- case 1: an owner runs its own instrument (common) ----
 check:            runtime.build-passes
 owner:            code-review
 producer:         code-review
@@ -17,12 +15,12 @@ evidence:
     kind: command-output
 result:           PASS
 confidence:       OBSERVED
-# §4.6 — sem estes dois campos, um PASS é NOT_VERIFIED/no-log
+# §4.6 — without these two fields a PASS is NOT_VERIFIED/no-log
 command:          "cargo build --release"
 log:              .audit/code-review/runtime.build-passes.log
 
 ---
-# ---- caso 2: instrumento externo (ui-system produz para design-pro) ----
+# ---- case 2: an external instrument (ui-system produces for design-pro) ----
 check:            a11y-critical-flows
 owner:            design-pro
 producer:         ui-system
