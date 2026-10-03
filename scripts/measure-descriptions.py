@@ -1,24 +1,19 @@
 #!/usr/bin/env python3
 """
-measure-descriptions.py — a única fonte de verdade sobre chars de description.
+measure-descriptions.py — the single source of truth on description lengths.
 
-Uso:
-    <interpretador> scripts/measure-descriptions.py <caminho>...
+Usage:
+    <interpreter> scripts/measure-descriptions.py <path>...
 
-Onde <interpretador> é o comando fixado por --print-interpreter (ver abaixo).
-No Windows, `python3` é frequentemente um atalho para a Microsoft Store que
-NÃO é interpretador nenhum; este script imprime no cabeçalho da saída o
-comando efectivo usado (mesma regra que a Fase 0 do motor de auditoria).
+<interpreter> is the command fixed by --print-interpreter (below). On Windows
+`python3` is often a Microsoft Store shortcut that is NOT an interpreter; the
+output header prints the command actually used.
 
-<caminho> é uma pasta com SKILL.md ou uma pasta que contém pastas com
-SKILL.md, em qualquer profundidade. Excluídas ao percorrer: `fixtures/`,
-`tests/`, `.git/`, `node_modules/`, `.venv/`, `venv/`.
+<path> is a folder with SKILL.md, or one holding such folders at any depth.
+Skipped while walking: `fixtures/`, `tests/`, `.git/`, `node_modules/`, `.venv/`, `venv/`.
 
-Exit 1 se alguma description ultrapassar o teto (250 por omissão) — o CI
-do plugin usa isto como gate.
-
-Regra dura: os documentos do plugin não guardam estes números; quem os
-quer corre isto.
+Exit 1 if any description exceeds the ceiling (250 by default) — the plugin's
+CI gates on it. The plugin's documents never store these numbers: run this.
 """
 from __future__ import annotations
 

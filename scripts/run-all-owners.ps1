@@ -442,9 +442,7 @@ function Invoke-SecurityAudit {
         Write-Evidence -Owner $owner -Producer $owner -Instrument dep-scanner -Check "sec.deps-no-cve" -Rule "owasp-asvs-5.0 V10" -RuleVersion "owasp-asvs-5.0" -Result NOT_VERIFIED -Reason "missing-instrument: no lockfile-based scanner available (npm audit / cargo audit)" | Out-Null
         $ran++; $nv++
     }
-    # tenant-isolation: o comando que o projeto declara em adapter-hints
-    # (`tenant-isolation-command`) e a prova de que entre tenants e 404. Sem
-    # comando declarado, a lacuna e dita — nao ha PASS por omissao.
+    # tenant-isolation: the project's `tenant-isolation-command` proves cross-tenant 404; without it, the gap is said.
     $ti = Invoke-JsonInstrument -Owner $owner -Instrument tenant-isolation `
         -Script (Join-Path $PluginRoot "skills/security-audit/scripts/tenant_isolation.py") `
         -Rule "owasp-asvs-5.0 V8" -RuleVersion "owasp-asvs-5.0" `
@@ -460,10 +458,7 @@ function Invoke-SecurityAudit {
         -Script (Join-Path $PluginRoot "skills/security-audit/scripts/secret_scan.py") `
         -Rule "owasp-asvs-5.0 V14" -RuleVersion "owasp-asvs-5.0" -ExtraArgs $glArgs
     if ($sec) { $ran += $sec.ran; $passed += $sec.passed; $failed += $sec.failed; $nv += $sec.notVerified }
-    # threat model: o documento tem de citar as provas dos controlos e cada
-    # citação tem de resolver (caminho e linha). Antes disto o check era "o
-    # ficheiro existe e um commit tocou-lhe" — um grau de evidência que um
-    # documento vazio satisfazia.
+    # threat model: the document cites each control's proof, and every citation resolves (path and line).
     $tm = Invoke-JsonInstrument -Owner $owner -Instrument threat-model-check `
         -Script (Join-Path $PluginRoot "skills/security-audit/scripts/threat_model.py") `
         -Rule "owasp-asvs-5.0 V1" -RuleVersion "owasp-asvs-5.0"
@@ -573,11 +568,8 @@ function Invoke-DeclaredGap { param([string]$Owner, [string]$Instrument)
 function Invoke-DesignPro {
     $owner = "design-pro"
     $ran=0; $passed=0; $failed=0; $nv=0
-    # O design-pro julga WCAG 2.2 AA sobre ecrãs a sério: o instrumento é do
-    # projeto (um browser drive, uma captura), não do plugin. O plugin corre o
-    # comando que o projeto declara em `adapter-hints.design-pro-capture-command`
-    # — exit 0 com output é PASS, != 0 é FAIL, sem comando é a lacuna dita.
-    # Não sabe que ferramenta é: node, python ou um script do projeto.
+    # design-pro judges WCAG 2.2 AA on real screens with the project's own capture command
+    # (`adapter-hints.design-pro-capture-command`): exit 0 with output PASS, != 0 FAIL, none = the gap said.
     $dp = Invoke-JsonInstrument -Owner $owner -Instrument adapter-local `
         -Script (Join-Path $PluginRoot "scripts/declared-command.py") `
         -Rule "a11y-critical-flows" -RuleVersion "wcag-2.2-AA" `
@@ -607,8 +599,7 @@ $dispatch = @{
 function Invoke-Verify {
     $owner = "verify"
     $ran=0; $passed=0; $failed=0; $nv=0
-    # O smoke e do projeto: o plugin corre o comando declarado em
-    # `adapter-hints.smoke-command` e guarda o log. Sem comando, a lacuna e dita.
+    # The smoke is the project's: the plugin runs `adapter-hints.smoke-command` and keeps the log; none = the gap said.
     $sv = Invoke-JsonInstrument -Owner $owner -Instrument adapter-local `
         -Script (Join-Path $PluginRoot "scripts/declared-command.py") `
         -Rule "smoke-against-the-real-environment" -RuleVersion "contract-4.6" `
@@ -620,8 +611,7 @@ function Invoke-Verify {
 function Invoke-CommercialReadiness {
     $owner = "commercial-readiness"
     $ran=0; $passed=0; $failed=0; $nv=0
-    # Os seis caminhos de venda: o projeto declara, por linha, o comando que os
-    # exercita. Uma linha sem comando fica NOT_VERIFIED (nao herda o PASS das outras).
+    # The six sales paths: one declared command per line; a line without one is NOT_VERIFIED.
     $sell = "sell-01-activation,sell-02-offline-or-failure,sell-03-machine-or-account-change,sell-04-trial-to-paid,sell-05-refund-cancel,sell-06-end-of-payment"
     $cr = Invoke-JsonInstrument -Owner $owner -Instrument billing-harness `
         -Script (Join-Path $PluginRoot "scripts/declared-command.py") `

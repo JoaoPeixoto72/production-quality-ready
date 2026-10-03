@@ -1,10 +1,8 @@
 import * as React from 'react';
 
 /**
- * Keyboard for a hand-drawn radio group (pills, cards): not `<input type="radio">`
- * because the design has nowhere for the native circle; `role` + `aria-checked`
- * say the same to a screen reader. Arrows move and choose, wrapping at the
- * ends; only the chosen option is in the Tab order.
+ * Keyboard for a hand-drawn radio group (pills, cards; `role` + `aria-checked`, not native radios):
+ * arrows move and choose, wrapping at the ends; only the chosen option is in the Tab order.
  */
 export function useArrowChoice<T extends string>(
   value: T,

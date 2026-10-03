@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""declared-command — corre o comando que o projeto declara como prova.
+"""declared-command — run the command the project declares as proof.
 
-Há obrigações cujo instrumento não pode ser escrito pelo plugin, porque só o
-projeto sabe qual é o comando que as exercita: o smoke da app, os caminhos de
-venda, o isolamento entre tenants. O plugin sabe o que fazer com o resultado —
-correr, guardar o log, e traduzir exit code em veredicto.
+Some obligations need an instrument only the project can write (the app's
+smoke test, the sales paths, tenant isolation). The plugin knows what to do
+with the result: run it, keep the log, turn the exit code into a verdict.
 
-O projeto declara o comando em `<host>/gates.json`, em `adapter-hints`:
+The project declares the command in `<host>/gates.json`, under `adapter-hints`:
 
     "adapter-hints": {
       "smoke-command": "pwsh -NoProfile -File scripts/smoke.ps1",
@@ -16,21 +15,21 @@ O projeto declara o comando em `<host>/gates.json`, em `adapter-hints`:
       }
     }
 
-O valor pode ser:
-  - **string** — um comando para todas as obrigações pedidas;
-  - **objecto** — um comando por obrigação; uma obrigação sem comando é
-    `NOT_VERIFIED` com a razão dita, nunca um PASS herdado das outras.
+The value is either:
+  - **a string** — one command for every obligation asked;
+  - **an object** — one command per obligation; one without a command is
+    `NOT_VERIFIED` with the reason, never a PASS inherited from the others.
 
-Veredicto por obrigação:
-  - sem comando declarado   → NOT_VERIFIED (a lacuna é dita, não preenchida)
-  - comando sai != 0        → FAIL/BLOCKER
-  - comando sai 0 sem output→ NOT_VERIFIED (nada prova que correu)
-  - comando sai 0 com output→ PASS (o log é a evidência)
+Verdict per obligation:
+  - no command declared        → NOT_VERIFIED (the gap is said, not filled)
+  - command exits != 0         → FAIL/BLOCKER
+  - command exits 0, no output → NOT_VERIFIED (nothing proves it ran)
+  - command exits 0 with output → PASS (the log is the evidence)
 
     python declared-command.py --repo . --owner verify --hint smoke-command \\
         --checks smoke-test-passes
 
-Saída: JSON no stdout, resumo no stderr, exit 0 (o veredicto vai no JSON).
+JSON on stdout, summary on stderr, exit 0 (the verdict is in the JSON).
 """
 
 from __future__ import annotations
@@ -86,8 +85,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", default=".")
     ap.add_argument("--owner", required=True)
     ap.add_argument("--hint", required=True)
-    ap.add_argument("--checks", required=True, help="obrigações separadas por vírgula")
-    ap.add_argument("--command", help="sobrepõe o valor declarado (testes e uso manual)")
+    ap.add_argument("--checks", required=True, help="comma-separated obligations")
+    ap.add_argument("--command", help="overrides the declared value (tests and manual use)")
     a = ap.parse_args(argv)
 
     repo = Path(a.repo).resolve()

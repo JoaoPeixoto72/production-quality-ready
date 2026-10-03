@@ -1,43 +1,40 @@
-# smoke.template.ps1 — o smoke da app, no formato que o owner `verify` espera.
+# smoke.template.ps1 — the app's smoke test, in the format the `verify` owner expects.
 #
-# Copia para o projeto (ex.: `scripts/smoke.ps1`), ajusta a lista de verificações
-# e declara em `.agents/gates.json`:
+# Copy it into the project (e.g. `scripts/smoke.ps1`), adjust the checks, and declare
+# in `.agents/gates.json`:
 #
 #   "adapter-hints": { "smoke-command": "pwsh -NoProfile -File scripts/smoke.ps1" }
 #
-# O contrato que este script tem de respeitar:
-#   - correr contra o ambiente REAL (não contra um mock);
-#   - imprimir uma linha por verificação, para o log dizer o que correu;
-#   - sair != 0 quando qualquer verificação falha.
-# Sem output, o instrumento devolve NOT_VERIFIED: um smoke silencioso não prova nada.
+# Contract: run against the REAL environment (not a mock); print one line per check;
+# exit != 0 when any check fails. No output is NOT_VERIFIED: a silent smoke proves nothing.
 
 $ErrorActionPreference = "Continue"
-$base = "https://SUBSTITUIR.example"
+$base = "https://REPLACE.example"
 $fail = 0
 
 function Check($name, $ok, $detail = "") {
     if (-not $ok) { $script:fail++ }
-    "{0,-28} {1}  {2}" -f $name, $(if ($ok) { "OK" } else { "FALHA" }), $detail
+    "{0,-28} {1}  {2}" -f $name, $(if ($ok) { "OK" } else { "FAIL" }), $detail
 }
 
-# 1. as páginas públicas respondem 200
-foreach ($p in @("/", "/precos", "/entrar")) {
+# 1. public pages answer 200
+foreach ($p in @("/", "/pricing", "/login")) {
     $code = curl.exe -s -o NUL -w "%{http_code}" "$base$p"
     Check "$p" ($code -eq "200") "GET $code"
 }
 
-# 2. o fluxo crítico completo (substituir pelo fluxo do produto)
+# 2. the full critical flow (replace with the product's)
 #    $body = curl.exe -s -X POST "$base/api/..." -H "content-type: application/json" -d '{...}'
 #    Check "checkout" ($body -match '"ok":true')
 
-# 3. o id de correlação existe na resposta
+# 3. the correlation id is in the response
 $headers = curl.exe -s -D - -o NUL "$base/"
-Check "x-request-id" (($headers -join "`n") -match "(?im)^x-request-id:") "cabecalho de correlacao"
+Check "x-request-id" (($headers -join "`n") -match "(?im)^x-request-id:") "correlation header"
 
-# 4. o ambiente serve o artefacto esperado (não uma versão antiga)
+# 4. the environment serves the expected artefact (not an old version)
 #    $version = (curl.exe -s "$base/api/health" | ConvertFrom-Json).version
-#    Check "versao" ($version -eq "X.Y.Z") "esperado X.Y.Z, servido $version"
+#    Check "version" ($version -eq "X.Y.Z") "expected X.Y.Z, served $version"
 
 ""
-"FALHAS: $fail"
+"FAILURES: $fail"
 exit $fail

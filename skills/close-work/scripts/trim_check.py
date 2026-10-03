@@ -44,7 +44,8 @@ CONSTANT = re.compile(r"^\s*(pub(\([^)]*\))?\s+)?(export\s+)?(const|static|final
 NUMBER = re.compile(r"\b\d+(?:[.,]\d+)?\b")
 STRING = re.compile(r'"(?:[^"\\]|\\.)*"')
 TEST_MODULE = re.compile(r"#\[cfg\(test\)\]")
-BARE_DELIMITER = re.compile(r"^\s*(\{?/\*\*?|\*/\}?|\*|//[/!]?|#)\s*$")  # carries no text
+# Lines that carry no text: comment delimiters and rulers (`// -----`, `/* ==== */`).
+BARE_DELIMITER = re.compile(r"^\s*(\{?/\*\*?|\*/\}?|\*|//[/!]?|#)?[\s\-=─*#/{}]*$")
 
 
 def git(repo: Path, *args: str) -> str:

@@ -15,9 +15,9 @@ coverage/
 
 # Audit evidence generated during runs
 .audit/
-docs/auditorias/
+docs/audits/
 
-# Relatorios que os motores de website escrevem no directorio corrente
+# Reports the website engines write in the current directory
 seo-audit-report.json
 seo-audit-report.sarif
 website-audit-report.json

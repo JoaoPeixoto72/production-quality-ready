@@ -29,16 +29,5 @@ gates:
       - gate: production-ready
       - all-pass-in-owner: [commercial-readiness]
 
-# Platform (CONTRACTS §5.4):
-#   gates.json declares `platform: web | desktop | both`. An owner/check whose
-#   `platforms:` excludes the project's is NOT_APPLICABLE by default and does
-#   not count for coverage-complete. `sales-model: licensed | subscription |
-#   both` selects the commercial-readiness rows.
-#
-# Supported predicates (CONTRACTS §7.1):
-#   no-open: [severities...]            # no FAIL with that severity
-#   all-pass-in-owner: [owners...]      # every emitted check = PASS
-#   coverage-complete: [owners...]      # every canonical check resolved
-#   coverage-complete: "<all-applicable-owners>"   # macro
-#   conditional: { when: <cond>, require: [predicates...] }
-#   gate: <name>                        # composition: another gate must close
+# Platform filtering is CONTRACTS §5.4; the predicates (no-open, all-pass-in-owner,
+# coverage-complete, conditional, gate) are CONTRACTS §7.1.

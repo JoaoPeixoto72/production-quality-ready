@@ -1,64 +1,44 @@
-// billing-harness.template.mjs — os seis caminhos de venda, no formato do
-// owner `commercial-readiness`.
-//
-// Copia para o projeto (ex.: `tests/billing-harness.mjs`), implementa os seis
-// cenários com a biblioteca de testes que o projeto já usa, e declara em
-// `.agents/gates.json` — **uma linha por cenário**:
-//
-//   "adapter-hints": {
-//     "billing-harness-commands": {
-//       "sell-01-activation": "node tests/billing-harness.mjs --only sell-01",
-//       "sell-02-offline-or-failure": "node tests/billing-harness.mjs --only sell-02",
-//       "sell-03-machine-or-account-change": "node tests/billing-harness.mjs --only sell-03",
-//       "sell-04-trial-to-paid": "node tests/billing-harness.mjs --only sell-04",
-//       "sell-05-refund-cancel": "node tests/billing-harness.mjs --only sell-05",
-//       "sell-06-end-of-payment": "node tests/billing-harness.mjs --only sell-06"
-//     }
-//   }
-//
-// O que fica de fora **não** herda o PASS das outras: o instrumento devolve
-// NOT_VERIFIED para a linha sem comando, com a razão dita. É a diferença entre
-// "não testámos o caminho de reembolso" e "não há reembolsos".
+// billing-harness.template.mjs — the six sales paths, in the `commercial-readiness` format.
+// Copy into the project, implement each scenario with its test library, and declare one command per
+// scenario in `adapter-hints.billing-harness-commands` (keys `sell-01-activation` … `sell-06-end-of-payment`,
+// e.g. "node tests/billing-harness.mjs --only sell-01"). A line without a command is NOT_VERIFIED.
 
 const only = process.argv[process.argv.indexOf("--only") + 1] || "all";
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
   ok ? pass++ : fail++;
-  console.log(`  ${ok ? "OK   " : "FALHA"} ${name}${detail ? " | " + detail : ""}`);
+  console.log(`  ${ok ? "OK  " : "FAIL"} ${name}${detail ? " | " + detail : ""}`);
 };
 
-// sell-01 — checkout → webhook → entitlement ativo; webhook duplicado não duplica
+// sell-01 — checkout → webhook → active entitlement; a duplicate webhook does not duplicate
 if (only === "all" || only === "sell-01") {
-  check("sell-01-activation", false, "implementar: checkout, webhook, entitlement");
+  check("sell-01-activation", false, "to implement: checkout, webhook, entitlement");
 }
 
-// sell-02 — indisponibilidade do fornecedor de pagamento: o utilizador mantém
-// o acesso durante a tolerância declarada, e nada é escrito a meio
+// sell-02 — payment provider down: the user keeps access through the declared grace, nothing half-written
 if (only === "all" || only === "sell-02") {
-  check("sell-02-offline-or-failure", false, "implementar: falha + tolerância");
+  check("sell-02-offline-or-failure", false, "to implement: failure + grace");
 }
 
-// sell-03 — mudar de email / transferir titularidade / adicionar lugar sem
-// perder dados nem acesso
+// sell-03 — change email / transfer ownership / add a seat without losing data or access
 if (only === "all" || only === "sell-03") {
-  check("sell-03-machine-or-account-change", false, "implementar: mudanca de conta");
+  check("sell-03-machine-or-account-change", false, "to implement: account change");
 }
 
-// sell-04 — gratuito → pago sem perder dados; prorratação e imposto ao cêntimo
+// sell-04 — free → paid without losing data; proration and tax to the cent
 if (only === "all" || only === "sell-04") {
-  check("sell-04-trial-to-paid", false, "implementar: trial -> pago");
+  check("sell-04-trial-to-paid", false, "to implement: trial -> paid");
 }
 
-// sell-05 — reembolso e cancelamento; revogação imediata do acesso no reembolso
+// sell-05 — refund and cancellation; access revoked at once on refund
 if (only === "all" || only === "sell-05") {
-  check("sell-05-refund-cancel", false, "implementar: reembolso + cancelamento");
+  check("sell-05-refund-cancel", false, "to implement: refund + cancellation");
 }
 
-// sell-06 — fim do pagamento: tolerância declarada, depois leitura ou exportação;
-// os dados nunca ficam reféns
+// sell-06 — end of payment: declared grace, then read-only or export; data never held hostage
 if (only === "all" || only === "sell-06") {
-  check("sell-06-end-of-payment", false, "implementar: fim do periodo");
+  check("sell-06-end-of-payment", false, "to implement: end of period");
 }
 
-console.log(`\nFALHAS: ${fail}`);
+console.log(`\nFAILURES: ${fail}`);
 process.exit(fail === 0 ? 0 : 1);
