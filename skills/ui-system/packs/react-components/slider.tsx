@@ -8,18 +8,12 @@ export interface SliderProps {
   min?: number;
   max?: number;
   step?: number;
-  /** A etiqueta do cabeçalho. Um nó, como no `Input` e no `Select`. */
   label?: React.ReactNode;
-  /**
-   * Escrever o valor cru no canto do cabeçalho. **Desliga-se quando quem chama
-   * já o escreve dentro da própria etiqueta** — há valores que não se leem em
-   * número solto: um `-30` que é `-30 dB` e um `55` que é `5,5 %` só ganham
-   * sentido com a unidade, e quem a sabe é quem chama.
-   */
+  /** Print the raw value in the header. Off when the caller writes it with its unit inside the label. */
   showValue?: boolean;
   disabled?: boolean;
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
-  /** Classe do **invólucro**, como no `Input` e no `Select`. */
+  /** Wrapper class, as in `Input` and `Select`. */
   className?: string;
 }
 
@@ -60,10 +54,7 @@ export function Slider({
           {showValue && <BaseSlider.Value data-ui="slider-value" />}
         </div>
       )}
-      {/* A pista pinta-se sozinha até ao polegar: o indicador é um elemento a
-          sério. Um `<input type="range"` nativo não tem nada disto — a única
-          forma de a pista saber o valor era uma custom property calculada por
-          fora, e era o que esta app fazia. */}
+      {/* The track fills up to the thumb by itself: the indicator is a real element. */}
       <BaseSlider.Control data-ui="slider-control">
         <BaseSlider.Track data-ui="slider-track">
           <BaseSlider.Indicator data-ui="slider-indicator" />

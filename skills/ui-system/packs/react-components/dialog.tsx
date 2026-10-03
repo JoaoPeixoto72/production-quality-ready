@@ -29,38 +29,24 @@ export function DialogContent({
   size = 'md',
   className,
 }: {
-  /** Um nó, e não só uma string: há títulos que levam um valor por dentro. */
+  /** A node: some titles carry a value. */
   title?: React.ReactNode;
   description?: React.ReactNode;
-  /**
-   * Uma marca à esquerda do título — o ícone da coisa que o diálogo abriu.
-   * Fica fora do `Title` de propósito: quem lê por som já ouve o título, e um
-   * ícone lido a seguir é ruído.
-   */
+  /** A mark left of the title, outside `Title` so a screen reader does not read it twice. */
   icon?: React.ReactNode;
-  /**
-   * A linha de baixo, onde vivem os botões de acção. Sem ela o diálogo é só de
-   * leitura, e não há nada a fechar a caixa por baixo do corpo.
-   */
+  /** The bottom row for action buttons; without it the dialog is read-only. */
   footer?: React.ReactNode;
-  /**
-   * O nome do botão de fechar, no canto do cabeçalho. **Não tem texto por
-   * omissão**, pela mesma razão do `placeholder` do `Select`: um componente de
-   * sistema não sabe em que língua a app está, e um `aria-label` embutido saía
-   * em inglês sem nada a avisar. Sem ele não há botão — e quem fecha é o
-   * Escape, o clique fora, e o que estiver no rodapé.
-   */
+  /** The close button's accessible name. No default (the component does not know the app's language); without it there is no button — Escape, outside click and the footer close. */
   closeLabel?: string;
-  /** O que se desenha dentro desse botão. Por omissão, um `×`. */
+  /** Drawn inside the close button. Default `×`. */
   closeIcon?: React.ReactNode;
   children: React.ReactNode;
-  /** `sm | md | lg`, como no resto do catálogo e como no HeroUI. */
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }) {
   return (
     <BaseDialog.Portal>
-      {/* Backdrop é filho direto do Portal para garantir suporte a iOS Safari */}
+      {/* Backdrop as a direct child of Portal, for iOS Safari. */}
       <BaseDialog.Backdrop data-ui="dialog-backdrop" />
       <div data-ui="dialog-viewport">
         <BaseDialog.Popup

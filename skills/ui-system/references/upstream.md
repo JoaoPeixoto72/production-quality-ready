@@ -2,27 +2,27 @@
 
 Package: `@base-ui/react`.
 
-Fontes oficiais:
+Official sources:
 
 - Docs: https://base-ui.com/
-- Índice para LLMs: https://base-ui.com/llms.txt
-- Qualquer página em Markdown: acrescentar `.md` ao URL
-- Repositório: https://github.com/mui/base-ui
+- Index for LLMs: https://base-ui.com/llms.txt
+- Any page as Markdown: append `.md` to the URL
+- Repository: https://github.com/mui/base-ui
 - Releases: https://base-ui.com/react/overview/releases
 
-## Setup obrigatório
+## Required setup
 
-1. `isolation: isolate` no root da aplicação.
-2. Para iOS Safari, seguir o padrão documentado do quick start: backdrop
-   `position: fixed` por omissão e `position: absolute` apenas no fallback
-   com `body { position: relative; }`.
-3. O backdrop tem de ser filho directo do Portal, nunca dentro do viewport.
+1. `isolation: isolate` on the app root.
+2. For iOS Safari, the quick start's documented pattern: backdrop
+   `position: fixed` by default and `position: absolute` only in the fallback
+   with `body { position: relative; }`.
+3. The backdrop is a direct child of the Portal, never inside the viewport.
 
-## Fontes
+## Fonts
 
-Esta skill não distribui binários de fontes. Se um profile recomendar uma
-família específica, o projecto consumidor tem de fornecer os ficheiros,
-declarações `@font-face` e licenças correspondentes.
+This skill ships no font binaries. If a profile recommends a family, the
+consuming project provides the files, the `@font-face` declarations and the
+licences.
 
 ## Base UI usage policy
 

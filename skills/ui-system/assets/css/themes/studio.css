@@ -1,8 +1,5 @@
 @layer ui.theme {
-  /* ============================================================
-     TEMA STUDIO — Dark Workstation para ferramentas profissionais,
-     editores multimédia e dashboards técnicas de alta densidade.
-     ============================================================ */
+  /* STUDIO THEME — dark workstation for pro tools, media editors and dense dashboards. */
 
   [data-theme="studio"],
   [data-theme="studio"][data-color-scheme="dark"] {
@@ -21,7 +18,7 @@
     --muted: oklch(0.55 0.010 285);
     --focus: oklch(0.72 0.15 62);
 
-    /* Acento Âmbar Profissional (não compete com grading de vídeo/imagem) */
+    /* Professional amber accent (does not compete with video/image grading) */
     --primary: oklch(0.72 0.15 62);
     --primary-foreground: oklch(0.12 0.005 285);
     --primary-hover: color-mix(in oklab, var(--primary) 85%, var(--white) 15%);

@@ -3,13 +3,7 @@ import { Select as BaseSelect } from '@base-ui/react/select';
 
 export interface SelectOption {
   value: string;
-  /**
-   * Um nó, e não só uma string: há listas que precisam de desenhar cada linha
-   * à sua maneira — uma lista de fontes que escreve cada nome na própria
-   * fonte, por exemplo. Num `<select>` nativo isso não era de confiança (o
-   * Chromium ignora quase tudo o que se põe num `<option>`); aqui cada item é
-   * um elemento normal.
-   */
+  /** A node, so a row can draw itself (a font list in its own font) — what a native `<option>` cannot. */
   label: React.ReactNode;
   disabled?: boolean;
 }
@@ -19,29 +13,16 @@ export interface SelectProps {
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   options: SelectOption[];
-  /**
-   * O que se lê quando não há escolha nenhuma. **Não tem texto por omissão de
-   * propósito**: um componente de sistema não sabe em que língua a app está, e
-   * uma frase embutida aqui saía em português numa interface inglesa sem nada
-   * a avisar — nem o `tsc` nem o auditor apanham isso. Sem valor, não se lê
-   * nada, que é errado de forma visível em vez de errado em silêncio.
-   */
+  /** Shown with no choice. No default text: a system component does not know the app's language. */
   placeholder?: React.ReactNode;
   disabled?: boolean;
-  /**
-   * A etiqueta por cima do controlo. Rende um `field-label` e liga-o ao
-   * gatilho por `aria-labelledby` — o gatilho é um `<button>`, e um
-   * `<label htmlFor>` não lhe dá nome nenhum.
-   */
+  /** Rendered as `field-label`, tied to the trigger by `aria-labelledby` (a `<label for>` cannot name a `<button>`). */
   label?: React.ReactNode;
-  /** Uma frase curta por baixo, para o que não cabe na etiqueta. */
+  /** A short sentence below, for what the label cannot hold. */
   description?: React.ReactNode;
-  /** Classe do invólucro, para quem já tem uma grelha própria. */
+  /** Wrapper class. */
   className?: string;
-  /**
-   * Estilo do gatilho, para o caso em que o próprio valor escolhido tem de se
-   * desenhar de outra maneira — outra vez, a lista das fontes.
-   */
+  /** Trigger style, for a chosen value that draws itself differently (the font list again). */
   triggerStyle?: React.CSSProperties;
 }
 
@@ -65,11 +46,7 @@ export function Select({
     <BaseSelect.Root
       value={value}
       defaultValue={defaultValue}
-      // O Base UI entrega `string | null` (o `null` é a limpeza da escolha) e
-      // um segundo argumento com o evento. Cá fora a API fica com a assinatura
-      // simples: quem usa um `Select` de opções fixas nunca quer tratar o
-      // `null` — e sem esta ponte o valor limpo chegava como `null` a quem
-      // espera uma `string`.
+      // Base UI sends `string | null` (null = cleared); fixed-option callers only want strings.
       onValueChange={(v) => {
         if (v !== null) onValueChange?.(v);
       }}
@@ -81,10 +58,7 @@ export function Select({
         aria-labelledby={label ? labelId : undefined}
         aria-describedby={description ? descId : undefined}
       >
-        {/* Sem esta função, o `Select.Value` escreve o **valor** e não a
-            etiqueta: uma opção `{ value: 'best', label: 'Melhor' }` aparecia
-            como `best`. O `placeholder` sozinho não chega — só cobre o caso de
-            não haver escolha nenhuma. */}
+        {/* Without this function `Select.Value` prints the value, not the label. */}
         <BaseSelect.Value data-ui="select-value" placeholder={placeholder}>
           {(v: string | null) => {
             if (v === null || v === undefined || v === '') return placeholder;

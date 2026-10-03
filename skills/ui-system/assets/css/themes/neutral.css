@@ -1,10 +1,7 @@
 @layer ui.theme {
-  /* ============================================================
-     TEMA NEUTRAL — Agnóstico, sóbrio, ideal para SaaS corporativo
-     e utilitários neutros (Zinc/Slate OKLCH).
-     ============================================================ */
+  /* NEUTRAL THEME — agnostic and sober, for corporate SaaS and utilities (Zinc/Slate OKLCH). */
 
-  /* Modo Claro Padrão */
+  /* Default light mode */
   :root,
   [data-theme="neutral"],
   [data-theme="neutral"][data-color-scheme="light"],

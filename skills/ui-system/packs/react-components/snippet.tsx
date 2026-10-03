@@ -4,10 +4,13 @@ export interface SnippetProps extends React.HTMLAttributes<HTMLDivElement> {
   text?: string;
   variant?: 'solid' | 'flat' | 'bordered';
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
+  /** The copy button's accessible names, before and after copying. No defaults (the app's language). */
+  copyLabel?: string;
+  copiedLabel?: string;
 }
 
 export const Snippet = React.forwardRef<HTMLDivElement, SnippetProps>(
-  ({ text, variant = 'flat', color = 'default', children, ...props }, ref) => {
+  ({ text, variant = 'flat', color = 'default', copyLabel, copiedLabel, children, ...props }, ref) => {
     const [copied, setCopied] = React.useState(false);
     const contentToCopy = text || (typeof children === 'string' ? children : '');
 
@@ -18,7 +21,7 @@ export const Snippet = React.forwardRef<HTMLDivElement, SnippetProps>(
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
-        console.error('Falha ao copiar:', err);
+        console.error('copy failed:', err);
       }
     };
 
@@ -37,7 +40,7 @@ export const Snippet = React.forwardRef<HTMLDivElement, SnippetProps>(
           type="button"
           data-ui="snippet-copy-btn"
           onClick={handleCopy}
-          aria-label={copied ? 'Copiado!' : 'Copiar código'}
+          aria-label={copied ? copiedLabel : copyLabel}
         >
           {copied ? '✓' : '📋'}
         </button>

@@ -1,8 +1,5 @@
 @layer ui.theme {
-  /* ============================================================
-     TEMA EDITORIAL — Tipografia expressiva, estética editorial,
-     bordas demarcadas e leitura de longa duração (OKLCH).
-     ============================================================ */
+  /* EDITORIAL THEME — expressive type, marked borders, long-form reading (OKLCH). */
 
   [data-theme="editorial"],
   [data-theme="editorial"][data-color-scheme="light"] {

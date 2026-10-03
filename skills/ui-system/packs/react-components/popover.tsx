@@ -28,15 +28,7 @@ export function PopoverContent({
   ...props
 }: {
   children: React.ReactNode;
-  /**
-   * De que lado do gatilho o painel abre, e como se alinha com ele.
-   *
-   * **Vão ao positioner e não ao popup**, como o `z-index` — e pela mesma
-   * razão: quem está posicionado é ele. Um painel que escolhia o lado por
-   * `position: absolute` no CSS da app ficava preso a essa escolha; aqui o
-   * Base UI vira-o sozinho quando não cabe do lado pedido, que é o que uma
-   * regra de CSS não tem como saber.
-   */
+  /** Side and alignment go to the positioner, which flips the panel when it does not fit. */
   side?: PositionerProps['side'];
   align?: PositionerProps['align'];
   sideOffset?: number;

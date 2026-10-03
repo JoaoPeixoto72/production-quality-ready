@@ -1,13 +1,10 @@
 /**
- * @project/ui — Ponto de exportação público do design system (ui-system).
- * A aplicação consome EXCLUSIVAMENTE este ficheiro ou o package @project/ui.
- * As primitivas do Base UI permanecem como detalhe privado e blindado de implementação.
- *
- * Catálogo completo de 34 componentes (100% de paridade com HeroUI v3 + Base UI v1.8.0).
+ * @project/ui — the design system's public export. The app imports only this file
+ * or the @project/ui package; the Base UI primitives stay private.
  */
 
 /* ============================================================
-   1. Controlos Gerais & Estrutura
+   1. General Controls & Structure
    ============================================================ */
 export * from './button';
 export * from './card';
@@ -17,7 +14,7 @@ export * from './spacer';
 export * from './scroll-shadow';
 
 /* ============================================================
-   2. Formulários & Seleção
+   2. Forms & Selection
    ============================================================ */
 export * from './field';
 export * from './input';
@@ -27,16 +24,14 @@ export * from './radio';
 export * from './select';
 export * from './switch';
 export * from './slider';
-/* Os que o catálogo não trazia, e que uma app com um editor de vídeo acaba
-   sempre por precisar: um número preso a um intervalo, uma cor, e uma escolha
-   entre poucas em pílulas. */
+/* Beyond the HeroUI catalogue: a clamped number, a colour, a choice among few as pills. */
 export * from './number-field';
 export * from './color-field';
 export * from './segmented-control';
 export * from './radio-cards';
 
 /* ============================================================
-   3. Feedback, Progresso & Status
+   3. Feedback, Progress & Status
    ============================================================ */
 export * from './spinner';
 export * from './progress';
@@ -44,7 +39,7 @@ export * from './circular-progress';
 export * from './badge';
 
 /* ============================================================
-   4. Identidade, Chips & Teclado
+   4. Identity, Chips & Keyboard
    ============================================================ */
 export * from './avatar';
 export * from './user';
@@ -53,7 +48,7 @@ export * from './kbd';
 export * from './snippet';
 
 /* ============================================================
-   5. Navegação & Menus
+   5. Navigation & Menus
    ============================================================ */
 export * from './navbar';
 export * from './breadcrumbs';
@@ -63,7 +58,7 @@ export * from './link';
 export * from './dropdown';
 
 /* ============================================================
-   6. Overlays, Modais & Superfícies Expansíveis
+   6. Overlays, Modals & Expandable Surfaces
    ============================================================ */
 export * from './dialog';
 export * from './drawer';
@@ -72,6 +67,6 @@ export * from './tooltip';
 export * from './accordion';
 
 /* ============================================================
-   7. Visualização de Dados
+   7. Data Display
    ============================================================ */
 export * from './table';

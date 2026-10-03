@@ -2,20 +2,19 @@ import * as React from 'react';
 
 export interface TextareaProps
   extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'className'> {
-  /** A etiqueta por cima do campo — um nó, como no `Input` e no `Select`. */
   label?: React.ReactNode;
-  /** Uma frase curta por baixo, para o que não cabe na etiqueta. */
+  /** A short sentence below, for what the label cannot hold. */
   description?: React.ReactNode;
   error?: React.ReactNode;
-  /** Classe do **invólucro**, e não do campo. Ver o `Input`. */
+  /** Wrapper class, not the field's (see `Input`). */
   className?: string;
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, description, error, className, id, ...props }, ref) => {
-    // Ver o `input.tsx`: o hook é sempre chamado, e a escolha vem depois.
-    const gerado = React.useId();
-    const textareaId = id || gerado;
+    // Always called; see `input.tsx`.
+    const generated = React.useId();
+    const textareaId = id || generated;
     const descriptionId = `${textareaId}-desc`;
     const errorId = `${textareaId}-err`;
 

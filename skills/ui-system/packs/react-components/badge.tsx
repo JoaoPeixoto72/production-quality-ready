@@ -3,11 +3,7 @@ import * as React from 'react';
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'solid' | 'flat' | 'bordered';
   color?: 'default' | 'primary' | 'success' | 'warning' | 'danger';
-  /**
-   * `sm | md | lg`, como no `Button`, no `Chip` e no `Progress` — e como no
-   * HeroUI. Tinha `small | medium`, que era o único sítio do catálogo a
-   * escrever os tamanhos por extenso.
-   */
+  /** `sm | md | lg`, as in `Button`, `Chip` and `Progress`. */
   size?: 'sm' | 'md' | 'lg';
 }
 

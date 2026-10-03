@@ -14,7 +14,7 @@
 
 @layer ui.core {
   /* ============================================================
-     1. ISOLAMENTO DO STACKING CONTEXT & RESETS GLOBAIS
+     1. STACKING CONTEXT ISOLATION & GLOBAL RESETS
      ============================================================ */
   :root,
   [data-ui="app-root"] {
@@ -32,7 +32,7 @@
   }
 
   /* ============================================================
-     2. GESTÃO DETERMINÍSTICA DE FOCO (WCAG 2.4.7 + 2.4.11)
+     2. DETERMINISTIC FOCUS (WCAG 2.4.7 + 2.4.11)
      ============================================================ */
   :focus {
     outline: none;
@@ -53,7 +53,7 @@
   }
 
   /* ============================================================
-     3. FÍSICA TÁTIL & ESTADOS INTERATIVOS
+     3. TACTILE PHYSICS & INTERACTIVE STATES
      ============================================================ */
   :where(button, [role="button"]):not(:disabled, [data-disabled]) {
     cursor: var(--cursor-interactive);
@@ -67,7 +67,7 @@
     pointer-events: none;
   }
 
-  /* Estado ativo/pressionado com física mecânica tátil */
+  /* Active/pressed state */
   [data-ui="button"]:not(:disabled, [data-disabled]):active,
   [data-ui="button"][data-pressed]:not(:disabled, [data-disabled]),
   [data-pressable="true"]:not(:disabled, [data-disabled]):active {
@@ -81,7 +81,7 @@
   }
 
   /* ============================================================
-     4. COMPATIBILIDADE MOBILE / IOS SAFARI (PORTAL & BACKDROP)
+     4. MOBILE / IOS SAFARI COMPATIBILITY (PORTAL & BACKDROP)
      ============================================================ */
   [data-ui="dialog-backdrop"],
   [data-ui="popover-backdrop"] {
@@ -92,7 +92,7 @@
     z-index: var(--z-backdrop);
   }
 
-  /* Fallback necessário para iOS Safari onde fixed em sub-árvores falha */
+  /* Fallback for iOS Safari, where fixed inside subtrees fails */
   @supports (-webkit-touch-callout: none) {
     [data-ui="dialog-backdrop"] {
       position: absolute;
@@ -109,20 +109,8 @@
     padding: var(--space-4);
   }
 
-  /* ── Os positioners, e porque é que o empilhamento vive aqui ──────────
-     Estes quatro slots não existiam, e as quatro declarações de `z-index`
-     que havia estavam nos `*-popup` — onde não fazem nada. Duas razões, as
-     duas medidas (`docs/FACTOS-VERIFICADOS.md`):
-
-     1. um `*-popup` é `position: static`, e num elemento não posicionado o
-        `z-index` é ignorado. O `z-index: 50` que aqui estava nunca chegou a
-        valer nada;
-     2. e mesmo posicionado ficava preso: o `Positioner` do Base UI é
-        `position: fixed`, e no Blink isso é um contexto de empilhamento
-        próprio ao nível `auto` — por isso subir o popup a 9999 não o tirava
-        de trás de um diálogo. Quem sai do contexto é o positioner.
-
-     É por isso que o número vive aqui, e não uma linha abaixo. */
+  /* Positioners carry the stacking: a `*-popup` is `position: static` (z-index
+     ignored), and Base UI's fixed positioner is its own stacking context in Blink. */
   [data-ui="select-positioner"],
   [data-ui="dropdown-positioner"],
   [data-ui="popover-positioner"] {
@@ -149,7 +137,7 @@
   [data-ui="dialog-popup"][data-size="lg"] { width: 48rem; }
 
   /* ============================================================
-     5. CONTROLOS DE FORMULÁRIO (INPUT, FIELD, SWITCH)
+     5. FORM CONTROLS (INPUT, FIELD, SWITCH)
      ============================================================ */
   [data-ui="field"] {
     display: flex;
@@ -189,10 +177,8 @@
     color: var(--muted);
   }
 
-  /* Select
-     O gatilho é um `<button>`, e não um `<select>`: a lista vive num portal,
-     e por isso é estilizável e fotografável — a lista de um `<select>` nativo
-     abre numa janela do sistema, que nem se desenha nem se captura. */
+  /* Select: the trigger is a `<button>` and the list lives in a portal, so it
+     can be styled and captured — a native `<select>` list is a system window. */
   [data-ui="select-trigger"] {
     display: flex;
     align-items: center;
@@ -214,13 +200,8 @@
       background-color var(--duration-tactile) var(--ease-tactile);
   }
 
-  /* O valor escolhido, numa linha só. Um gatilho é um controlo de uma linha
-     por convenção, e sem isto uma etiqueta comprida parte-se em duas e faz o
-     campo crescer — desalinhando-o do que estiver ao lado dele. Visto na
-     janela: o modelo do Whisper («Muito bom — o melhor pelo que ocupa») ao
-     lado da caixa do idioma. O `min-width: 0` é o que deixa um filho de flex
-     encolher abaixo do próprio conteúdo; sem ele o `ellipsis` nunca chega a
-     acontecer. */
+  /* One line for the chosen value; `min-width: 0` lets the flex child shrink so
+     the ellipsis can happen. */
   [data-ui="select-value"] {
     min-width: 0;
     overflow: hidden;
@@ -234,8 +215,7 @@
     cursor: var(--cursor-disabled);
   }
 
-  /* A seta roda quando a lista abre: é como o botão diz que o que está por
-     baixo dele é dele, sem uma segunda etiqueta a explicá-lo. */
+  /* The arrow turns when the list opens. */
   [data-ui="select-icon"] {
     flex: none;
     color: var(--muted);
@@ -273,9 +253,7 @@
     transition: background-color var(--duration-tactile) var(--ease-tactile);
   }
 
-  /* O realce é do teclado e do rato ao mesmo tempo — o Base UI põe
-     `data-highlighted` nos dois, e por isso não há aqui um `:hover` à parte
-     que discordasse dele. */
+  /* Base UI sets `data-highlighted` for keyboard and pointer alike: no separate `:hover`. */
   [data-ui="select-item"][data-highlighted] {
     background-color: var(--content2);
   }
@@ -342,7 +320,7 @@
   }
 
   /* ============================================================
-     6. COMPONENTES EXPANDIDOS (PARIDADE HEROUI V3)
+     6. EXTENDED COMPONENTS (HEROUI V3 PARITY)
      ============================================================ */
 
   /* Separator / Divider */
@@ -468,13 +446,8 @@
   [data-ui="progress"][data-color="warning"] [data-ui="progress-indicator"] { background-color: var(--warning); }
   [data-ui="progress"][data-color="danger"] [data-ui="progress-indicator"] { background-color: var(--danger); }
 
-  /* Sem valor conhecido, o indicador deixa de medir e passa a dizer só «isto
-     anda»: um troço a atravessar a pista, em vez de a encher.
-
-     **Sem esta regra o `isIndeterminate` dava uma barra cheia e parada** — que é
-     exactamente a mentira oposta à que ele existe para evitar. Era um estado que
-     o componente emitia e que o sistema não desenhava: a mesma armadilha dos
-     positioners sem `data-ui`. */
+  /* Unknown value: a segment crosses the track instead of filling it. Without this
+     rule `isIndeterminate` drew a full, still bar. */
   [data-ui="progress"][data-indeterminate] [data-ui="progress-indicator"] {
     right: auto;
     width: 35%;
@@ -523,8 +496,7 @@
     color: var(--foreground);
   }
 
-  /* Os números alinham em coluna: um valor que dança horizontalmente
-     enquanto muda lê-se como ruído, e estes mudam a toda a hora. */
+  /* Tabular figures: a value that shifts sideways while changing reads as noise. */
   [data-ui="progress-value"] {
     font-size: var(--ui-text-sm);
     color: var(--muted);
@@ -614,9 +586,7 @@
     color: var(--foreground);
     border: var(--border-width) solid transparent;
   }
-  /* O chip como interruptor: um `<button aria-pressed>`. **O estado vive no
-     `aria-pressed` e não numa classe**, porque é ali que ele tem de estar para
-     quem lê por som — e assim o CSS e o leitor de ecrã leem a mesma coisa. */
+  /* The chip as a toggle (`<button aria-pressed>`): state lives in `aria-pressed`, read by CSS and screen readers alike. */
   [data-ui="chip"][aria-pressed] {
     border: var(--border-width) solid transparent;
     cursor: var(--cursor-interactive);
@@ -706,10 +676,8 @@
     color: var(--foreground);
   }
 
-  /* Number field
-     O `group` é a linha que junta o campo aos botões de somar e subtrair — que
-     são opcionais, e por omissão não estão lá. Sem eles, a linha é só o campo,
-     e por isso ele herda o desenho do `input`. */
+  /* Number field: `group` joins the input to the optional −/+ buttons; without
+     them it inherits the `input` look. */
   [data-ui="number-field-group"] {
     display: flex;
     align-items: stretch;
@@ -751,7 +719,7 @@
     border-left: none;
   }
 
-  /* Com botões, o campo perde os cantos que passam a ser deles. */
+  /* With buttons, the input gives them its corners. */
   [data-ui="number-field-decrement"] + [data-ui="number-field-input"] {
     border-radius: 0;
   }
@@ -760,11 +728,8 @@
     border-radius: 0;
   }
 
-  /* Color field
-     É o `<input type="color">` nativo — o único que abre o seletor do sistema.
-     O quadrado que o browser desenha não tem fundo nenhum por baixo, e sobre um
-     tema escuro aparece como um rectângulo branco cru: o `background` daqui é
-     o que o põe sobre a superfície certa. */
+  /* Color field: the native `<input type="color">`. Its swatch has no background
+     and shows raw white on a dark theme; this puts it on the right surface. */
   [data-ui="color-field"] {
     width: 4rem;
     height: 2.5rem;
@@ -775,8 +740,7 @@
     cursor: var(--cursor-interactive);
   }
 
-  /* O Chromium põe um embrulho com folga própria à volta da amostra, e uma
-     borda por cima dela. Sem estes dois, a folga não chega a aparecer. */
+  /* Chromium wraps the swatch with its own padding and border. */
   [data-ui="color-field"]::-webkit-color-swatch-wrapper {
     padding: 0;
   }
@@ -804,9 +768,7 @@
     border-color: var(--focus);
   }
 
-  /* Segmented control — uma escolha entre poucas, em pílulas na mesma linha.
-     O estado vive no `aria-checked`, como no chip: é ali que quem lê por som o
-     procura, e assim não há uma classe a dizer a mesma coisa noutro sítio. */
+  /* Segmented control — one choice among few, as pills; state in `aria-checked`. */
   [data-ui="segmented"] {
     display: flex;
     flex-wrap: wrap;
@@ -835,8 +797,7 @@
     cursor: var(--cursor-disabled);
   }
 
-  /* Radio cards — a mesma escolha do segmented, mas quando há uma frase para
-     ler ou uma amostra para olhar em vez de um nome que se explica sozinho. */
+  /* Radio cards — the same choice, when there is a sentence to read or a sample to see. */
   [data-ui="radio-cards"] {
     display: flex;
     flex-wrap: wrap;
@@ -1310,9 +1271,7 @@
     color: var(--muted);
   }
 
-  /* Dialog — o corpo, a cabeça e o título. O `dialog-popup`, o
-     `dialog-backdrop` e o `dialog-viewport` estão na secção 4, com o resto
-     do que é portal. */
+  /* Dialog — body, header, title. Popup, backdrop and viewport are in section 4, with the portals. */
   [data-ui="dialog-header"],
   [data-ui="drawer-header"] {
     display: flex;
@@ -1334,10 +1293,8 @@
     color: var(--muted);
   }
 
-  /* A marca à esquerda do título, e o botão de fechar no canto. Os dois são
-     opcionais — sem `icon` e sem `closeLabel` não existem —, mas a cabeça tem
-     de saber pô-los em linha quando existem: com um deles, o cabeçalho deixa de
-     ser uma coluna de título+descrição e passa a ser uma linha. */
+  /* Optional mark left of the title and close button in the corner: with either,
+     the header becomes a row. */
   [data-ui="dialog-header"]:has([data-ui="dialog-icon"]),
   [data-ui="dialog-header"]:has([data-ui="dialog-close"]) {
     flex-direction: row;
@@ -1374,7 +1331,7 @@
     color: var(--foreground);
   }
 
-  /* A linha dos botões de acção, encostada à direita. */
+  /* The action buttons row, right-aligned. */
   [data-ui="dialog-footer"] {
     display: flex;
     align-items: center;
@@ -1487,16 +1444,12 @@
     line-height: var(--ui-leading-tight);
     max-width: 20rem;
     box-shadow: var(--overlay-shadow, none);
-    /* Uma dica diz muitas vezes um caminho de ficheiro, e um caminho não tem
-       espaços por onde partir: sem isto, a caixa estica-se para além dos 20rem
-       e sai do ecrã. */
+    /* Tooltips often hold file paths with no spaces to break at. */
     overflow-wrap: break-word;
   }
 
-  /* A seta aponta ao gatilho, e o desenho vem de dentro do componente com
-     `currentColor` — sem ele, esta `color` sozinha não pintava nada. O Base UI
-     encosta-a ao lado certo e centra-a; o que falta é tirá-la de cima da caixa
-     (a altura do desenho) e virá-la para o lado de onde ela saiu. */
+  /* The arrow's shape comes from the component (`currentColor`); Base UI places
+     and centres it — here it moves off the box and turns towards the trigger. */
   [data-ui="tooltip-arrow"] {
     display: flex;
     color: var(--content4);
@@ -1511,8 +1464,7 @@
     rotate: 180deg;
   }
 
-  /* Nos lados é mais 2,5px: a seta tem 10 de largo por 5 de alto, e rodada
-     continua a ocupar uma caixa de 10 — metade da diferença fica a sobrar. */
+  /* Sideways it is 2.5px more: a 10×5 arrow rotated still takes a 10px box. */
   [data-ui="tooltip-arrow"][data-side="left"] {
     right: -7.5px;
     rotate: 90deg;
@@ -1564,7 +1516,7 @@
   }
 
   /* ============================================================
-     7. RESPETO A PREFERS-REDUCED-MOTION
+     7. PREFERS-REDUCED-MOTION
      ============================================================ */
   @media (prefers-reduced-motion: reduce) {
     *,

@@ -33,12 +33,10 @@ A substantial UI task is done only when the relevant categories below pass.
 
 ## Interaction
 
-> **Instrumento — ver `design-pro`.** Esta secção é a lista de verificação que
-> o instrumento do `ui-system` corre para produzir candidatos que alimentam a
-> régua do `design-pro` (WCAG 2.2 SC 2.4.7 "focus visible", SC 2.4.11 "focus
-> not obscured", SC 2.5.3 "label in name"). O `ui-system` não fecha verdicts
-> de UX/a11y — produz `candidate` / `clear` / `unproven` que o `design-pro`
-> transforma em `PASS`/`FAIL`. Ver `CONTRACTS.md §2.3`.
+> **Instrument — see `design-pro`.** This checklist produces candidates for
+> `design-pro`'s ruler (WCAG 2.2 SC 2.4.7, SC 2.4.11, SC 2.5.3). `ui-system`
+> closes no UX/a11y verdict: it emits `candidate` / `clear` / `unproven`, and
+> `design-pro` turns them into `PASS`/`FAIL` (`CONTRACTS.md §2.3`).
 
 - Controls work with keyboard.
 - Focus is visible.
@@ -53,12 +51,11 @@ A substantial UI task is done only when the relevant categories below pass.
 
 ## Accessibility
 
-> **Instrumento — ver `design-pro`.** Régua: WCAG 2.2 SC 1.4.3 (contraste
-> texto 4.5:1), SC 1.4.11 (contraste UI 3:1), SC 2.5.3 (label in name), SC
-> 2.5.8 (target size). O `audit_ui.py` produz candidatos por ΔL OKLCH sobre
-> `tokens.css`; **não decide `PASS` de contraste** — pixels renderizados só
-> se vêem com screenshot + amostragem perceptual, que é instrumento do
-> `design-pro`. Cortar esta secção era autoderrota (v1.2.1 do plano).
+> **Instrument — see `design-pro`.** Ruler: WCAG 2.2 SC 1.4.3 (text contrast
+> 4.5:1), SC 1.4.11 (UI contrast 3:1), SC 2.5.3 (label in name), SC 2.5.8
+> (target size). `audit_ui.py` yields candidates by OKLCH ΔL over `tokens.css`;
+> it **never decides contrast `PASS`** — rendered pixels need a screenshot and
+> perceptual sampling, which is `design-pro`'s instrument.
 
 - Native HTML is preferred.
 - Interactive elements have accessible names.

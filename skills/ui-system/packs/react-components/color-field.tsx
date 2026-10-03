@@ -5,37 +5,28 @@ export interface ColorFieldProps
     React.InputHTMLAttributes<HTMLInputElement>,
     'className' | 'type' | 'onChange' | 'value'
   > {
-  /** A cor, em `#rrggbb`. É o único formato que o controlo nativo aceita. */
+  /** `#rrggbb`, the only format the native control takes. */
   value?: string;
   onValueChange?: (value: string) => void;
   label?: React.ReactNode;
   description?: React.ReactNode;
   error?: React.ReactNode;
-  /** Classe do **invólucro**, como no `Input` e no `Select`. */
+  /** Wrapper class, as in `Input` and `Select`. */
   className?: string;
 }
 
 /**
- * Escolher uma cor.
- *
- * **É o `<input type="color">` nativo por dentro, e é de propósito.** Ao
- * contrário dos outros controlos deste catálogo, aqui não há nada do Base UI a
- * substituir: escolher uma cor sem o controlo do sistema obrigava a escrever um
- * seletor inteiro — roda, saturação, canal alfa, campo hexadecimal — e nenhum
- * deles é melhor do que aquele que quem usa já conhece do resto do sistema.
- *
- * O que este invólucro dá é o resto: a etiqueta, a nota, o erro e um slot
- * (`data-ui="color-field"`) por onde se lhe pode mexer no aspecto — porque o
- * quadrado que o browser desenha sozinho não tem cor de fundo nenhuma e, sobre
- * um tema escuro, aparece como um rectângulo branco cru.
+ * A colour picker: the native `<input type="color">` on purpose (no picker beats the
+ * system's). The wrapper adds label, note, error and a `color-field` slot to style the
+ * swatch, which is raw white on a dark theme otherwise.
  */
 export const ColorField = React.forwardRef<HTMLInputElement, ColorFieldProps>(
   (
     { label, description, error, className, value, onValueChange, id, ...props },
     ref,
   ) => {
-    const gerado = React.useId();
-    const inputId = id || gerado;
+    const generated = React.useId();
+    const inputId = id || generated;
     const descriptionId = `${inputId}-desc`;
     const errorId = `${inputId}-err`;
 

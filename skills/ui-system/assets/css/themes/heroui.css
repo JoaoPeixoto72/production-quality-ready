@@ -1,15 +1,12 @@
 @layer ui.theme {
-  /* ============================================================
-     TEMA HEROUI — Otimizado para SaaS moderno com 4 camadas de
-     superfície e vidro acetinado (HeroUI v3 / OKLCH).
-     ============================================================ */
+  /* HEROUI THEME — modern SaaS, 4 surface layers and satin glass (HeroUI v3 / OKLCH). */
 
   /* Modo Escuro (Dark-First) */
   [data-theme="heroui"],
   [data-theme="heroui"][data-color-scheme="dark"] {
     color-scheme: dark;
 
-    /* ---- 4 Níveis de Superfície HeroUI (Dark Obsidian) ---- */
+    /* ---- 4 HeroUI surface levels (Dark Obsidian) ---- */
     --background: oklch(0.14 0.006 285);
     --foreground: oklch(0.98 0 0);
 

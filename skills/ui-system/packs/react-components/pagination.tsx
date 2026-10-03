@@ -1,13 +1,16 @@
 import * as React from 'react';
 
-// O `onChange` daqui leva um número de página, e não um `ChangeEvent`: sem o
-// `Omit` colide com o handler nativo que vem do `HTMLAttributes`.
+// `onChange` takes a page number, not a `ChangeEvent`: `Omit` avoids the native handler clash.
 export interface PaginationProps
   extends Omit<React.HTMLAttributes<HTMLElement>, 'onChange'> {
   page?: number;
   total?: number;
   onChange?: (page: number) => void;
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
+  /** Accessible names. No defaults: a system component does not know the app's language. */
+  label?: string;
+  previousLabel?: string;
+  nextLabel?: string;
 }
 
 export function Pagination({
@@ -15,19 +18,22 @@ export function Pagination({
   total = 1,
   onChange,
   color = 'primary',
+  label,
+  previousLabel,
+  nextLabel,
   ...props
 }: PaginationProps) {
   const pages = Array.from({ length: total }, (_, i) => i + 1);
 
   return (
-    <nav data-ui="pagination" data-color={color} aria-label="Paginação" {...props}>
+    <nav data-ui="pagination" data-color={color} aria-label={label} {...props}>
       <button
         type="button"
         data-ui="pagination-item"
         data-action="prev"
         disabled={page <= 1}
         onClick={() => onChange?.(page - 1)}
-        aria-label="Página anterior"
+        aria-label={previousLabel}
       >
         ‹
       </button>
@@ -50,7 +56,7 @@ export function Pagination({
         data-action="next"
         disabled={page >= total}
         onClick={() => onChange?.(page + 1)}
-        aria-label="Página seguinte"
+        aria-label={nextLabel}
       >
         ›
       </button>

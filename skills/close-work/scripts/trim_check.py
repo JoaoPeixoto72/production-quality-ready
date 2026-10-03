@@ -44,6 +44,7 @@ CONSTANT = re.compile(r"^\s*(pub(\([^)]*\))?\s+)?(export\s+)?(const|static|final
 NUMBER = re.compile(r"\b\d+(?:[.,]\d+)?\b")
 STRING = re.compile(r'"(?:[^"\\]|\\.)*"')
 TEST_MODULE = re.compile(r"#\[cfg\(test\)\]")
+BARE_DELIMITER = re.compile(r"^\s*(\{?/\*\*?|\*/\}?|\*|//[/!]?|#)\s*$")  # carries no text
 
 
 def git(repo: Path, *args: str) -> str:
@@ -134,8 +135,9 @@ def scan(repo: Path, since: str | None) -> dict[str, list[str]]:
                 end += 1
             touched = any(new(j) for j in range(k, end))
             limit = 2 * max_block if k == 0 else max_block  # a file header may say what the file is
-            if touched and end - k > limit and k < tests_from:
-                found["trim.comment-budget"].append(f"{f}:{k + 1} {end - k} lines")
+            text_lines = sum(1 for j in range(k, end) if not BARE_DELIMITER.match(lines[j]))
+            if touched and text_lines > limit and k < tests_from:
+                found["trim.comment-budget"].append(f"{f}:{k + 1} {text_lines} lines")
             m = CONSTANT.match(lines[end]) if end < len(lines) else None
             if m and touched:
                 values = {v for v in NUMBER.findall(m.group(6)) if len(v) > 1}

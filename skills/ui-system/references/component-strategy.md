@@ -2,12 +2,12 @@
 
 ## Contents
 
-- Escolher o nível de implementação
-- Componentes verificados no Base UI
-- Não existem no Base UI
-- Preferir Base UI mesmo onde o HTML parece suficiente
-- Sempre Base UI
-- Como confirmar a API antes de escrever código
+- Choosing the implementation level
+- Components verified in Base UI
+- Not in Base UI
+- Prefer Base UI even where HTML looks enough
+- Always Base UI
+- Confirming the API before writing code
 - Component contract
 - Variant discipline
 - Size discipline
@@ -15,88 +15,81 @@
 - Domain components
 - New dependency policy
 
-## Escolher o nível de implementação
+## Choosing the implementation level
 
-Usar o nível mais baixo suficiente:
+Use the lowest level that is enough:
 
-1. HTML nativo.
-2. Componente próprio existente.
-3. Padrão próprio existente.
-4. Base UI encapsulado privadamente.
-5. Novo primitivo próprio, só quando necessário.
-6. Componente de domínio da aplicação.
+1. Native HTML.
+2. An existing owned component.
+3. An existing owned pattern.
+4. Base UI, wrapped privately.
+5. A new owned primitive, only when needed.
+6. An application domain component.
 
-## Componentes verificados no Base UI
+## Components verified in Base UI
 
-Lista verificada contra https://base-ui.com/llms.txt (v1.8.0). Sempre
-reconfirmar contra a versão instalada antes de implementar.
+Checked against https://base-ui.com/llms.txt (v1.8.0); re-confirm against the
+installed version before implementing.
 
-Overlays e navegação: Dialog, Alert Dialog, Drawer, Popover, Tooltip,
+Overlays and navigation: Dialog, Alert Dialog, Drawer, Popover, Tooltip,
 Preview Card, Menu, Menubar, Context Menu, Navigation Menu, Toolbar,
 Tabs, Toast.
 
-Selecção e entrada: Select, Combobox, Autocomplete, Input, Number Field,
+Selection and input: Select, Combobox, Autocomplete, Input, Number Field,
 OTP Field, Checkbox, Checkbox Group, Radio, Switch, Toggle,
 Toggle Group, Slider.
 
-Formulários: Field, Fieldset, Form.
+Forms: Field, Fieldset, Form.
 
-Estrutura e feedback: Accordion, Collapsible, Scroll Area, Separator,
+Structure and feedback: Accordion, Collapsible, Scroll Area, Separator,
 Progress, Meter, Avatar, Button.
 
-Utilitários: CSP Provider, Direction Provider, mergeProps, useRender.
+Utilities: CSP Provider, Direction Provider, mergeProps, useRender.
 
-## Não existem no Base UI
+## Not in Base UI
 
-Estes têm de ser próprios, sobre HTML nativo:
+These are owned, on native HTML:
 
 Badge, Card/Surface, Skeleton, Spinner, Table/DataTable, Breadcrumb,
 Pagination, Empty State, Stack, Inline, Grid, Container, Heading, Text,
 Link, Textarea.
 
-## Preferir Base UI mesmo onde o HTML parece suficiente
+## Prefer Base UI even where HTML looks enough
 
-| Componente | Porque não ficar no nativo |
+| Component | Why not stay native |
 |---|---|
-| Field | Faz o labelling e a validação, e a relação label/erro/descrição |
-| Form | Consolida o tratamento de erros do formulário |
-| Fieldset | Legend estilizável, que é notoriamente difícil em CSS |
-| Button | Renderizável noutra tag e focável quando disabled |
-| Input | Integra com Field e Form |
-| Separator | Semântica correcta para leitores de ecrã |
-| Progress, Meter | Semântica ARIA e valores |
-| Avatar | Estados de fallback de imagem |
+| Field | Labelling, validation, and the label/error/description relation |
+| Form | Consolidates the form's error handling |
+| Fieldset | A styleable legend, notoriously hard in CSS |
+| Button | Renderable as another tag, focusable when disabled |
+| Input | Integrates with Field and Form |
+| Separator | Correct semantics for screen readers |
+| Progress, Meter | ARIA semantics and values |
+| Avatar | Image fallback states |
 
-Um `<button>` nativo continua correcto para acções isoladas fora de
-formulários. Um `<input>` solto num formulário real quase nunca é a
-escolha certa: perde-se a relação com label, descrição e erro.
+A native `<button>` stays right for isolated actions outside forms. A bare
+`<input>` in a real form is almost never right: it loses the relation with
+label, description and error.
 
-## Sempre Base UI
+## Always Base UI
 
-Nunca implementar à mão: focus trap, dismissal, posicionamento de
-popups, navegação por teclado em colecções, anúncios de toast, gestos
-de swipe, ou virtual focus. É trabalho não diferenciado e difícil de
-acertar.
+Never by hand: focus trap, dismissal, popup positioning, keyboard navigation
+in collections, toast announcements, swipe gestures, virtual focus.
+Undifferentiated work that is hard to get right.
 
-## Como confirmar a API antes de escrever código
+## Confirming the API before writing code
 
-Ordem obrigatória:
+In this order:
 
-1. Tipos e código do package instalado, e o lockfile.
-2. `https://base-ui.com/llms.txt` para o índice de componentes.
-3. A página de docs do componente com o sufixo `.md`
-   (ex: `https://base-ui.com/react/components/select.md`), que devolve
-   Markdown pronto a ler.
-4. Nunca gerar props de memória.
+1. The installed package's types and code, and the lockfile.
+2. `https://base-ui.com/llms.txt` for the component index.
+3. The component's docs page with the `.md` suffix
+   (`https://base-ui.com/react/components/select.md`), which returns Markdown.
+4. Never generate props from memory.
 
-Nota do próprio `llms.txt`: os exemplos de Tailwind estão escritos para
-v4; se o `package.json` usar v3, converter.
-
-O quick start pede explicitamente que a documentação do Base UI seja
-tratada como autoritária em conflito com conhecimento prévio, e cada
-página tem link "View as Markdown". Isto reforça a regra acima: nunca
-gerar props de memória — abrir a versão Markdown da página do
-componente e ler o contrato.
+The Tailwind examples in `llms.txt` are written for v4; convert if
+`package.json` uses v3. Base UI asks for its docs to be treated as
+authoritative over prior knowledge.
 
 ## Component contract
 

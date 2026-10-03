@@ -4,7 +4,7 @@
 @import "./core.css" layer(ui.core);
 @import "./tailwind-bridge.css";
 
-/* Catálogo Quádruplo de Temas Intercambiáveis */
+/* Four interchangeable themes */
 @import "./themes/neutral.css" layer(ui.theme);
 @import "./themes/heroui.css" layer(ui.theme);
 @import "./themes/studio.css" layer(ui.theme);

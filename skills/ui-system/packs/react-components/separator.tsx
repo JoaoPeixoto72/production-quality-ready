@@ -20,5 +20,5 @@ export const Separator = React.forwardRef<HTMLDivElement, SeparatorProps>(
 
 Separator.displayName = 'Separator';
 
-/** Alias para manter conformidade semântica com o HeroUI */
+/** HeroUI alias. */
 export const Divider = Separator;

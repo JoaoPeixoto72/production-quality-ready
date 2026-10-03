@@ -7,10 +7,7 @@ export interface ProgressProps {
   size?: 'sm' | 'md' | 'lg';
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
   isIndeterminate?: boolean;
-  /**
-   * Classe da raiz, como no resto do catálogo. É por ela que quem usa decide a
-   * grelha à volta — e, num estado que o `color` não cubra, a cor do indicador.
-   */
+  /** Root class: the surrounding grid and, outside `color`, the indicator's colour. */
   className?: string;
 }
 
@@ -46,16 +43,7 @@ export function Progress({
       <BaseProgress.Track data-ui="progress-track">
         <BaseProgress.Indicator
           data-ui="progress-indicator"
-          /**
-           * **Indeterminado não leva `transform` nenhum daqui**: quem o move é a
-           * animação do `core.css`, e um valor escrito em linha sobrevivia a uma
-           * barra que passasse de determinada a indeterminada.
-           *
-           * Isto era um `useEffect` a escrever `style.transform` num `ref`. Um
-           * efeito para pôr um valor que se sabe no render é uma volta a mais —
-           * e era ele que deixava o valor velho para trás, porque só escrevia no
-           * ramo determinado e nunca limpava o outro.
-           */
+          // Indeterminate gets no inline transform: core.css animates it.
           style={
             isIndeterminate
               ? undefined

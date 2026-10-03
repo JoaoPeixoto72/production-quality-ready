@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Auditoria determinística do design system próprio.
+"""Deterministic audit of the project's own design system.
 
-Severidades:
-  error -> falha em --strict (contrato violado, objetivamente verificável)
-  warn  -> requer julgamento humano, não bloqueia
+Severities:
+  error -> fails under --strict (contract broken, objectively verifiable)
+  warn  -> needs human judgement, does not block
 """
 
 from __future__ import annotations
@@ -118,22 +118,14 @@ class Finding:
 
 @dataclass
 class SlotUsage:
-    """O que se sabe sobre os slots `data-ui` de um ficheiro.
-
-    Os três eixos respondem a perguntas diferentes, e é por isso que não são um
-    contador só: `counts` é o inventário que vai para o relatório, `emitted` é
-    o que o design system promete no DOM, e `styled` é o que alguém se deu ao
-    trabalho de desenhar. Um slot emitido e nunca estilizado é um componente
-    que renderiza sem aspecto nenhum — e era o que passava despercebido.
-    """
+    """`data-ui` slots of a file: `counts` (inventory), `emitted` (what the system
+    promises in the DOM) and `styled` (what CSS draws). Emitted but never styled
+    renders with no look at all."""
 
     counts: Counter = field(default_factory=Counter)
-    #: slot -> (ficheiro, linha) da primeira vez que um componente **do design
-    #: system** o emite. Só conta dentro de `ui_sources`: os `data-ui` que uma
-    #: aplicação inventa são dela, e o sistema não responde por eles.
+    #: slot -> (file, line) where a design-system component (inside `ui_sources`) first emits it.
     emitted: dict[str, tuple[str, int]] = field(default_factory=dict)
-    #: Slots que aparecem como selector em CSS, venha ele de onde vier — um
-    #: projecto pode estilizar no seu próprio CSS um slot que o sistema emite.
+    #: Slots used as a CSS selector anywhere, the project's own CSS included.
     styled: set[str] = field(default_factory=set)
 
     def merge(self, other: "SlotUsage") -> None:
@@ -458,7 +450,7 @@ def color_mix_percent_findings(content: str, rel: str) -> list[Finding]:
                 rel,
                 line,
                 inner.strip()[:120],
-                f"color-mix() com percentagens a somar {total:g}%: o browser normaliza os pesos para 100. A proporção relativa preserva-se, mas os pesos efectivos diferem dos valores declarados.",
+                f"color-mix() percentages sum to {total:g}%: the browser normalises the weights to 100. The ratio holds, but the effective weights differ from the declared ones.",
             ))
         elif total < 99.99:
             out.append(Finding(
@@ -467,16 +459,14 @@ def color_mix_percent_findings(content: str, rel: str) -> list[Finding]:
                 rel,
                 line,
                 inner.strip()[:120],
-                f"color-mix() com percentagens a somar {total:g}%: o resto ({100 - total:g}%) torna-se transparência. Somar 100 ou declarar uma só percentagem.",
+                f"color-mix() percentages sum to {total:g}%: the rest ({100 - total:g}%) becomes transparency. Sum to 100 or declare a single percentage.",
             ))
     return out
 
 
 def check_oklch_contrast_pairs(content: str, rel: str) -> list[Finding]:
     """
-    Heurística matemática de luminância OKLCH (|L_fg - L_bg| < 0.40).
-    WCAG 2.1 AA exige contraste de 4.5:1 para texto normal. No espaço OKLCH,
-    uma diferença de luminância |L1 - L2| inferior a 0.40 indica risco de reprovação.
+    OKLCH lightness heuristic: |L_fg - L_bg| < 0.40 risks failing WCAG 2.1 AA (4.5:1).
     """
     out: list[Finding] = []
     OKLCH_PAT = re.compile(
@@ -540,7 +530,7 @@ def check_oklch_contrast_pairs(content: str, rel: str) -> list[Finding]:
                         rel,
                         fg_line,
                         f"--{fg} (L={l_fg:.2f}) vs --{bg} (L={l_bg:.2f})",
-                        f"Contraste OKLCH insuficiente entre '--{fg}' (L={l_fg:.2f}) e '--{bg}' (L={l_bg:.2f}): delta={delta:.2f} < 0.40 (risco de violação WCAG AA 4.5:1).",
+                        f"Insufficient OKLCH contrast between '--{fg}' (L={l_fg:.2f}) and '--{bg}' (L={l_bg:.2f}): delta={delta:.2f} < 0.40 (risk of failing WCAG AA 4.5:1).",
                     ))
     return out
 
@@ -632,7 +622,7 @@ def load_json(path: Path) -> dict:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception as e:
-        sys.stderr.write(f"Erro: Falha ao ler ficheiro JSON '{path}': {e}\n")
+        sys.stderr.write(f"Error: could not read JSON file '{path}': {e}\n")
         sys.exit(2)
 
 
@@ -645,7 +635,7 @@ def resolve_settings(args: argparse.Namespace, root: Path) -> AuditSettings:
         elif (root / candidate).is_file():
             config_path = (root / candidate).resolve()
         else:
-            sys.stderr.write(f"Erro: Ficheiro de configuração explícito '--config {args.config}' não encontrado.\n")
+            sys.stderr.write(f"Error: explicit config file '--config {args.config}' not found.\n")
             sys.exit(2)
     elif getattr(args, "profile", None):
         prof = args.profile.strip()
@@ -660,7 +650,7 @@ def resolve_settings(args: argparse.Namespace, root: Path) -> AuditSettings:
                 config_path = c.resolve()
                 break
         if not config_path:
-            sys.stderr.write(f"Erro: Configuração para o perfil '--profile {prof}' não encontrada.\n")
+            sys.stderr.write(f"Error: no config for profile '--profile {prof}'.\n")
             sys.exit(2)
     else:
         candidate = root / "ui.config.json"
@@ -772,7 +762,7 @@ def scan(path: Path, root: Path, settings: AuditSettings):
                     rel,
                     source_line,
                     source,
-                    f"Import directo de {system} fora da fronteira do package UI.",
+                    f"Direct import of {system} outside the UI package boundary.",
                 ))
             for alias in settings.forbidden_ui_aliases:
                 normalized = alias.rstrip("/")
@@ -783,7 +773,7 @@ def scan(path: Path, root: Path, settings: AuditSettings):
                         rel,
                         source_line,
                         source,
-                        f"Import via alias legado `{normalized}/*`. Confirmar se aponta para UI antiga a migrar ou para o package UI canónico.",
+                        f"Import through legacy alias `{normalized}/*`. Check whether it points at old UI to migrate or at the canonical UI package.",
                     ))
 
         for n, line in enumerate(js_without_comments.splitlines(), start=1):
@@ -792,13 +782,13 @@ def scan(path: Path, root: Path, settings: AuditSettings):
                 if in_ui_source:
                     slots.emitted.setdefault(slot, (rel, n))
             for m in ARBITRARY_COLOR_UTILITY.finditer(line):
-                findings.append(Finding(raw_color_sev, "arbitrary-color-utility", rel, n, m.group(0), "Cor arbitrária em utility. Usar um token semântico."))
+                findings.append(Finding(raw_color_sev, "arbitrary-color-utility", rel, n, m.group(0), "Arbitrary colour in a utility. Use a semantic token."))
             for m in ARBITRARY_SPACE_UTILITY.finditer(line):
-                findings.append(Finding("warn", "arbitrary-space-utility", rel, n, m.group(0), "Espaçamento arbitrário. Confirmar se é cálculo estrutural local (permitido) ou devia ser token."))
+                findings.append(Finding("warn", "arbitrary-space-utility", rel, n, m.group(0), "Arbitrary spacing. Check whether it is a local structural calculation (allowed) or should be a token."))
             if re.search(r"\bstyle\s*=\s*\{\{", line):
-                findings.append(Finding("warn", "inline-style", rel, n, line.strip()[:160], "Style inline. Confirmar que é valor dinâmico e não uma decisão de tema."))
+                findings.append(Finding("warn", "inline-style", rel, n, line.strip()[:160], "Inline style. Check it is a dynamic value, not a theme decision."))
             if settings.offline and REMOTE_JS_RESOURCE.search(line):
-                findings.append(Finding("error", "remote-resource", rel, n, line.strip()[:160], "Recurso remoto proibido pela configuração actual da UI (offline / sem assets remotos)."))
+                findings.append(Finding("error", "remote-resource", rel, n, line.strip()[:160], "Remote resource forbidden by the current UI config (offline / no remote assets)."))
 
     if ext in STYLE_EXT:
         allowed_token_ranges = css_custom_property_line_ranges(body_css) if in_tokens else []
@@ -807,13 +797,13 @@ def scan(path: Path, root: Path, settings: AuditSettings):
                 slots.counts[slot] += 1
                 slots.styled.add(slot)
             for m in BOOLEAN_STATE_SELECTOR.finditer(line):
-                findings.append(Finding("error", "boolean-state-selector", rel, n, m.group(0), "Os atributos de estado booleanos do Base UI são renderizados sem valor: usar [data-pressed] em vez de [data-pressed=\"true\"]."))
+                findings.append(Finding("error", "boolean-state-selector", rel, n, m.group(0), "Base UI renders boolean state attributes without a value: use [data-pressed], not [data-pressed=\"true\"]."))
             for m in HEX.finditer(line):
                 if in_tokens and line_in_ranges(n, allowed_token_ranges):
                     continue
                 findings.append(Finding(raw_color_sev, "raw-hex", rel, n, m.group(0), "Cor hexadecimal crua. O sistema usa tokens e mistura em oklch/oklab."))
             if settings.offline and (REMOTE_CSS_IMPORT.search(line) or REMOTE_URL.search(line)):
-                findings.append(Finding("error", "remote-resource", rel, n, line.strip()[:160], "Recurso remoto proibido pela configuração actual da UI (offline / sem assets remotos)."))
+                findings.append(Finding("error", "remote-resource", rel, n, line.strip()[:160], "Remote resource forbidden by the current UI config (offline / no remote assets)."))
 
         for m in COLOR_FN.finditer(body_css):
             if m.group(0).lower().startswith("color-mix"):
@@ -821,7 +811,7 @@ def scan(path: Path, root: Path, settings: AuditSettings):
             match_line = line_number(body_css, m.start())
             if in_tokens and line_in_ranges(match_line, allowed_token_ranges):
                 continue
-            findings.append(Finding(raw_color_sev, "raw-color-function", rel, match_line, m.group(0), "Função de cor crua fora da camada de tokens. Usar token ou derivar com color-mix()."))
+            findings.append(Finding(raw_color_sev, "raw-color-function", rel, match_line, m.group(0), "Raw colour function outside the token layer. Use a token or derive with color-mix()."))
 
         findings.extend(color_mix_percent_findings(body_css, rel))
         findings.extend(check_oklch_contrast_pairs(body_css, rel))
@@ -829,7 +819,7 @@ def scan(path: Path, root: Path, settings: AuditSettings):
             if ":focus" not in selector:
                 continue
             if has_top_level_box_shadow(block_body):
-                findings.append(Finding("error" if settings.require_focus_visible else "warn", "focus-box-shadow", rel, block_line, selector[:120], "Anel de foco por box-shadow. Preferir outline com outline-offset; em forced-colors o box-shadow é suprimido."))
+                findings.append(Finding("error" if settings.require_focus_visible else "warn", "focus-box-shadow", rel, block_line, selector[:120], "Focus ring via box-shadow. Prefer outline with outline-offset; forced-colors suppresses box-shadow."))
 
     if ext in HTML_EXT:
         for n, line in enumerate(html_without_comments.splitlines(), start=1):
@@ -838,39 +828,39 @@ def scan(path: Path, root: Path, settings: AuditSettings):
                 if in_ui_source:
                     slots.emitted.setdefault(slot, (rel, n))
             if settings.offline and (REMOTE_LINK_TAG.search(line) or REMOTE_CSS_IMPORT.search(line) or REMOTE_URL.search(line)):
-                findings.append(Finding("error", "remote-resource", rel, n, line.strip()[:160], "Recurso remoto proibido pela configuração actual da UI (offline / sem assets remotos)."))
+                findings.append(Finding("error", "remote-resource", rel, n, line.strip()[:160], "Remote resource forbidden by the current UI config (offline / no remote assets)."))
 
     if ext in SOURCE_EXT:
         body = body_css if ext in STYLE_EXT else (html_without_comments if ext in HTML_EXT else js_without_comments)
         for m in FONT_DECL.finditer(body):
             value = m.group(1)
             if primary_font_is_generic(value):
-                findings.append(Finding("error" if settings.forbid_generic_fonts else "warn", "generic-font", rel, line_number(body, m.start()), value.strip()[:120], "Inter/Roboto como família primária são defaults genéricos de output gerado. Escolher uma família deliberada para o projecto (como fallback do sistema são aceites)."))
+                findings.append(Finding("error" if settings.forbid_generic_fonts else "warn", "generic-font", rel, line_number(body, m.start()), value.strip()[:120], "Inter/Roboto as the primary family is a generic default of generated output. Pick a deliberate family (as a system fallback they are fine)."))
 
     return findings, slots, has_transition, has_reduced
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Auditoria do design system próprio.")
+    parser = argparse.ArgumentParser(description="Audit of the project's own design system.")
     parser.add_argument("root", nargs="?", default=".")
-    parser.add_argument("--repo", default=None, help="Directório raiz (alias para positional root).")
-    parser.add_argument("--out", default=None, help="Directório/ficheiro de saída markdown (alias para --markdown-output).")
-    parser.add_argument("--config", default=None, help="Path explícito para ui.config.json.")
-    parser.add_argument("--profile", default=None, help="Nome do perfil ativo em profiles/<nome>/ para carregar a sua configuração.")
-    parser.add_argument("--ui-source", action="append", default=None, help="Onde imports privados de Base UI são permitidos. Repetível.")
-    parser.add_argument("--token-dir", action="append", default=None, help="Directórios onde primitives de cor podem ser declarados. Repetível.")
+    parser.add_argument("--repo", default=None, help="Root directory (alias for the positional root).")
+    parser.add_argument("--out", default=None, help="Markdown output directory/file (alias for --markdown-output).")
+    parser.add_argument("--config", default=None, help="Explicit path to ui.config.json.")
+    parser.add_argument("--profile", default=None, help="Active profile name in profiles/<name>/, to load its config.")
+    parser.add_argument("--ui-source", action="append", default=None, help="Where private Base UI imports are allowed. Repeatable.")
+    parser.add_argument("--token-dir", action="append", default=None, help="Directories where colour primitives may be declared. Repeatable.")
     parser.add_argument("--json-output", default="ui-audit.json")
     parser.add_argument("--markdown-output", default="ui-audit.md")
     parser.add_argument("--strict", action="store_true", help="Exit code 1 se existir qualquer finding 'error'.")
-    parser.add_argument("--forbidden-ui-alias", action="append", default=None, help="Alias legado de UI a sinalizar (ex.: @/components/ui). Repetível.")
-    parser.add_argument("--shadcn-alias-severity", choices=["error", "warn"], default="warn", help="Severidade para aliases legacy de UI. Default: warn.")
-    parser.add_argument("--ignore-dir", action="append", default=None, help="Nome de directório adicional a ignorar durante a auditoria. Repetível.")
+    parser.add_argument("--forbidden-ui-alias", action="append", default=None, help="Legacy UI alias to flag (e.g. @/components/ui). Repeatable.")
+    parser.add_argument("--shadcn-alias-severity", choices=["error", "warn"], default="warn", help="Severity for legacy UI aliases. Default: warn.")
+    parser.add_argument("--ignore-dir", action="append", default=None, help="Extra directory name to ignore. Repeatable.")
     args = parser.parse_args()
 
     target_root = args.repo if args.repo is not None else args.root
     root = Path(target_root).resolve()
     if not root.is_dir():
-        print(f"Root inválido: {root}", file=sys.stderr)
+        print(f"Invalid root: {root}", file=sys.stderr)
         return 2
 
     if args.out:
@@ -896,55 +886,44 @@ def main() -> int:
                 any_reduced_motion = True
 
     if scanned == 0:
-        findings.append(Finding("error", "no-files-scanned", "<projecto>", 0, str(root), "Nenhum ficheiro suportado foi analisado."))
+        findings.append(Finding("error", "no-files-scanned", "<project>", 0, str(root), "No supported file was scanned."))
 
-    # Slots que o design system promete no DOM e que ninguem desenha.
-    #
-    # A distincao entre os dois casos e' o que faz esta regra valer alguma
-    # coisa. Um slot solto por estilizar e' muitas vezes deliberado: o contrato
-    # `data-ui` existe **para** dar ganchos a quem tema, e nem todos precisam
-    # de aspecto de fabrica. Mas um componente em que **nenhum** slot esta
-    # estilizado nao e' um gancho — e' um componente que renderiza sem aspecto
-    # nenhum. Foi assim que oito componentes inteiros (badge, card, popover,
-    # select, switch, table, tabs e tooltip) sairam sem uma linha de CSS: o
-    # auditor via os slots existirem e dava-os por bons.
-    #
-    # So se aplica ao que sai de `ui_sources`: os `data-ui` que uma aplicacao
-    # inventa sao dela, e o sistema nao responde por eles.
-    por_ficheiro: dict[str, list[tuple[str, int]]] = {}
-    for slot, (ficheiro, linha) in slots.emitted.items():
-        por_ficheiro.setdefault(ficheiro, []).append((slot, linha))
+    # Emitted but unstyled: one loose slot is often a deliberate theming hook (warn);
+    # a component with no styled slot at all renders with no look (error).
+    by_file: dict[str, list[tuple[str, int]]] = {}
+    for slot, (file_, line_no) in slots.emitted.items():
+        by_file.setdefault(file_, []).append((slot, line_no))
 
-    for ficheiro, emitidos in sorted(por_ficheiro.items()):
-        sem_estilo = sorted(s for s, _ in emitidos if s not in slots.styled)
-        if not sem_estilo:
+    for file_, emitted_slots in sorted(by_file.items()):
+        unstyled = sorted(s for s, _ in emitted_slots if s not in slots.styled)
+        if not unstyled:
             continue
-        if len(sem_estilo) == len(emitidos):
-            primeira = min(linha for _, linha in emitidos)
+        if len(unstyled) == len(emitted_slots):
+            first_line = min(line_no for _, line_no in emitted_slots)
             findings.append(Finding(
                 "error",
                 "unstyled-component",
-                ficheiro,
-                primeira,
-                ", ".join(f'data-ui="{s}"' for s in sem_estilo),
-                "Nenhum dos slots deste componente esta estilizado: ele "
-                "renderiza sem aspecto nenhum. Dar-lhe CSS na camada ui.core.",
+                file_,
+                first_line,
+                ", ".join(f'data-ui="{s}"' for s in unstyled),
+                "None of this component's slots is styled: it renders with "
+                "no look at all. Give it CSS in the ui.core layer.",
             ))
             continue
-        for slot in sem_estilo:
-            linha = next(l for s, l in emitidos if s == slot)
+        for slot in unstyled:
+            line_no = next(l for s, l in emitted_slots if s == slot)
             findings.append(Finding(
                 "warn",
                 "unstyled-slot",
-                ficheiro,
-                linha,
+                file_,
+                line_no,
                 f'data-ui="{slot}"',
-                "Slot emitido e nunca estilizado. Confirmar que e' um gancho "
-                "deliberado para quem tema, e nao um esquecimento.",
+                "Slot emitted and never styled. Check it is a deliberate "
+                "theming hook, not an oversight.",
             ))
 
     if motion_files and not any_reduced_motion:
-        findings.append(Finding("error", "missing-reduced-motion", "<projecto>", 0, f"{len(motion_files)} ficheiro(s) com transições", "Existem transições ou animações mas nenhuma regra funcional de reduced motion no projecto."))
+        findings.append(Finding("error", "missing-reduced-motion", "<project>", 0, f"{len(motion_files)} file(s) with transitions", "Transitions or animations exist but no working reduced-motion rule."))
 
     errors = [f for f in findings if f.severity == "error"]
     warns = [f for f in findings if f.severity == "warn"]
@@ -969,33 +948,33 @@ def main() -> int:
         "# UI audit",
         "",
         f"- Root: `{root}`",
-        f"- Config: `{settings.config_path}`" if settings.config_path else "- Config: nenhuma",
-        f"- Ficheiros analisados: {scanned}",
+        f"- Config: `{settings.config_path}`" if settings.config_path else "- Config: none",
+        f"- Files scanned: {scanned}",
         f"- Errors: {len(errors)}",
         f"- Warnings: {len(warns)}",
         "",
-        "## Resumo",
+        "## Summary",
         "",
     ]
-    lines += [f"- `{k}`: {v}" for k, v in report["summary"].items()] or ["- Sem ocorrências."]
-    lines += ["", "## Slots estáveis", ""]
-    lines += [f"- `{k}`: {v}" for k, v in slots.counts.most_common()] or ["- Nenhum `data-ui` estático encontrado."]
+    lines += [f"- `{k}`: {v}" for k, v in report["summary"].items()] or ["- None."]
+    lines += ["", "## Stable slots", ""]
+    lines += [f"- `{k}`: {v}" for k, v in slots.counts.most_common()] or ["- No static `data-ui` found."]
 
     for title, group in (("Errors", errors), ("Warnings", warns)):
         lines += ["", f"## {title}", ""]
         if not group:
-            lines.append("Nenhum.")
+            lines.append("None.")
             continue
         for finding in group:
             lines += [
                 f"- `{finding.kind}` — `{finding.file}:{finding.line}`",
-                f"  - Valor: `{finding.value}`",
-                f"  - Nota: {finding.message}",
+                f"  - Value: `{finding.value}`",
+                f"  - Note: {finding.message}",
             ]
 
     Path(args.markdown_output).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    print(f"Analisados {scanned} ficheiros.")
+    print(f"Scanned {scanned} files.")
     print(f"{len(errors)} errors, {len(warns)} warnings.")
     print(f"JSON: {args.json_output}")
     print(f"Markdown: {args.markdown_output}")

@@ -6,15 +6,11 @@ export interface CheckboxProps
     React.ComponentPropsWithoutRef<typeof BaseCheckbox.Root>,
     'className'
   > {
-  /** O texto ao lado da caixa. Um nó, como no `Input` e no `Select`. */
+  /** The text beside the box. */
   label?: React.ReactNode;
-  /** Uma segunda linha, mais pequena e apagada, por baixo do texto. */
+  /** A smaller, dimmer second line under the text. */
   description?: React.ReactNode;
-  /**
-   * Classe do **invólucro** (o `<label>` que embrulha a caixa e o texto), e não
-   * da caixa — a mesma regra do `Input` e do `Select`. Sem isto, uma classe de
-   * grelha aterrava no `<button>` da caixa e a linha desfazia-se.
-   */
+  /** Wrapper class (the `<label>` around box and text), not the box's. */
   className?: string;
 }
 

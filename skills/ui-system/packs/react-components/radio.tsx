@@ -6,17 +6,12 @@ export interface RadioGroupProps {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
-  /** A etiqueta do grupo. Um nó, como no `Select`. */
   label?: React.ReactNode;
   description?: React.ReactNode;
-  /**
-   * O nome do grupo para quem lê por som, quando não há `label` à vista. Um
-   * grupo de escolhas sem nome é uma lista de palavras soltas a meio de uma
-   * página.
-   */
+  /** The group's accessible name when no visible `label`. */
   'aria-label'?: string;
   disabled?: boolean;
-  /** Classe do **invólucro**, como no `Input` e no `Select`. */
+  /** Wrapper class, as in `Input` and `Select`. */
   className?: string;
   children: React.ReactNode;
 }
@@ -36,9 +31,7 @@ export function RadioGroup({
     <BaseRadioGroup
       value={value}
       defaultValue={defaultValue}
-      // O Base UI entrega `unknown` (o valor pode ser qualquer coisa) e um
-      // segundo argumento com o evento. Cá fora a assinatura fica simples, como
-      // no `Select`.
+      // Base UI sends `unknown`; callers get a string, as in `Select`.
       onValueChange={(v) => onValueChange?.(String(v))}
       disabled={disabled}
       data-ui="radio-group"
@@ -59,11 +52,10 @@ export interface RadioProps
     React.ComponentPropsWithoutRef<typeof BaseRadio.Root>,
     'className'
   > {
-  /** O nome da opção. Um nó, como no resto do catálogo. */
   label?: React.ReactNode;
-  /** A frase por baixo do nome. */
+  /** The sentence under the name. */
   description?: React.ReactNode;
-  /** Classe do **invólucro** (o `<label>` que embrulha o ponto e o texto). */
+  /** Wrapper class (the `<label>` around dot and text). */
   className?: string;
 }
 

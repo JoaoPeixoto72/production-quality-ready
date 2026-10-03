@@ -1,71 +1,65 @@
-# Playbook de Migração: Transição Suave e Não-Destrutiva
+# Migration playbook: smooth and non-destructive
 
 ## Contents
 
-- Regra de Ouro: Migração Não-Destrutiva
-- Fase 0: Auditoria e Inventário
-- Fase 1: Fundação de Tokens (Sem Quebras)
-- Fase 2: Migração dos Controles Atómicos
-- Fase 3: Superfícies e Layout Shell
-- Fase 4: Overlays e Componentes Complexos
-- Fase 5: Limpeza e Auditoria Final
+- Golden rule: non-destructive migration
+- Phase 0: audit and inventory
+- Phase 1: token foundation (no breakage)
+- Phase 2: atomic controls
+- Phase 3: surfaces and layout shell
+- Phase 4: overlays and complex components
+- Phase 5: cleanup and final audit
 
-Este manual define o procedimento determinístico para transformar uma aplicação existente (com design genérico, Tailwind cru, Radix, Shadcn antigo ou MUI) na arquitetura **Base UI + HeroUI v3 CSS**, sem interromper o funcionamento nem quebrar a compilação do projeto.
+The deterministic procedure to move an existing app (generic design, raw
+Tailwind, Radix, old Shadcn or MUI) onto **Base UI + HeroUI v3 CSS**, without
+stopping it from working or building.
 
----
-
-## Regra de Ouro: Migração Não-Destrutiva
+## Golden rule: non-destructive migration
 
 > [!IMPORTANT]
-> Uma migração **nunca** apaga classes antigas ou desinstala pacotes na primeira fase. A aplicação tem de se manter compilável e testável a cada passo. A transição faz-se por **camadas concêntricas**: Fundação de Tokens → Controles Atómicos → Superfícies de Layout → Overlays → Limpeza Final.
+> A migration **never** deletes old classes or uninstalls packages in its first
+> phase. The app stays buildable and testable at every step. It moves in
+> **concentric layers**: token foundation → atomic controls → layout surfaces →
+> overlays → final cleanup.
 
----
+## Phase 0: audit and inventory
 
-## Fase 0: Auditoria e Inventário
-
-Antes de modificar código, o agente executa a inspeção automatizada da app de destino:
+Before touching code, run the automated inspection on the target app:
 
 ```bash
 python .claude/skills/ui-system/scripts/audit_ui.py .
 ```
 
-O script identifica:
-1. Todas as bibliotecas de UI instaladas no `package.json` (ex: `@radix-ui/*`, `@headlessui/*`, `antd`, `@mui/*`).
-2. Todas as ocorrências de cores hexadecimais soltas (`#1e293b`, `#3b82f6`, etc.).
-3. Classes arbitrárias de Tailwind (`bg-[#...]`, `text-[13px]`).
+It finds:
+1. Every UI library in `package.json` (`@radix-ui/*`, `@headlessui/*`, `antd`, `@mui/*`).
+2. Every loose hex colour (`#1e293b`, `#3b82f6`, …).
+3. Arbitrary Tailwind classes (`bg-[#...]`, `text-[13px]`).
 
-O agente cria um ficheiro de controlo na pasta de trabalho que o repositório ignora, `.work/ui-migration.md`, com a checklist gerada:
+Keep the checklist in the ignored work folder, `.work/ui-migration.md`:
 ```markdown
-# Checklist de Migração de UI
+# UI migration checklist
 
-- [ ] Fase 1: Fundação de Tokens injetada e compilando
-- [ ] Fase 2: Botões e Inputs migrados
-- [ ] Fase 3: Layout Shell e Superfícies (content1/content2)
-- [ ] Fase 4: Modais e Menus migrados para Base UI
-- [ ] Fase 5: Dependências antigas removidas e auditoria limpa
+- [ ] Phase 1: token foundation injected and building
+- [ ] Phase 2: buttons and inputs migrated
+- [ ] Phase 3: layout shell and surfaces (content1/content2)
+- [ ] Phase 4: dialogs and menus on Base UI
+- [ ] Phase 5: old dependencies removed, audit clean
 ```
 
----
+## Phase 1: token foundation (no breakage)
 
-## Fase 1: Fundação de Tokens (Sem Quebras)
-
-1. Instalar as dependências essenciais:
+1. Install the essentials:
    ```bash
    npm install @base-ui/react clsx tailwind-merge class-variance-authority lucide-react
    ```
-2. Adicionar o ficheiro `tokens.css` aos estilos globais do projeto:
-   - Se existir `src/globals.css` ou `src/index.css`, importar o `tokens.css` no topo.
-3. Se o projeto usar Tailwind, estender o `tailwind.config.ts` com as novas chaves semânticas (`content1`..`content4`, `primary`, etc.).
-4. **Verificação obrigatória**: Rodar `npm run build` ou o linter do projeto. Nada deve quebrar porque as classes antigas continuam intactas.
+2. Import `tokens.css` at the top of the global styles (`src/globals.css` or `src/index.css`).
+3. With Tailwind, extend `tailwind.config.ts` with the semantic keys (`content1`..`content4`, `primary`, …).
+4. **Required check**: `npm run build` or the project's linter. Nothing breaks: the old classes are untouched.
 
----
+## Phase 2: atomic controls
 
-## Fase 2: Migração dos Controles Atómicos
-
-Substituir elementos interativos mais comuns:
-
-### 1. Botões
-- Mapeamento direto de estilos antigos para as variantes do HeroUI v3:
+### 1. Buttons
+- Map old styles onto the HeroUI v3 variants:
   - `<button className="bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2">`
     → `<Button variant="solid" color="primary">`
   - `<button className="border border-gray-300 text-gray-700 rounded px-3 py-1">`
@@ -73,53 +67,31 @@ Substituir elementos interativos mais comuns:
   - `<button className="bg-gray-100 hover:bg-gray-200 text-gray-800">`
     → `<Button variant="flat">`
 
-### 2. Inputs e Campos de Texto
-- Substituir inputs nativos com bordas duras pelo blueprint `components/ui/input.tsx` (Base UI Field), garantindo foco tátil e superfícies `bg-content3`.
+### 2. Inputs and text fields
+- Replace hard-bordered native inputs with the `components/ui/input.tsx` blueprint (Base UI Field): tactile focus, `bg-content3` surfaces.
 
----
+## Phase 3: surfaces and layout shell
 
-## Fase 3: Superfícies e Layout Shell
+This phase removes the flat look at once:
 
-Esta fase transforma imediatamente a perceção visual da aplicação eliminando o visual plano:
+1. **Base canvas**: in the root container (`App.tsx`, `layout.tsx` or `<body>`), replace `bg-slate-900`, `bg-gray-900` or `bg-gray-50` with `bg-background text-foreground`.
+2. **Primary surfaces (`content1`)**: navbar, sidebar and structural panels get `bg-content1 border-r border-default-200/50`.
+3. **Secondary surfaces (`content2`)**: lists, tables and inner cards get `bg-content2 rounded-large border border-default-200/40`.
 
-1. **Tela Base**:
-   - Procurar o contêiner raiz (geralmente em `App.tsx`, `layout.tsx` ou `<body>`).
-   - Substituir `bg-slate-900`, `bg-gray-900` ou `bg-gray-50` por `bg-background text-foreground`.
+## Phase 4: overlays and complex components
 
-2. **Superfícies Primárias (`content1`)**:
-   - Identificar a Navbar, Sidebar e painéis estruturais.
-   - Aplicar `bg-content1 border-r border-default-200/50`.
+1. **Dialogs**: replace hand-made `isOpen && <div className="fixed...">` with Base UI's `Dialog`; backdrop `backdrop-blur-md bg-black/40`.
+2. **Dropdowns and menus**: Base UI's Menu, with automatic positioning and no overflow or z-index breakage.
 
-3. **Superfícies Secundárias (`content2`)**:
-   - Identificar listas, tabelas e cartões internos.
-   - Aplicar `bg-content2 rounded-large border border-default-200/40`.
+## Phase 5: cleanup and final audit
 
----
-
-## Fase 4: Overlays e Componentes Complexos
-
-Migração de componentes com estado e acessibilidade:
-
-1. **Modais / Diálogos**:
-   - Substituir implementações manuais de `isOpen && <div className="fixed...">` pelo componente `Dialog` do Base UI.
-   - Adicionar o backdrop com `backdrop-blur-md bg-black/40`.
-
-2. **Dropdowns e Menus**:
-   - Migrar para o Menu do Base UI, aproveitando o posicionamento automático sem risco de overflow ou quebra de z-index.
-
----
-
-## Fase 5: Limpeza e Auditoria Final
-
-1. Reexecutar o script:
+1. Run the script again:
    ```bash
    python .claude/skills/ui-system/scripts/audit_ui.py .
    ```
-2. Confirmar que:
-   - Cores hexadecimais arbitrárias caíram drasticamente ou foram a zero.
-   - Não há imports órfãos de bibliotecas antigas de UI.
-3. Se algum pacote antigo (ex: `@radix-ui/react-dialog`) já não tiver qualquer ficheiro a importá-lo, removê-lo:
+2. Confirm that arbitrary hex colours dropped sharply or to zero, and no old UI library import is orphaned.
+3. Remove any old package no file imports any more:
    ```bash
    npm uninstall @radix-ui/react-dialog
    ```
-4. Eliminar o ficheiro de controlo `.work/ui-migration.md` após confirmação do utilizador.
+4. Delete `.work/ui-migration.md` once the user confirms.

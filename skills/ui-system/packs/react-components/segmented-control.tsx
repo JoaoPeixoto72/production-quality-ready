@@ -1,21 +1,11 @@
 import * as React from 'react';
-import { useEscolhaPorSetas } from './escolha';
+import { useArrowChoice } from './arrow-choice';
 import { Tooltip } from './tooltip';
 
 export interface SegmentedOption<T extends string> {
   value: T;
-  /** Um nó, e não só uma string — como no `Select`. */
   label: React.ReactNode;
-  /**
-   * O que aparece ao passar o rato, no `Tooltip` deste catálogo e não num
-   * `title` do browser.
-   *
-   * **Numa opção desligada não abre**, e não há volta a dar aqui: o browser não
-   * entrega eventos de rato a um controlo com `disabled`, e o invólucro que
-   * resolveria isso passaria a ser o item da linha de pílulas. Uma opção que
-   * precise de explicar porque está desligada pede cartões (`RadioCards`), que
-   * têm uma `description` à vista.
-   */
+  /** Hover text via this catalog's `Tooltip`. Never opens on a disabled option: use `RadioCards` to explain one. */
   title?: React.ReactNode;
   disabled?: boolean;
 }
@@ -24,26 +14,14 @@ export interface SegmentedControlProps<T extends string> {
   value: T;
   onValueChange: (value: T) => void;
   options: SegmentedOption<T>[];
-  /**
-   * O nome do grupo, para quem lê por som. **Não tem texto por omissão** — um
-   * grupo de escolhas sem nome é uma lista de palavras soltas a meio de uma
-   * página, e um componente de sistema não sabe em que língua a app está.
-   */
+  /** The group's accessible name. No default: a system component does not know the app's language. */
   label: string;
-  /** Classe do invólucro, como no `Select` e no `Input`. */
   className?: string;
 }
 
 /**
- * Uma escolha entre poucas, em pílulas na mesma linha.
- *
- * É um `radiogroup` de `<button>`s; o porquê e a mecânica do teclado estão no
- * `escolha.ts`, que esta e os `RadioCards` partilham.
- *
- * **Quando é que se usa isto e não os `RadioCards`:** quando cada opção se
- * explica pelo próprio nome. Uma linha de sete pílulas diz «16:9» e acabou; se
- * for preciso uma frase por opção — quem não sabe o que é um Matroska não
- * decide por um nome de três letras —, são cartões.
+ * One choice among few, as pills on a line, when each option explains itself by
+ * its name; one that needs a sentence is `RadioCards`. Keyboard: `arrow-choice.ts`.
  */
 export function SegmentedControl<T extends string>({
   value,
@@ -52,41 +30,38 @@ export function SegmentedControl<T extends string>({
   label,
   className,
 }: SegmentedControlProps<T>) {
-  const { grupo, aoTeclar } = useEscolhaPorSetas(value, options, onValueChange);
+  const { group, onKeyDown } = useArrowChoice(value, options, onValueChange);
 
   return (
     <div
-      ref={grupo}
+      ref={group}
       data-ui="segmented"
       role="radiogroup"
       aria-label={label}
       className={className}
-      onKeyDown={aoTeclar}
+      onKeyDown={onKeyDown}
     >
       {options.map((o) => {
-        const escolhida = o.value === value;
-        const pilula = (
+        const chosen = o.value === value;
+        const pill = (
           <button
             type="button"
             role="radio"
-            aria-checked={escolhida}
+            aria-checked={chosen}
             data-ui="segmented-item"
             data-value={o.value}
             disabled={o.disabled}
-            tabIndex={escolhida ? 0 : -1}
+            tabIndex={chosen ? 0 : -1}
             onClick={() => onValueChange(o.value)}
           >
             {o.label}
           </button>
         );
-        // Sem `title`, sai a pílula nua: o `Tooltip` cola-se por dentro do
-        // filho, mas um `Root` por pílula é estado que não faz falta nenhuma
-        // numa linha de sete.
         return o.title === undefined || o.title === '' ? (
-          <React.Fragment key={o.value}>{pilula}</React.Fragment>
+          <React.Fragment key={o.value}>{pill}</React.Fragment>
         ) : (
           <Tooltip key={o.value} content={o.title}>
-            {pilula}
+            {pill}
           </Tooltip>
         );
       })}

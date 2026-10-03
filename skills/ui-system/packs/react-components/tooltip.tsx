@@ -1,13 +1,8 @@
 import * as React from 'react';
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
 
-/**
- * A seta, quando ela é pedida. **Um `<div>` vazio não tem forma nenhuma** — o
- * `Tooltip.Arrow` do Base UI rende um `<div>`, e a regra do `core.css` só lhe
- * dava uma `color`. Um desenho com `currentColor` é o que faz essa `color`
- * querer dizer alguma coisa, e é por isso que ele está aqui e não no CSS.
- */
-function Seta() {
+/** Base UI's `Tooltip.Arrow` is an empty `<div>`: this shape gives `core.css`'s `color` something to fill. */
+function Arrow() {
   return (
     <svg width="10" height="5" viewBox="0 0 10 5" aria-hidden="true">
       <path d="M0 5 L5 0 L10 5 Z" fill="currentColor" />
@@ -16,56 +11,36 @@ function Seta() {
 }
 
 export interface TooltipProps {
-  /** O que a dica diz. */
   content: React.ReactNode;
   /**
-   * **Um elemento só, e a dica cola-se por dentro dele** (o `render` do Base
-   * UI): os gestos do rato e do teclado vão para o próprio filho, e não sobra
-   * elemento nenhum a mais no DOM.
-   *
-   * O `Tooltip.Trigger` rende um `<button>` por omissão, e embrulhar o filho
-   * nele punha um botão dentro de outro em metade dos sítios — HTML inválido,
-   * que o browser desfaz sozinho e deixa o gatilho partido em dois.
-   *
-   * **Um filho desligado não recebe o rato.** O browser não entrega eventos de
-   * rato a um controlo com `disabled`, e por isso a dica nunca abre. Quem a
-   * quer aí tem de pôr por fora um invólucro com caixa própria e dá-lo como
-   * filho — um `display: contents` não serve, porque sem caixa não há
-   * rectângulo contra o qual posicionar a dica.
+   * One element; the tooltip attaches inside it (Base UI `render`), so no extra
+   * `<button>` wraps it. A disabled child gets no mouse events: wrap it in a box
+   * with its own layout (not `display: contents`) to give it a tooltip.
    */
   children: React.ReactElement;
-  /** De que lado do gatilho ela aparece. Vira-se sozinha se não couber. */
+  /** Side of the trigger; flips when it does not fit. */
   placement?: 'top' | 'bottom' | 'left' | 'right';
-  /** Como se alinha contra o gatilho, nesse lado. */
   align?: 'start' | 'center' | 'end';
-  /**
-   * A distância ao gatilho. Com seta é maior, porque a seta ocupa a folga —
-   * os mesmos dois valores do HeroUI.
-   */
+  /** Distance to the trigger; larger with an arrow (HeroUI's two values). */
   offset?: number;
   /** @default false */
   showArrow?: boolean;
-  /** Quanto tempo o rato tem de lá ficar antes de ela abrir, em ms. */
+  /** Hover time before opening, ms. */
   delay?: number;
-  /** Quanto tempo ela fica depois de o rato sair, em ms. */
+  /** Time it stays after the pointer leaves, ms. */
   closeDelay?: number;
-  /** Desligada, não abre de maneira nenhuma — nem por rato nem por foco. */
+  /** Never opens, by pointer or focus. */
   isDisabled?: boolean;
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Classe da caixa da dica, para quem precise de a alargar ou apertar. */
   className?: string;
 }
 
 /**
- * A frase que aparece ao parar o rato — ou o foco do teclado — sobre uma coisa.
- *
- * **É o substituto do `title` do browser**, que não tem formatação nenhuma e
- * não aparece a quem anda pelo teclado. Aqui é um `role="tooltip"` com a
- * superfície do tema, ligado ao gatilho por `aria-describedby`: uma *descrição*
- * e não um nome, e por isso um botão só com um ícone continua a precisar do seu
- * `aria-label`.
+ * The browser `title` replacement: themed, and shown on keyboard focus too. A
+ * `role="tooltip"` tied by `aria-describedby` — a description, not a name, so an
+ * icon-only button still needs its `aria-label`.
  */
 export function Tooltip({
   content,
@@ -89,10 +64,7 @@ export function Tooltip({
       onOpenChange={onOpenChange}
       disabled={isDisabled}
     >
-      {/* Sem `data-ui` nenhum, e de propósito: com o `render`, o gatilho **é**
-          o filho, e um elemento só pode ter um slot. Pôr-lhe
-          `tooltip-trigger` apagava o `button` (ou o `chip`, ou o `input`) que
-          ele já era, e com ele o desenho todo. */}
+      {/* No `data-ui`: the trigger is the child, and its own slot must survive. */}
       <BaseTooltip.Trigger
         delay={delay}
         closeDelay={closeDelay}
@@ -108,7 +80,7 @@ export function Tooltip({
           <BaseTooltip.Popup data-ui="tooltip-popup" className={className}>
             {showArrow && (
               <BaseTooltip.Arrow data-ui="tooltip-arrow">
-                <Seta />
+                <Arrow />
               </BaseTooltip.Arrow>
             )}
             {content}
