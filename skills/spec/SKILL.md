@@ -1,9 +1,7 @@
 ---
 name: spec
 description: "Write the spec before the code: problem, acceptance criteria each with its proof, invariants touched, out of scope. Use before a feature or a decision-heavy change. Not for reviewing a diff (review-change) or finding a cause (diagnose)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write, Edit
+allowed-tools: Read Glob Grep Bash Write Edit
 ---
 
 # spec

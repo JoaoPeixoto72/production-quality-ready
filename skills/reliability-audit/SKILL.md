@@ -1,13 +1,12 @@
 ---
 name: reliability-audit
 description: "Audit that data survives and failures can be diagnosed: atomic writes, migrations from every version, crash mid-write, resume, logs, correlation-id, PII redaction. Use for data loss or migration safety. Not for one cause (diagnose)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # reliability-audit
+
+Read-only: it reads the code and the running system, and writes only its own output; it changes nothing else.
 
 Two sentences own this skill:
 

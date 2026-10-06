@@ -1,15 +1,12 @@
 ---
 name: verify
 description: "Test a change in the running app: launch it, drive real actions, capture before/after artefacts and compare. Web via browser automation, desktop via drive-app-window. Use for 'see this working'. Not for running the test suite (code-review)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-requires-adapter: true
-adapter-contract: adapter-contracts/verify.md
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # verify
+
+It drives the running app and captures artefacts; it never edits the code.
 
 **What tests can't catch is on the screen.** This skill decides *what*
 to prove and *how to read* what the app returns. The mechanism that

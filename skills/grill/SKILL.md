@@ -1,9 +1,7 @@
 ---
 name: grill
 description: "Interrogate a plan until nothing is assumed: work its design tree in rounds, ask only the unblocked frontier, a recommended answer beside each question, facts found not asked. Use before building it. Not for writing the criteria (spec)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # grill

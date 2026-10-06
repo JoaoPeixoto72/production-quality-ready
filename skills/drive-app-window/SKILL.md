@@ -1,14 +1,12 @@
 ---
 name: drive-app-window
 description: "Test a change in a running desktop window on Windows: click, type, drag, scroll, full-content screenshot (Win32, WebView2, Tauri, Electron). Use when verify needs a desktop driver. Closes no verdict. Not for web apps (use a browser instead)."
-contract: CONTRACTS.md
-argument-hint: "-Title <window> -Process <exe without .exe> -Action <content|shot|crop|screen|click|hover|drag|wheel|rawkeys|list>"
-platforms: [desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # Drive an app window from the terminal
+
+It drives the app window and captures artefacts; it never edits the code.
 
 What tests cannot catch is in the window. This is the harness to get there,
 and the five things that break on the way.

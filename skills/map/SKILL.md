@@ -1,9 +1,7 @@
 ---
 name: map
 description: "Chart work too large for one session as a decision-ticket map: destination, decisions so far, the fog you cannot specify yet, what is out of scope. Use when the route is not visible. Not for sequencing a clear plan (slice)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write, Edit
+allowed-tools: Read Glob Grep Bash Write Edit
 ---
 
 # map

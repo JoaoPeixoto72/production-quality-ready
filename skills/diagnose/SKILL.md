@@ -1,9 +1,7 @@
 ---
 name: diagnose
 description: "Diagnose a bug with a feedback loop that fails on it: reproduce, minimise, rank hypotheses, fix at the cause, lock it with a regression test. Use when something is broken and you cannot say why. Not for reviewing a diff (review-change)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # diagnose

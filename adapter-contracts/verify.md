@@ -8,10 +8,11 @@ Contract a local `verify` adapter must provide.
 ---
 name: <local-name>                        # not the plugin skill's name (POLICY §3.2)
 extends: production-quality-ready:verify
-contract: production-quality-ready/CONTRACTS.md
-allowed-tools: Read, Glob, Grep, Bash
+allowed-tools: Read Glob Grep Bash
 ---
 ```
+
+The adapter body names the contract it is judged under, never a copy or a version: `production-quality-ready/CONTRACTS.md` (POLICY Â§3.1).
 
 ## Required body sections
 

@@ -1,10 +1,7 @@
 ---
 name: handoff
 description: "Package finished work: a pull-request body with Summary, Evidence before and after, and Merge Danger, or a session handoff file for the next agent. Use when a change goes to review. Not for the state document (close-work)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-argument-hint: "What will the next session be used for?"
-allowed-tools: Read, Glob, Grep, Bash, Write
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # handoff

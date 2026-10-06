@@ -1,7 +1,7 @@
 # CONTRACTS — plugin `production-quality-ready`
 
 Plugin mechanical contract. **Authoritative.** Every plugin skill refers
-to this file by its root (`contract: CONTRACTS.md`). A discrepancy
+to this file by its root in its body. A discrepancy
 between this file and a skill is always the skill's defect.
 
 This file **does not describe workflows** — it describes *what counts

@@ -1,11 +1,7 @@
 ---
 name: design-pro
 description: "Audit UX, accessibility (WCAG 2.2 AA, criterion named) and i18n on running screens; owns the a11y verdict. Use for 'review this screen', onboarding, checkout, or an accessibility audit. Not for building the design system (ui-system)."
-contract: CONTRACTS.md
-rule-version: wcag-2.2-AA
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # design-pro

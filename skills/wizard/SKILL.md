@@ -1,9 +1,7 @@
 ---
 name: wizard
 description: "Generate an interactive bash wizard for the steps only a person can take: provisioning, API keys, a dashboard setting, a CI secret. Use when a release is blocked on what no agent can do. Not for steps an agent runs (ship)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # wizard

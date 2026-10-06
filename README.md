@@ -125,7 +125,6 @@ what is missing.
 | `spec` | requirements before code: criteria, out of scope, proof per criterion | both | — (writes the spec) |
 | `diagnose` | cause before fix: a tight feedback loop, ranked hypotheses, regression test | both | repro + test |
 | `grill` | interrogate a plan: design tree, rounds, a recommended answer per question | both | — |
-| `spec` | requirements before code: criteria, out of scope, proof per criterion | both | — (writes the spec) |
 | `slice` | tracer-bullet slices with blocking edges, expand–contract for wide refactors | both | — (writes the slices) |
 | `map` | chart work too large for one session: destination, frontier, fog, out of scope | both | — |
 | `research` | answer a question from primary sources, cited and versioned | both | source lookup |
@@ -148,10 +147,15 @@ what is missing.
 | `audit-website` | 360º + deep SEO/GEO engines, SARIF | web | `run_website_audit.mjs`, `seo/run_seo_audit.mjs` |
 | `audit-app` | audit the app: H/V/T/C method + owner-evidence orchestrator | both | `validate_evidence.py` |
 
-Every skill is **model-invoked** except `bootstrap-project`, which the
-user names by hand (`POLICY.md §2.1`) because it writes into the repo.
-Each skill carries `agents/openai.yaml` for Codex's skill picker; Claude
-Code reads `SKILL.md` alone.
+Every skill is **model-invoked** except `bootstrap-project` and `ship`,
+which the user names by hand (`POLICY.md §2.1`): the first writes into
+the repo, the second acts on production.
+
+Frontmatter follows the [Agent Skills](https://agentskills.io) spec
+(`name`, `description`, `allowed-tools`), so a skill loads in any host.
+Host-specific behaviour lives in the body or in a host file: each skill
+carries `agents/openai.yaml` for Codex's skill picker and its explicit
+invocation policy; Claude Code reads `SKILL.md` alone.
 
 Checks tagged for the other platform resolve `NOT_APPLICABLE/platform`
 automatically — a Tauri app is not asked about cookies, a Worker is not

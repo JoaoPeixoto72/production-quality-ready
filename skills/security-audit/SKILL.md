@@ -1,15 +1,12 @@
 ---
 name: security-audit
 description: "Audit security against OWASP ASVS 5.0 and the project's threat model: untrusted input, auth, sessions, tenant isolation, paths, child processes, capabilities, CSP, CVEs, secrets in history. Use for 'is this input/dependency/endpoint safe?'."
-argument-hint: "[path | endpoint | dependency]"
-contract: CONTRACTS.md
-rule-version: owasp-asvs-5.0
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # security-audit
+
+Read-only: it reads the code and the running system, and writes only its own output; it changes nothing else.
 
 Rule: **OWASP ASVS 5.0**, plus the *project's declared threat model*.
 Without a threat model, the audit does not run — the rule is half

@@ -1,11 +1,7 @@
 ---
 name: review-change
 description: "Review a diff on two axes that never merge: does it do what the spec asked, and is it built right (invariants, adversarial matrix, maintainability, proof commands). Use after writing code, before close-work. Not for full audits (audit-app)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-requires-adapter: true
-adapter-contract: adapter-contracts/review-change.md
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # review-change

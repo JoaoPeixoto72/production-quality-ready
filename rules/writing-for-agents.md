@@ -66,6 +66,10 @@ list" does not. The strongest criteria are both checkable and exhaustive.
 - `description` ≤ 250 chars, starts with an action verb, names when it
   runs, and names the sibling that owns the case it refuses
   (`POLICY.md §1.2`).
+- Frontmatter carries only the [Agent Skills](https://agentskills.io)
+  spec fields (`name`, `description`, `allowed-tools`). Host-specific
+  behaviour goes in the body or in a host file such as
+  `agents/openai.yaml` — never a non-spec top-level key.
 - The body carries the steps and the reference every branch needs. Detail
   for one branch goes to `references/`, `scripts/`, or the skill that owns
   it.

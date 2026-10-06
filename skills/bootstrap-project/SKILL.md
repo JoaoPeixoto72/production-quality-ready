@@ -1,10 +1,7 @@
 ---
 name: bootstrap-project
-description: "Write the project's gates.json and its four adapters (start-work, review-change, close-work, verify) from what the repo already declares. Run once after installing the plugin, and again after a plugin major upgrade. Not for audits."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+description: "Write the project's gates.json and its four adapters (start-work, review-change, close-work, verify) from what the repo already declares. Run once after installing the plugin, and again after a plugin major upgrade. Not for audits. User-invoked only."
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # bootstrap-project

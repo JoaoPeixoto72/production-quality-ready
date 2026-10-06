@@ -1,11 +1,7 @@
 ---
 name: audit-app
 description: "Audit the app by the H/V/T/C method (flows, layers, transitions, cross-audit) and/or aggregate owner evidence from .audit/**, apply gates.json gates and write a verdict. Not for websites (audit-website) or one PR (review-change)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-effort: high
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # audit-app
@@ -122,11 +118,9 @@ project's defects list (`close-work`).
 - `scripts/validate_evidence.py`, `scripts/validate_report.py` — validate form,
   not truth. Regression tests in `tests/audit-app/`.
 
-## Anti-patterns
+## Scope
 
-- Running commands declared in the target's `gates.json`. Never. Strict read-only.
-- Accepting `producer == unknown`, or a `PASS` with no `command:` and `log:`.
-- Writing `✓` (or a PASS) from reading code alone. If you cannot verify, say `?`.
-- Invoking another plugin skill. `audit-app` names what is missing; the harness activates.
-- Filling the report with rules the model would follow anyway. State the
-  judgement, not the obvious.
+`audit-app` reads code and evidence and writes one report. It invokes no other
+skill — it names the owner that must produce the missing evidence, and the
+harness activates it. The report states the judgement, not the rules the reader
+already follows.

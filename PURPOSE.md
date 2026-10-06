@@ -173,7 +173,7 @@ the defect to look for.
 | Human-only setup | `wizard` | if an agent can run it, it is not a wizard step |
 | Structural debt | `improve` | no proof of no-change, no refactor |
 
-Every owner declares `platforms:` (web, desktop, both). A project's
+Every owner declares `platforms:` in its `instruments.yaml` (web, desktop, both). A project's
 `gates.json` declares `platform:`; checks tagged for the other platform
 resolve `NOT_APPLICABLE/platform`. This is how one plugin serves a
 Cloudflare Worker and a Tauri binary without inventing rules for either.

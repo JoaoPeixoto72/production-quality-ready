@@ -1,11 +1,7 @@
 ---
 name: close-work
 description: "Run at the end of every session, after review-change, before commit: rewrite ESTADO.md ('one subject, one owner; reason stays, history goes') writing only what the code cannot say. Not for opening a session (start-work)."
-contract: CONTRACTS.md
-requires-adapter: true
-adapter-contract: adapter-contracts/close-work.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # close-work

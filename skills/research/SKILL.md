@@ -1,9 +1,7 @@
 ---
 name: research
 description: "Answer a question from primary sources and write it down, each claim with the source and the version it holds for. Use when a decision waits on a fact outside this codebase. Not for interrogating a plan (grill)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write, WebFetch
+allowed-tools: Read Glob Grep Bash Write WebFetch
 ---
 
 # research

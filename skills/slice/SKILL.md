@@ -1,9 +1,7 @@
 ---
 name: slice
 description: "Cut an agreed spec into tracer-bullet slices, each through every layer and verifiable alone, with blocking edges, and expand-contract for a wide refactor. Use when the criteria exist. Not for an unclear route (map)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # slice

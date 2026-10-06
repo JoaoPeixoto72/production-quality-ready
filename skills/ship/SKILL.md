@@ -1,10 +1,7 @@
 ---
 name: ship
-description: "Deploy a verified change to production: version and changelog, tag, deploy, smoke the real environment, rollback named before starting. Use when the release is ready. Not for auditing how releases are declared (release-audit)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+description: "Deploy a verified change to production: version and changelog, tag, deploy, smoke the real environment, rollback named before starting. Use when the release is ready. Not for auditing how releases are declared (release-audit). User-invoked only."
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # ship

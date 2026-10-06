@@ -1,13 +1,12 @@
 ---
 name: code-review
 description: "Audit code repo-wide and write .audit evidence: build, tests, oracles, races, IPC/API contracts, maintainability budgets (size, nesting, params), perf. Not for one diff before commit (review-change) or CVEs (security-audit)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # code-review
+
+Read-only: it reads the code and the running behaviour, and writes only its own output; it changes nothing else.
 
 Single owner for **correctness and maintainability of code**: what
 happens inside a layer when it runs, what crosses a boundary between

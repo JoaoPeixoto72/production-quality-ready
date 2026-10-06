@@ -1,11 +1,7 @@
 ---
 name: start-work
 description: "Run at the start of every conversation and before new code: read the state document, confirm build and tests at HEAD, name the canonical owner of the code about to change, prevent duplication. Not for review or close (close-work)."
-contract: CONTRACTS.md
-requires-adapter: true
-adapter-contract: adapter-contracts/start-work.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # start-work

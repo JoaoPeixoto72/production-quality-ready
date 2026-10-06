@@ -1,9 +1,7 @@
 ---
 name: improve
 description: "Find where a codebase is hard to change, rank the candidates by what they unblock against their blast radius, and write the refactor plan a slice can execute. Use when the structure is the problem. Not for the pre-commit review (review-change)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # improve

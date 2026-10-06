@@ -1,10 +1,7 @@
 ---
 name: ui-system
 description: "Build, migrate or audit the design system: OKLCH tokens, 4 elevations, data-ui contract, @project/ui boundary, executable audit_ui.py. CSS core is framework-agnostic; React components optional. Use for new app/page, DS component, migration."
-contract: CONTRACTS.md
-argument-hint: "[create | migrate | audit | review | extend | theme | profile] [options]"
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # ui-system

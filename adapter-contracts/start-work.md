@@ -8,10 +8,11 @@ Contract a local `start-work` adapter must provide.
 ---
 name: <local-name>                        # not the plugin skill's name (POLICY §3.2)
 extends: production-quality-ready:start-work
-contract: production-quality-ready/CONTRACTS.md
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 ```
+
+The adapter body names the contract it is judged under, never a copy or a version: `production-quality-ready/CONTRACTS.md` (POLICY Â§3.1).
 
 ## Required body sections
 

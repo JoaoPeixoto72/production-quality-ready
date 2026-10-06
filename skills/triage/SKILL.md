@@ -1,9 +1,7 @@
 ---
 name: triage
 description: "Move incoming issues and pull requests through triage roles: categorise, verify the claim against the code, interrogate if it needs shape, leave an agent-ready brief. Use when issues arrive. Not for approved work (slice)."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Write, Edit
+allowed-tools: Read Glob Grep Bash Write Edit
 ---
 
 # triage

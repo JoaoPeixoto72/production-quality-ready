@@ -1,9 +1,7 @@
 ---
 name: prototype
 description: "Build throwaway code that answers one design question: a logic walkthrough a non-developer can drive, or several UI variants on one route. Use when the question is how it should look or behave. Not the real implementation."
-contract: CONTRACTS.md
-platforms: [web, desktop]
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # prototype

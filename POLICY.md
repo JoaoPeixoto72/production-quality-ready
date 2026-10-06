@@ -112,7 +112,7 @@ Every owner is **model-invoked**; two skills are **user-invoked**, because
 an automatic trigger can cost more than it saves: `bootstrap-project`
 writes adapters into a repo and a re-run rewrites what an earlier run
 wrote, and `ship` acts on production, where the person owns that decision.
-Both carry `disable-model-invocation: true` (Claude Code) and
+Both say so in their `description` ("User-invoked only.") and carry
 `policy.allow_implicit_invocation: false` in `agents/openai.yaml` (Codex);
 the user reaches each by name in either harness.
 
@@ -186,9 +186,9 @@ and specific invariants.
 
 ### 3.1 Frontmatter
 
-The universal skill carries `requires-adapter: true` and
-`adapter-contract: adapter-contracts/<name>.md`. The local adapter
-carries `extends: production-quality-ready:<name>`. Without an adapter,
+The universal skill's body names its adapter contract
+(`adapter-contracts/<name>.md`). The local adapter carries
+`extends: production-quality-ready:<name>`. Without an adapter,
 the universal skill returns `NOT_VERIFIED/missing-adapter`
 (`CONTRACTS §4.5`).
 
@@ -220,7 +220,7 @@ frontmatter and body — whatever the project's language. The project's own
 documents (`ESTADO.md`, its guide for agents, code comments) keep the
 project's language.
 
-The adapter's `contract:` names the file, never a copy or a version:
+The adapter names its contract file in its body, never a copy or a version:
 `production-quality-ready/CONTRACTS.md`. A copy in the project would be
 a second owner of the contract, and it drifts the day the plugin
 updates.

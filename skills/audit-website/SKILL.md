@@ -1,13 +1,12 @@
 ---
 name: audit-website
 description: "Audit a public web surface with two engines: 360º (SEO, CWV, cookies, analytics, CRO, spider, WCAG) and deep SEO/GEO with SARIF. Use for 'audit my website', landing, storefront, SEO or Core Web Vitals. Not for software behind login (audit-app)."
-contract: CONTRACTS.md
-platforms: [web]
-allowed-tools: Read, Glob, Grep, Bash, Write
-disallowed-tools: Edit, MultiEdit, NotebookEdit
+allowed-tools: Read Glob Grep Bash Write
 ---
 
 # audit-website
+
+Read-only: it inspects the public surface and writes only its own output; it changes nothing else.
 
 Owner of everything a **public web surface** exposes before login:
 discovery (SEO/GEO), Core Web Vitals, privacy in runtime (cookies fire
