@@ -111,6 +111,12 @@ use the audit-app skill
 `docs/audits/<date>-<scope>.md`. Owners with no evidence show
 `BLOCKED (n/m)`; that is the honest state, not a bug.
 
+It can also **carry the audit itself**: with no owner evidence to aggregate, it
+reads the code by the H/V/T/C method — flows (H), layers (V), transitions (T)
+and the cross-audit (C), with the cross-cutting concerns verified on the relevant
+axes — and produces an Evidence Matrix, where a `✓` needs a proof and a `?` says
+what is missing.
+
 ## The skills
 
 | Skill | Role | Platforms | Runs code? |
@@ -140,7 +146,7 @@ use the audit-app skill
 | `release-audit` | reproducible build, lockfiles, SBOM; signing (desktop), deploy/rollback (web) | both | ci/sbom checks |
 | `commercial-readiness` | SELL-01..06 for licensed and subscription; legal; SLA | both | billing/licensing harness |
 | `audit-website` | 360º + deep SEO/GEO engines, SARIF | web | `run_website_audit.mjs`, `seo/run_seo_audit.mjs` |
-| `audit-app` | read-only orchestrator | both | `validate_evidence.py` |
+| `audit-app` | audit the app: H/V/T/C method + owner-evidence orchestrator | both | `validate_evidence.py` |
 
 Every skill is **model-invoked** except `bootstrap-project`, which the
 user names by hand (`POLICY.md §2.1`) because it writes into the repo.
