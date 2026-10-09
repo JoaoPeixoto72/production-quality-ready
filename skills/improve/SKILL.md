@@ -32,9 +32,21 @@ exists yet, the first candidate is the test that creates it, not the move.
 repeats. Cite them; never re-declare a threshold here. Run the scan across the
 whole codebase, not over a diff — a diff review is `review-change`.
 
+## Scope first, and read what is already decided
+
+Structure pays off where change keeps happening. Unless the owner named an
+area, take the hot spots from `git log` (the paths that keep coming back) and
+look there first, counting code only (generated media, catalogues and docs
+drown the signal); if the history is scattered, widen the net. A candidate in
+files with someone else's uncommitted changes is deferred, not planned. Before scanning,
+read the project's closed decisions (its instructions file, the state document,
+ADRs if any): a candidate that contradicts one is surfaced only when the
+friction is real, and says so.
+
 ## Find the candidates
 
-Look for structure, not for bugs:
+Look for structure, not for bugs. Walk the code the way a change would, and note
+where it hurts; do not run down the list as a checklist:
 
 | Signal | What it looks like |
 |---|---|
@@ -43,6 +55,11 @@ Look for structure, not for bugs:
 | **Repeated conditional** | the same `if` about the same concept in several places — a model is missing |
 | **Pass-through indirection** | a wrapper that forwards, a boolean flag that selects a branch, a name that says nothing |
 | **Reachable state** | one piece of state mutated from everywhere, so no change is local |
+
+For a suspected shallow module, apply the **deletion test**: if deleting it
+would concentrate the complexity in its callers, it earns its place; if the
+complexity only moves, it is pass-through and a candidate. One implementation
+behind an interface is a hypothetical seam; two make it real.
 
 Name each candidate by the **concept**, not the file: "the refund decision is
 spread across three modules", not "refactor refund.ts".
@@ -63,6 +80,15 @@ and sequenced as expand–contract when they cannot land green in one step
 - the proof that behaviour held (the command or test, not the intention);
 - what is explicitly **out of scope** in this refactor, so the work does not
   grow while it moves.
+
+Lead the plan with the decisions the owner is most likely to change (data
+shapes, interfaces, who owns what); mechanical moves go last. Keep it to what
+the code and a test cannot say, and put it where the project keeps work
+products, not in the repository.
+
+Then interview the owner about the top candidate, one question at a time, each
+with your recommended answer, asking only what would change the shape; facts
+found in the code are not asked (`grill`).
 
 Hand the plan to `slice`, which cuts it into slices with blocking edges; the
 sessions then open with `start-work` and close with `review-change` like any
