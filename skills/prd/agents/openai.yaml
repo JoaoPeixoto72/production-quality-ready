@@ -1,0 +1,3 @@
+interface:
+  display_name: "PRD"
+  short_description: "Write the PRD of a new app by interviewing the owner"

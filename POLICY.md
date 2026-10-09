@@ -69,6 +69,8 @@ Pairs that touch:
 | `spec` ↔ `diagnose` | spec: "broken behaviour — diagnose"; diagnose: "new behaviour — spec" |
 | `reliability-audit` ↔ `diagnose` | reliability: "finding one cause — diagnose"; diagnose: "failure handling in production — reliability-audit" |
 | `grill` ↔ `spec` | grill: "writes what the interview settles — spec"; spec: "runs the interview — grill" |
+| `prd` ↔ `spec` | prd: "one feature in an existing app — spec"; spec: "a whole new app — prd" |
+| `prd` ↔ `bootstrap-project` | prd: "adapting the plugin to code that exists — bootstrap-project"; bootstrap-project: "the new app's requirements — prd" |
 | `slice` ↔ `map` | slice: "the route is not visible yet — map"; map: "the route is already clear — slice" |
 | `research` ↔ `grill` | research: "makes the decisions — grill"; grill: "supplies the facts — research" |
 | `prototype` ↔ `spec` | prototype: "turns the answer into criteria — spec"; spec: "answers a design question — prototype" |
@@ -163,6 +165,7 @@ Consequence: an owner can run alone. Nightly CI running only
 | `start-work` / `close-work` | Work cadence. Read and rewrite the state document. |
 | `spec` | Writer of requirements. Writes the spec file; closes no check. |
 | `diagnose` | Finder of causes. Writes the reproduction and the regression test; closes no check. |
+| `prd` | Writer of a new app's PRD, CLAUDE.md and regression log; closes no check. |
 | `grill` | Interview. Settles decisions in conversation; closes no check. |
 | `slice` | Breakdown. Writes slices and their blocking edges; closes no check. |
 | `map` | Chart. Writes the map and its decision tickets; closes no check. |

@@ -80,6 +80,7 @@ declared `spec-dir`. Ask only what code cannot tell:
 - **review-change** — reviews the diff against these criteria; it does not
   write them.
 - **grill** — runs the interview; this owner writes what it settles.
+- **prd** — a whole new app; this owner is one feature in an app that exists.
 - **slice** — sequences the work these criteria define.
 - **map** — charts a destination whose route is not visible yet; a spec
   needs a route.

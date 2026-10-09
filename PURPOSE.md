@@ -162,6 +162,7 @@ the defect to look for.
 | Sale, activation or checkout, first run, legal | `commercial-readiness` | the failing paths were walked, not just the happy one |
 | Public web surface: SEO, GEO, CWV, cookies, CRO, links | `audit-website` | 7 pillars + deep SEO engine; consent prior to fire |
 | Requirements: problem, acceptance criteria, out of scope | `spec` | a criterion names the observable proof it needs |
+| New app: PRD, agent instructions, regression log | `prd` | only confirmed decisions; the rest is a pending decision with an owner |
 | Diagnosis: reproduction, cause, regression | `diagnose` | *a bug is fixed when a test that failed on it passes* |
 | Project vocabulary and decisions | `spec` | one term, one meaning; a decision recorded once, never edited |
 | Planning: the way when it is not visible | `map` | plan, don't do — the route is clear when nothing is left to decide |

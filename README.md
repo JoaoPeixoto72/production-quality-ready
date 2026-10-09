@@ -123,6 +123,7 @@ what is missing.
 |---|---|---|---|
 | `bootstrap-project` | generator — **run first** | both | writes files |
 | `spec` | requirements before code: criteria, out of scope, proof per criterion | both | — (writes the spec) |
+| `prd` | PRD of a new app: interview, confirmed decisions only, CLAUDE.md and regression log | both | — (writes the PRD) |
 | `diagnose` | cause before fix: a tight feedback loop, ranked hypotheses, regression test | both | repro + test |
 | `grill` | interrogate a plan: design tree, rounds, a recommended answer per question | both | — |
 | `slice` | tracer-bullet slices with blocking edges, expand–contract for wide refactors | both | — (writes the slices) |
