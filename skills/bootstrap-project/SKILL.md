@@ -1,6 +1,6 @@
 ---
 name: bootstrap-project
-description: "Write the project's gates.json and its four adapters (start-work, review-change, close-work, verify) from what the repo already declares. Run once after installing the plugin, and again after a plugin major upgrade. Not for audits. User-invoked only."
+description: "Write gates.json and the four adapters (start-work, review-change, close-work, verify) from what the repo already declares. Run once after installing the plugin, and again after a plugin major upgrade. Not for audits. User-invoked only."
 allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
@@ -76,7 +76,9 @@ goes stale.
 1. **`<host>/gates.json`** — from `templates/gates.json.template`:
    `platform`, `sales-model`, `stack`, `owners` (applicable +
    `not-applicable` with reason), `adapter-hints` (every detected
-   command, including `migrations-verify-command`), `gates`.
+   command, including `migrations-verify-command`), `waivers` (empty
+   until the project accepts a `FAIL` with a dated reason, CONTRACTS §4.7),
+   `gates`.
 2. **`<host>/skills/<local-name>/SKILL.md`** for each of start-work,
    review-change, close-work and verify, from `templates/skills/*.template`
    with every `{{PLACEHOLDER}}` replaced. Pre-fill:

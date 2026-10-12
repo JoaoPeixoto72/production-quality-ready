@@ -21,7 +21,7 @@ Seven units. One sentence each. No eighth.
 | **Reference** | Knowledge unit. Pays context only when its owning skill loads it. Has a declared owner in the header. |
 | **Instrument** | Detection unit. Produces *candidates*, never findings. A subject has N independent instruments; none closes a verdict on its own. |
 | **Evidence** | What an instrument returned, linked to `path:line` or an observable artifact. Without evidence, no finding. |
-| **Verdict** | The result the rule produces on a check given the evidence. One of: `PASS`, `FAIL`, `NOT_VERIFIED`, `NOT_APPLICABLE`. |
+| **Verdict** | The result the rule produces on a check given the evidence. One of: `PASS`, `FAIL`, `NOT_VERIFIED`, `NOT_APPLICABLE`. A fifth, `WAIVED`, is never written by a producer: it is a `FAIL` the project accepts with a dated waiver (§4.7). |
 | **Gate** | Declarative condition over a set of verdicts that opens or blocks a phase (`Production Ready`, `Release Candidate`, …). A gate has no score; it is binary. |
 
 **Not vocabulary of the contract** — and therefore absent from every
@@ -382,6 +382,44 @@ instrument reads the artefact and verifies what it *claims* — the
 citations resolve, the tests it names exist — which is the difference
 between `sec.threat-model-declared` before and after v3.2.0.
 
+### 4.7 A waiver is dated and project-declared
+
+A `FAIL` is the truth; a waiver is the project choosing to live with it
+— on purpose, in writing, with an expiry. It is declared in
+`gates.json`, never in the evidence file: a producer that could waive
+itself would have no gate.
+
+```json
+"waivers": [
+  {
+    "check": "sell-01-activation",
+    "owner": "commercial-readiness",
+    "reason": "duplicate email accepted; the claim still prevents a double charge",
+    "expires": "2027-01-01",
+    "approved-by": "Joao"
+  }
+]
+```
+
+**Rule 4.7.1.** A waiver is valid only with a `reason`, an `approved-by`
+and an `expires` (ISO `YYYY-MM-DD`) at most **180 days** ahead of the
+day it is read, and it names **one** exact `check` — never a glob. An
+optional `owner` narrows it to that owner. Anything else is `invalid`
+and changes nothing: an undated or far-dated waiver is a permanent one,
+and a glob is a blanket one — the two things this forbids. Renewing a
+waiver is editing its `expires`, in a reviewed commit.
+
+**Rule 4.7.2.** A valid, unexpired waiver rewrites the effective result
+`FAIL` → `WAIVED` (`validate_evidence.py`). `WAIVED` is *accepted* and
+*not open*: it does not count against `no-open`, it resolves a check for
+`coverage-complete`, and it counts for `all-pass-in-owner` — a dated
+waiver is the one mechanism a domain with binary integrity uses to
+accept a known `FAIL` (`security-audit` waives `sec.*` checks only
+through it). An *expired* waiver leaves the `FAIL` standing.
+
+**Rule 4.7.3.** `WAIVED` is not a writable `result:`. A producer that
+writes it is `invalid-result`. Only `gates.json` grants a waiver.
+
 ---
 
 ## 5. Severity taxonomy
@@ -488,9 +526,9 @@ Predicates:
 
 | Predicate | Semantics |
 |---|---|
-| `no-open` | No `FAIL` with `severity:` in the list. |
-| `all-pass-in-owner` | Every check emitted by those owners has `result: PASS`. |
-| `coverage-complete` | **Every** canonical check of the owner (§7.4) resolved to `PASS`, `FAIL` or `NOT_APPLICABLE`; no `NOT_VERIFIED`. An owner without canonicals registered in §7.4 **cannot close** `coverage-complete` — reports `BLOCKED (—/?)` with reason `no-canonical-registry`. Registration in §7.4 is a precondition for closing a gate for that owner. |
+| `no-open` | No `FAIL` with `severity:` in the list. A `WAIVED` (§4.7) is not open. |
+| `all-pass-in-owner` | Every check emitted by those owners is `PASS` or `WAIVED`. |
+| `coverage-complete` | **Every** canonical check of the owner (§7.4) resolved to `PASS`, `FAIL`, `WAIVED` or `NOT_APPLICABLE`; no `NOT_VERIFIED`. An owner without canonicals registered in §7.4 **cannot close** `coverage-complete` — reports `BLOCKED (—/?)` with reason `no-canonical-registry`. Registration in §7.4 is a precondition for closing a gate for that owner. |
 | `conditional` | Sub-requirements evaluated only when the condition holds. Condition evaluated against the project's gate pack. |
 
 ### 7.2 Gate ≠ score

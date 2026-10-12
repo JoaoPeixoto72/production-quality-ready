@@ -58,4 +58,8 @@ Rows that do not apply are `NOT_APPLICABLE` with the reason.
 
 See `instruments.yaml`. `clean-run` (stopwatch), `licensing-harness`
 or `billing-harness` (walks the SELL paths by test), `legal-inspection`.
-A `PASS` without `command` and `log` is invalid (CONTRACTS §4.6).
+For `sell-01-activation` on web, `code-review::webhook-idempotency` adds the
+**static** half (the handler claims the event before the side effects, and the
+claim gates them). It can only `FAIL` this check, never `PASS` it: the `PASS`
+stays the `billing-harness`'s, which delivers the same event twice. A `PASS` without `command` and
+`log` is invalid (CONTRACTS §4.6).

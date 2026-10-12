@@ -8,6 +8,7 @@ the two disagree, `CONTRACTS.md` wins and this file is the defect.
 |---|---|
 | `CANDIDATE` / `CONFIRMED` / `DISMISSED` / `ACCEPTED_RISK` / `OUT_OF_SCOPE` | detection vocabulary (informal) |
 | `PROVEN` / `CLEARED` / `UNPROVEN` / `NOT_APPLICABLE` | §3.1 `result:` — `FAIL` / `PASS` / `NOT_VERIFIED` / `NOT_APPLICABLE` |
+| `ACCEPTED_RISK` | §4.7 `WAIVED` — a `FAIL` with a valid dated waiver in `gates.json`; never written by a producer |
 | `COMPLETE` / `PARTIAL` / `BLOCKED (n/m)` | coverage §4.3 |
 | evidence types (`EXECUTION` / `TEST` / `MEASUREMENT` / `READING` / …) | §3.4 `evidence[].kind` (`source` / `screenshot` / `log` / `measurement` / `command-output` / `external`) |
 

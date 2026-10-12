@@ -226,6 +226,9 @@ function Invoke-JsonInstrument {
         [Parameter(Mandatory)][string]$Owner,
         [Parameter(Mandatory)][string]$Script,      # absolute path
         [Parameter(Mandatory)][string]$Instrument,  # id declared in instruments.yaml
+        [string]$Producer = "",                     # defaults to $Owner; set to file evidence for another owner
+        [string]$CheckOverride = "",                # relabel the instrument's check as the owner's check
+        [string[]]$OnlyResults = @(),               # file only these results (e.g. FAIL); the rest stay with their own owner
         [string]$Rule = "declared-by-owner",
         [string]$RuleVersion = "",
         [string[]]$ExtraArgs = @()
@@ -261,12 +264,13 @@ function Invoke-JsonInstrument {
 
     $ran = 0; $passed = 0; $failed = 0; $nv = 0
     foreach ($r in $report.results) {
+        if ($OnlyResults.Count -gt 0 -and $OnlyResults -notcontains [string]$r.result) { continue }
         $ev = @()
         if ($r.PSObject.Properties['evidence'] -and $r.evidence) { $ev = @($r.evidence) }
         $sev = if ($r.PSObject.Properties['severity']) { [string]$r.severity } else { "" }
         $params = @{
-            Owner = $Owner; Producer = $Owner; Instrument = $Instrument
-            Check = [string]$r.check; Rule = $Rule; RuleVersion = $RuleVersion
+            Owner = $Owner; Producer = $(if ($Producer) { $Producer } else { $Owner }); Instrument = $Instrument
+            Check = $(if ($CheckOverride) { $CheckOverride } else { [string]$r.check }); Rule = $Rule; RuleVersion = $RuleVersion
             Result = [string]$r.result; Reason = [string]$r.reason; EvidenceLines = $ev
         }
         if ($sev) { $params.Severity = $sev }
@@ -339,6 +343,13 @@ function Invoke-CodeReview {
     $scan = Invoke-JsonInstrument -Owner $owner -Instrument "quality-scan" -Rule "maintainability-budgets" `
         -Script (Join-Path $PluginRoot "skills/code-review/scripts/quality_scan.py")
     if ($scan) { $ran += $scan.ran; $passed += $scan.passed; $failed += $scan.failed; $nv += $scan.notVerified }
+    # Webhook idempotency: an inbound contract is retried, so the claim must precede the side effects.
+    if ($Platform -eq "web" -or $Platform -eq "both") {
+        $wh = Invoke-JsonInstrument -Owner $owner -Instrument "webhook-idempotency" -Rule "inbound-contract-idempotency" -RuleVersion "contract-4.6" `
+            -Script (Join-Path $PluginRoot "skills/code-review/scripts/webhook_idempotency.py") `
+            -ExtraArgs @("--platform", $Platform)
+        if ($wh) { $ran += $wh.ran; $passed += $wh.passed; $failed += $wh.failed; $nv += $wh.notVerified }
+    }
     Register-Owner -Owner $owner -Ran $ran -Passed $passed -Failed $failed -NotVerified $nv
 }
 
@@ -618,6 +629,17 @@ function Invoke-CommercialReadiness {
         -Rule "sell-paths" -RuleVersion "contract-4.6" `
         -ExtraArgs @("--owner", $owner, "--hint", "billing-harness-commands", "--checks", $sell)
     if ($cr) { $ran += $cr.ran; $passed += $cr.passed; $failed += $cr.failed; $nv += $cr.notVerified }
+    # sell-01, the static half: code-review's webhook reading can FAIL sell-01 (a claim after
+    # the side effects, or none), never PASS it — that stays the billing-harness's to prove.
+    # Attributed to code-review; authorized by this owner's `accepts` list.
+    if ($Platform -eq "web" -or $Platform -eq "both") {
+        $wh = Invoke-JsonInstrument -Owner $owner -Producer "code-review" -Instrument "webhook-idempotency" `
+            -Script (Join-Path $PluginRoot "skills/code-review/scripts/webhook_idempotency.py") `
+            -CheckOverride "sell-01-activation" -OnlyResults @("FAIL") `
+            -Rule "inbound-contract-idempotency" -RuleVersion "contract-4.6" `
+            -ExtraArgs @("--platform", $Platform)
+        if ($wh) { $ran += $wh.ran; $passed += $wh.passed; $failed += $wh.failed; $nv += $wh.notVerified }
+    }
     Register-Owner -Owner $owner -Ran $ran -Passed $passed -Failed $failed -NotVerified $nv
 }
 

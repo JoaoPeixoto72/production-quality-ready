@@ -65,12 +65,22 @@ It is the plugin's canonical mechanical producer — it runs the pipeline
 |---|---|
 | `contract.timeout-declared` | Every blocking call has an explicit, justified timeout. |
 | `contract.retry-idempotent` | Retry only where idempotent; idempotency identifier declared. |
+| `contract.webhook-idempotency-ordered` | Web: the handler claims the event (a write keyed by the event id) before any irreversible side effect — a retried or concurrent delivery repeats none. |
 | `contract.schema-compat` | Schema changes carry a two-way compat plan and a version per message. |
 | `contract.failure-modes-declared` | Every error the boundary can return is enumerated on the caller side. |
 | `contract.input-not-trusted` | Receiver validates input; survives bad-faith payloads. |
 | `contract.side-effects-bounded` | Files, network, subprocess effects declared; none silent. |
 | `contract.cancellation-honoured` | Caller cancellation reaches callee; resources released. |
 | `contract.layer-direction` | Dependencies only in the declared direction. |
+
+`contract.webhook-idempotency-ordered` is decided by
+`scripts/webhook_idempotency.py` — a **static** read of the handler (SQL,
+Prisma/Drizzle/Supabase, KV/Redis `NX`, Express and framework route files;
+test files and clients excluded). `FAIL` only for what the source shows: a
+claim after the side effect (`BLOCKER`), a guard never written back, or
+nothing that could deduplicate (`HIGH`). An insert-if-absent whose result is
+not read, or a dedup it cannot recognise, is `NOT_VERIFIED` — the
+behavioural proof is the project's `billing-harness` (`commercial-readiness`).
 
 ### Performance budgets
 
@@ -123,5 +133,5 @@ Loaded by the `stack` in `gates.json`:
 ## Accepted instruments
 
 See `instruments.yaml`. This owner runs `build-runner`, `test-runner`,
-`static-analysis`, `measurement-run` and `quality-scan`. A `PASS` without `command` and
+`static-analysis`, `measurement-run`, `quality-scan` and `webhook-idempotency`. A `PASS` without `command` and
 `log` is invalid (CONTRACTS §4.6).

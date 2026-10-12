@@ -9,6 +9,7 @@ Implements what CONTRACTS.md lets a parser decide without interpretation:
   §3.5   platform tags — owner/entry `platforms:` vs project `platform:`
   §4.5   authority chain — owner == producer, or the (producer, instrument)
          pair is declared in `<owner>/instruments.yaml`
+  §4.7   a valid dated waiver in `gates.json` turns a FAIL into WAIVED
 
 It never decides whether the evidence is *true*. It decides whether the
 file is *admissible*. Output is one line per file plus a summary; exit 1
@@ -28,6 +29,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass, field, asdict
+from datetime import date as _date
 from pathlib import Path
 
 REQUIRED = ("check", "owner", "producer", "instrument", "rule",
@@ -150,9 +152,15 @@ class Verdict:
     confidence_declared: str
     confidence_effective: str
     reasons: list = field(default_factory=list)
+    waived: bool = False
 
     @property
     def downgraded(self) -> bool:
+        # A waiver is the project accepting a FAIL (dated, reasoned): FAIL -> WAIVED
+        # is not a rejection. Everything else that moves the declared result is,
+        # and a waiver does not hide a confidence the file could not hold.
+        if self.waived:
+            return self.confidence_effective != self.confidence_declared
         return self.result_effective != self.result_declared or \
             self.confidence_effective != self.confidence_declared
 
@@ -167,6 +175,64 @@ def load_gates(repo: Path) -> tuple[dict | None, Path | None]:
                 print(f"gates.json unreadable: {p}: {e}", file=sys.stderr)
                 return None, p
     return None, None
+
+
+def load_waivers(gates: dict | None) -> list:
+    """Dated waivers the project declares in gates.json (§4.7). A producer never
+    carries one — only the project can accept its own FAIL."""
+    if not gates:
+        return []
+    w = gates.get("waivers")
+    return w if isinstance(w, list) else []
+
+
+def _parse_date(s: object) -> _date | None:
+    try:
+        return _date.fromisoformat(str(s).strip())
+    except (ValueError, TypeError):
+        return None
+
+
+WAIVER_MAX_DAYS = 180  # §4.7.1 — a waiver further out than this is a permanent one in disguise
+
+
+def waiver_status(w: dict, today: _date) -> tuple[str, str]:
+    """(`valid` | `expired` | `invalid`, why). §4.7.1: `reason`, `approved-by` and an
+    `expires` no more than WAIVER_MAX_DAYS ahead; an exact check id, never a glob."""
+    if "*" in str(w.get("check", "")):
+        return "invalid", "a waiver names one check, not a pattern"
+    missing = [k for k in ("reason", "approved-by") if not str(w.get(k, "")).strip()]
+    if missing:
+        return "invalid", f"missing {', '.join(missing)}"
+    expires = _parse_date(w.get("expires"))
+    if expires is None:
+        return "invalid", "expires is not an ISO date"
+    if (expires - today).days > WAIVER_MAX_DAYS:
+        return "invalid", f"expires more than {WAIVER_MAX_DAYS} days ahead"
+    if expires < today:
+        return "expired", str(expires)
+    return "valid", str(expires)
+
+
+def match_waiver(waivers: list, check: str, owner: str, today: _date) -> tuple[dict | None, str, str]:
+    """(entry, status, why) for the waivers naming this check (and, if they name one,
+    this owner). A valid one wins over an expired or invalid one; `""` when none
+    names the check. An invalid waiver is reported, never silently effective."""
+    best: tuple[dict | None, str, str] = (None, "", "")
+    rank = {"valid": 0, "expired": 1, "invalid": 2, "": 3}
+    for w in waivers:
+        if not isinstance(w, dict):
+            continue
+        wc = str(w.get("check", "")).strip()
+        if wc != check and not ("*" in wc and _matches(wc, check)):
+            continue  # a glob that would cover this check is reported as invalid, not ignored
+        wo = str(w.get("owner", "")).strip()
+        if wo and wo != owner:
+            continue
+        status, why = waiver_status(w, today)
+        if rank[status] < rank[best[1]]:
+            best = (w, status, why)
+    return best
 
 
 def find_plugin(repo: Path, explicit: str | None) -> Path | None:
@@ -240,7 +306,10 @@ def platform_applies(manifest: dict | None, producer: str, instrument: str,
 
 
 def validate_file(path: Path, repo: Path, plugin: Path | None,
-                  project_platform: str | None) -> Verdict:
+                  project_platform: str | None, waivers: list | None = None,
+                  today: _date | None = None) -> Verdict:
+    waivers = waivers or []
+    today = today or _date.today()
     text = path.read_text(encoding="utf-8", errors="replace")
     d = parse_yaml_min(text)
     check = str(d.get("check", "")).strip()
@@ -320,6 +389,19 @@ def validate_file(path: Path, repo: Path, plugin: Path | None,
         v.confidence_effective = "INFERRED"
         v.reasons.append("observed-without-trace -> INFERRED")
 
+    # §4.7 — a dated project waiver turns a FAIL into WAIVED (accepted, not open).
+    if v.result_effective == "FAIL":
+        entry, status, why = match_waiver(waivers, check, owner, today)
+        if status == "valid":
+            v.result_effective = "WAIVED"
+            v.waived = True
+            v.reasons.append(f"waived until {why} by {str(entry.get('approved-by')).strip()}: "
+                             f"{str(entry.get('reason')).strip()}")
+        elif status == "expired":
+            v.reasons.append(f"waiver-expired ({why})")
+        elif status == "invalid":
+            v.reasons.append(f"waiver-invalid ({why})")
+
     return v
 
 
@@ -352,7 +434,8 @@ def main(argv: list[str] | None = None) -> int:
         print("plugin root not found (pass --plugin)", file=sys.stderr)
         return 2
 
-    verdicts = [validate_file(p, repo, plugin, platform) for p in iter_evidence(repo / ".audit")]
+    verdicts = [validate_file(p, repo, plugin, platform, load_waivers(gates))
+                for p in iter_evidence(repo / ".audit")]
     downgraded = [v for v in verdicts if v.downgraded]
 
     if a.json:
@@ -364,7 +447,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"repo={repo}\nplugin={plugin}\ngates={gates_path}\nplatform={platform or '(undeclared)'}\n")
         for v in verdicts:
-            flag = "!" if v.downgraded else " "
+            flag = "~" if v.waived else ("!" if v.downgraded else " ")
             eff = v.result_effective if v.result_effective == v.result_declared else f"{v.result_declared}->{v.result_effective}"
             print(f"{flag} {v.owner or '?':22} {v.check or '?':40} {eff:26} {'; '.join(v.reasons)}")
         print(f"\n{len(verdicts)} file(s), {len(downgraded)} downgraded")

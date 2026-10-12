@@ -97,12 +97,13 @@ instrument to produce evidence closes as `NOT_VERIFIED` (§4.5), never
 4. **Enumerate capabilities** (Tauri, browser permissions, OS
    entitlements, sandbox flags) and prove the unnecessary ones are
    denied — the denial path is exercised, not assumed.
-5. **Waivers.** A waived finding records `waived-by`, `waived-at`,
-   `waived-until` (≤ 180 days), `reason` and the compensating control,
-   in the project's threat model. This owner re-reads them every time it
-   emits: an expired waiver reverts the check to its native status
-   (usually `FAIL`), never to `PASS`. A waiver without expiry is a
-   defect of the waiver. `audit-app` sees only the evidence that results.
+5. **Waivers.** This owner always emits the native `FAIL`; it never
+   waives its own finding. The project accepts one in `gates.json`
+   `waivers` (CONTRACTS §4.7: one exact `check`, `reason`, `approved-by`,
+   `expires` ≤ 180 days ahead), and `validate_evidence.py` turns that
+   `FAIL` into `WAIVED`. For a `sec.*` check the `reason` names the
+   compensating control; the threat model may cite the waiver, but it
+   is not where the waiver lives. An expired waiver leaves the `FAIL`.
 
 ## Anti-patterns
 

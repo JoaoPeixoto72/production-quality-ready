@@ -29,6 +29,15 @@ accepts:
       - sell-01-activation
       - sell-04-trial-to-paid
       - commercial.tax-invoice-valid
+  # The static half of sell-01: code-review's reading of the webhook handler
+  # (claim keyed by the event id before, and gating, the side effects). The runner
+  # files only its FAIL here: it can fail sell-01, never pass it — the PASS stays
+  # the billing-harness's above.
+  - producer: code-review
+    instrument: webhook-idempotency
+    platforms: [web]
+    for-checks:
+      - sell-01-activation
   - producer: commercial-readiness
     instrument: clean-run
     for-checks:

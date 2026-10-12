@@ -8,6 +8,7 @@ import sys
 import tempfile
 import textwrap
 import unittest
+from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "skills" / "audit-app" / "scripts"))
@@ -41,10 +42,13 @@ confidence: {confidence}
 
 
 class Repo:
-    def __init__(self, platform="web"):
+    def __init__(self, platform="web", waivers=None):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
-        write(self.root / ".agents/gates.json", json.dumps({"platform": platform}))
+        gates = {"platform": platform}
+        if waivers is not None:
+            gates["waivers"] = waivers
+        write(self.root / ".agents/gates.json", json.dumps(gates))
 
     def evidence(self, owner, check, producer=None, instrument="test-runner",
                  result="PASS", confidence="OBSERVED", extra=""):
@@ -60,7 +64,9 @@ class Repo:
         return rel.strip()
 
     def run(self):
-        return [ve.validate_file(p, self.root, PLUGIN, "web")
+        gates, _ = ve.load_gates(self.root)
+        waivers = ve.load_waivers(gates)
+        return [ve.validate_file(p, self.root, PLUGIN, "web", waivers)
                 for p in ve.iter_evidence(self.root / ".audit")]
 
 
@@ -134,6 +140,26 @@ class TestAuthority(unittest.TestCase):
         v = r.run()[0]
         self.assertEqual(v.result_effective, "PASS", v.reasons)
 
+    def test_commercial_readiness_accepts_the_webhook_idempotency_half(self):
+        # commercial-readiness accepts code-review::webhook-idempotency for sell-01-activation
+        r = Repo()
+        log = r.log()
+        r.evidence("commercial-readiness", "sell-01-activation", producer="code-review",
+                   instrument="webhook-idempotency", result="FAIL", confidence="INFERRED",
+                   extra=f'severity: BLOCKER\ncommand: "python webhook_idempotency.py"\nlog: {log}')
+        v = r.run()[0]
+        self.assertFalse(any("unauthorized-instrument" in x for x in v.reasons), v.reasons)
+        self.assertFalse(any("missing-producer" in x for x in v.reasons), v.reasons)
+        self.assertEqual(v.result_effective, "FAIL")
+
+    def test_commercial_readiness_rejects_the_pair_for_a_check_it_did_not_accept(self):
+        r = Repo()
+        log = r.log()
+        r.evidence("commercial-readiness", "sell-02-offline-or-failure", producer="code-review",
+                   instrument="webhook-idempotency", extra=f'command: "x"\nlog: {log}')
+        v = r.run()[0]
+        self.assertTrue(any("unauthorized-instrument" in x for x in v.reasons), v.reasons)
+
     def test_undeclared_pair_is_rejected(self):
         r = Repo()
         log = r.log()
@@ -203,6 +229,86 @@ class TestManifests(unittest.TestCase):
                 prod = e.get("producer")
                 self.assertTrue((PLUGIN / "skills" / prod).is_dir(),
                                 f"{skill.name} accepts unknown producer {prod}")
+
+
+class TestWaiver(unittest.TestCase):
+    """§4.7 — a dated, project-declared waiver turns a FAIL into WAIVED (accepted, not
+    open). A producer can never carry one; only the project accepts its own FAIL."""
+
+    SOON = (date.today() + timedelta(days=30)).isoformat()
+
+    def _waiver(self, **over):
+        w = {"check": "sell-01-activation", "owner": "commercial-readiness",
+             "reason": "duplicate email accepted; the claim still prevents a double charge",
+             "expires": self.SOON, "approved-by": "Joao"}
+        w.update(over)
+        return {k: v for k, v in w.items() if v is not None}
+
+    def _fail(self, r, confidence="OBSERVED", extra='command: "python webhook_idempotency.py"'):
+        r.evidence("commercial-readiness", "sell-01-activation", producer="code-review",
+                   instrument="webhook-idempotency", result="FAIL", confidence=confidence,
+                   extra="severity: BLOCKER\n" + extra)
+        return r.run()[0]
+
+    def test_a_dated_waiver_accepts_a_fail(self):
+        v = self._fail(Repo(waivers=[self._waiver()]))
+        self.assertEqual(v.result_effective, "WAIVED")
+        self.assertTrue(v.waived)
+        self.assertFalse(v.downgraded)
+        self.assertTrue(any("waived until" in x and "by Joao" in x for x in v.reasons), v.reasons)
+
+    def test_an_expired_waiver_does_not_accept(self):
+        v = self._fail(Repo(waivers=[self._waiver(expires="2000-01-01")]))
+        self.assertEqual(v.result_effective, "FAIL")
+        self.assertFalse(v.waived)
+        self.assertTrue(any("waiver-expired" in x for x in v.reasons), v.reasons)
+
+    def test_a_waiver_without_an_expiry_is_invalid(self):
+        v = self._fail(Repo(waivers=[self._waiver(expires=None)]))
+        self.assertEqual(v.result_effective, "FAIL")
+        self.assertTrue(any("waiver-invalid" in x for x in v.reasons), v.reasons)
+
+    def test_a_waiver_dated_beyond_the_maximum_is_invalid(self):
+        """An expiry years ahead is a permanent waiver in disguise."""
+        far = (date.today() + timedelta(days=ve.WAIVER_MAX_DAYS + 1)).isoformat()
+        v = self._fail(Repo(waivers=[self._waiver(expires=far)]))
+        self.assertEqual(v.result_effective, "FAIL")
+        self.assertTrue(any("waiver-invalid" in x and "days ahead" in x for x in v.reasons), v.reasons)
+
+    def test_a_waiver_without_an_approver_is_invalid(self):
+        v = self._fail(Repo(waivers=[self._waiver(**{"approved-by": None})]))
+        self.assertEqual(v.result_effective, "FAIL")
+        self.assertTrue(any("approved-by" in x for x in v.reasons), v.reasons)
+
+    def test_a_glob_waiver_is_invalid_and_reported(self):
+        v = self._fail(Repo(waivers=[self._waiver(check="*", owner=None)]))
+        self.assertEqual(v.result_effective, "FAIL")
+        self.assertTrue(any("waiver-invalid" in x and "pattern" in x for x in v.reasons), v.reasons)
+
+    def test_a_valid_waiver_wins_over_an_invalid_one(self):
+        v = self._fail(Repo(waivers=[self._waiver(check="sell-*"), self._waiver()]))
+        self.assertEqual(v.result_effective, "WAIVED")
+
+    def test_a_waiver_for_another_check_or_owner_does_not_apply(self):
+        v = self._fail(Repo(waivers=[self._waiver(check="sell-05-refund-cancel"),
+                                     self._waiver(owner="security-audit")]))
+        self.assertEqual(v.result_effective, "FAIL")
+        self.assertFalse(v.waived)
+
+    def test_a_waiver_does_not_hide_a_confidence_downgrade(self):
+        """OBSERVED without a log is rewritten to INFERRED; waiving the FAIL keeps that visible."""
+        v = self._fail(Repo(waivers=[self._waiver()]), extra="")
+        self.assertEqual(v.result_effective, "WAIVED")
+        self.assertEqual(v.confidence_effective, "INFERRED")
+        self.assertTrue(v.downgraded)
+
+    def test_a_producer_cannot_write_waived_itself(self):
+        r = Repo(waivers=[self._waiver()])
+        r.evidence("commercial-readiness", "sell-01-activation", producer="code-review",
+                   instrument="webhook-idempotency", result="WAIVED", confidence="OBSERVED")
+        v = r.run()[0]
+        self.assertFalse(v.waived)
+        self.assertTrue(any("invalid-result" in x for x in v.reasons), v.reasons)
 
 
 if __name__ == "__main__":

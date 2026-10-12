@@ -44,7 +44,7 @@ This report: docs/audits/<date>-<scope>.md
 ## 4. Verification
 Critical gates: X/Y resolved
 Total obligations: X/Y resolved
-PROVEN: n · CLEARED: n · UNPROVEN: n · NOT_APPLICABLE: n
+PROVEN: n · CLEARED: n · UNPROVEN: n · NOT_APPLICABLE: n · ACCEPTED_RISK (WAIVED, until <date>): n
 (Counted **in** the obligations table, never estimated. If summary and table
 disagree, the summary is wrong — and a wrong `PROVEN` is a wrong verdict.)
 

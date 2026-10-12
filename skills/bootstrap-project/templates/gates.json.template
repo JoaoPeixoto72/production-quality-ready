@@ -5,6 +5,7 @@
   "stack": {{STACK_JSON}},
   "owners": {{OWNERS_JSON}},
   "adapter-hints": {{ADAPTER_HINTS_JSON}},
+  "waivers": [],
   "gates": [
     "release-candidate",
     "production-ready",

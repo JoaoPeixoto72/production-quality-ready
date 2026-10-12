@@ -47,6 +47,10 @@ accepts:
       - quality.nesting
       - quality.params
       - quality.budgets-met
+  - producer: code-review
+    instrument: webhook-idempotency
+    for-checks:
+      - contract.webhook-idempotency-ordered
   # Web CWV measured by audit-website count as hot-path evidence.
   - producer: audit-website
     instrument: run_website_audit.mjs

@@ -30,6 +30,7 @@ PLUGIN = Path(__file__).resolve().parents[2]
 # instrument -> (script implementing it, class proving it goes red)
 RED_CASE: dict[str, tuple[str, str]] = {
     "quality-scan": ("skills/code-review/scripts/quality_scan.py", "QualityScanGoesRed"),
+    "webhook-idempotency": ("skills/code-review/scripts/webhook_idempotency.py", "WebhookIdempotencyGoesRed"),
     "audit_ui.py": ("skills/ui-system/scripts/audit_ui.py", "AuditUiGoesRed"),
     "secret-scanner": ("skills/security-audit/scripts/secret_scan.py", "SecretScanGoesRed"),
     "migration-harness": ("skills/reliability-audit/scripts/migration_harness.py", "MigrationHarnessGoesRed"),
@@ -521,6 +522,144 @@ class TrimCheckGoesRed(unittest.TestCase):
                 "skills/close-work/scripts/trim_check.py", ["--repo", "."], root)
             self.assertEqual(code, 0)
             self.assertTrue(all(x["result"] == "PASS" for x in payload["results"]))
+
+
+class WebhookIdempotencyGoesRed(unittest.TestCase):
+    """The inbound-contract predicate: a claim taken **after** the side effect, or one
+    that does not gate it, is the retry bug (Stripe re-delivers until 200; two
+    deliveries race the guard). What it cannot recognise is NOT_VERIFIED, never FAIL."""
+
+    def _verdict(self, files: dict[str, str]) -> dict:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name, text in files.items():
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_text(text, encoding="utf-8")
+            _, payload = instrument_json(
+                "skills/code-review/scripts/webhook_idempotency.py",
+                ["--repo", ".", "--platform", "web"], root)
+        return by_check(payload)["contract.webhook-idempotency-ordered"]
+
+    D1 = """
+export async function webhook(req, env) {
+  const ev = await evento(env, req);
+  const id = ev.id;
+  const visto = await env.DB.prepare("SELECT id FROM eventos WHERE id = ?").bind(id).first();
+  if (visto) return json({ repetido: true });
+%s
+  return json({ ok: true });
+}
+"""
+    CLAIM_IF_ABSENT = '  await env.DB.prepare("INSERT OR IGNORE INTO eventos (id, tipo) VALUES (?, ?)").bind(id, ev.type).run();'
+    EFFECTS = "  await emitirCodigo(env, id);\n  await mandarCodigo(env, id);"
+
+    def test_a_claim_after_the_side_effect_is_a_blocker(self):
+        r = self._verdict({"webhook.ts": self.D1 % (self.EFFECTS + "\n" + self.CLAIM_IF_ABSENT)})
+        self.assertEqual(r["result"], "FAIL")
+        self.assertEqual(r["severity"], "BLOCKER")
+        self.assertIn("AFTER the first side effect", r["reason"])
+
+    def test_a_check_then_insert_if_absent_is_not_a_gate(self):
+        """SELECT, then INSERT OR IGNORE with the result unread: two concurrent
+        deliveries both pass the SELECT. Ordered, but not proven to gate."""
+        r = self._verdict({"webhook.ts": self.D1 % (self.CLAIM_IF_ABSENT + "\n" + self.EFFECTS)})
+        self.assertEqual(r["result"], "NOT_VERIFIED")
+        self.assertIn("does not gate", r["reason"])
+
+    def test_an_atomic_claim_whose_result_is_read_passes(self):
+        claim = ('  const r = await env.DB.prepare("INSERT INTO eventos (id) VALUES (?) ON CONFLICT DO NOTHING")'
+                 '.bind(id).run();\n  if (r.meta.changes === 0) return json({ repetido: true });')
+        r = self._verdict({"webhook.ts": self.D1 % (claim + "\n" + self.EFFECTS)})
+        self.assertEqual(r["result"], "PASS", r["reason"])
+
+    def test_a_plain_create_on_the_event_key_passes(self):
+        """Prisma `create` throws on the duplicate key: the claim gates by itself."""
+        r = self._verdict({"app/api/stripe/webhook/route.ts": """
+export async function POST(req: Request) {
+  const event = stripe.webhooks.constructEvent(await req.text(), sig, secret);
+  await prisma.stripeEvent.create({ data: { id: event.id } });
+  await sendLicenseEmail(event);
+}
+"""})
+        self.assertEqual(r["result"], "PASS", r["reason"])
+
+    def test_a_destructured_result_read_by_an_if_is_a_gate(self):
+        r = self._verdict({"server.js": """
+app.post("/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  const event = stripe.webhooks.constructEvent(req.body, req.headers["stripe-signature"], secret)
+  const { rowCount } = await pool.query("INSERT INTO processed_events (event_id) VALUES ($1) ON CONFLICT DO NOTHING", [event.id])
+  if (rowCount === 0) return res.sendStatus(200)
+  await resend.emails.send({ to: "a@b.c" })
+})
+"""})
+        self.assertEqual(r["result"], "PASS", r["reason"])
+
+    def test_a_route_file_with_no_claim_is_a_high(self):
+        """Found by its path (`app/api/stripe/webhook/route.ts`), not by its name."""
+        r = self._verdict({"app/api/stripe/webhook/route.ts": """
+export async function POST(req: Request) {
+  const event = stripe.webhooks.constructEvent(await req.text(), sig, secret);
+  await prisma.license.create({ data: { user: event.data.object.customer } });
+}
+"""})
+        self.assertEqual(r["result"], "FAIL")
+        self.assertEqual(r["severity"], "HIGH")
+
+    def test_a_guard_on_another_table_is_not_a_claim(self):
+        r = self._verdict({"webhook.ts": """
+export async function webhook(req, env) {
+  const ev = await req.json();
+  const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(ev.user).first();
+  await mandarCodigo(env, u);
+}
+"""})
+        self.assertEqual(r["result"], "FAIL")
+        self.assertEqual(r["severity"], "HIGH")
+
+    def test_an_unrecognised_dedup_is_not_verified_not_failed(self):
+        r = self._verdict({"webhook.ts": """
+export async function webhook(req, env) {
+  const ev = await req.json();
+  if (await alreadyProcessed(env, ev.id)) return ok();
+  await mandarCodigo(env, ev.id);
+}
+"""})
+        self.assertEqual(r["result"], "NOT_VERIFIED")
+
+    def test_a_repo_with_no_webhook_is_not_applicable(self):
+        self.assertEqual(self._verdict({"app.ts": "export const x = 1;\n"})["result"], "NOT_APPLICABLE")
+
+    def test_a_test_file_is_not_a_handler(self):
+        r = self._verdict({"src/webhook.test.ts":
+                           'it("x", async () => { await fetch("/api/webhook", { method: "POST" }); });\n'})
+        self.assertEqual(r["result"], "NOT_APPLICABLE")
+
+    def test_a_client_that_sends_to_the_route_is_not_a_handler(self):
+        """A script that POSTs to `/stripe/webhook` is a client, not the receiving handler."""
+        r = self._verdict({
+            "send-webhook.mjs": "const r = await fetch(`${URL}/stripe/webhook`, {\n"
+                                "  method: 'POST',\n"
+                                "  headers: { 'stripe-signature': `t=${t},v1=${sig}` },\n"
+                                "  body: corpo,\n"
+                                "});\n",
+            "scripts/replay.mjs": 'await fetch("/api/stripe/webhook", { method: "POST", body });\n'})
+        self.assertEqual(r["result"], "NOT_APPLICABLE")
+
+    def test_a_route_named_only_in_a_comment_is_not_a_handler(self):
+        r = self._verdict({"stripe.ts":
+                           "// The whole border: without it, `/stripe/webhook` issues licences.\n"
+                           "export async function cobrar(env) { return fetch('https://api.stripe.com', {}); }\n"})
+        self.assertEqual(r["result"], "NOT_APPLICABLE")
+
+    def test_a_route_comparison_is_a_handler(self):
+        r = self._verdict({"router.ts":
+                           "export function despachar(req, env, caminho) {\n"
+                           "  if (caminho === \"/stripe/webhook\") return webhook(req, env);\n"
+                           "}\n"
+                           "async function webhook(req, env) {\n"
+                           "  await mandarCodigo(env, 'x');\n"
+                           "}\n"})
+        self.assertNotEqual(r["result"], "NOT_APPLICABLE")
 
 
 class EveryInstrumentHasARedCase(unittest.TestCase):

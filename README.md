@@ -138,7 +138,7 @@ what is missing.
 | `start-work` · `review-change` · `close-work` | work cycle (adapters per project) | both | proof commands |
 | `verify` | prove in the running app | both | browser driver / `gui.ps1` |
 | `drive-app-window` | Win32/WebView2 driver for `verify` | desktop | `scripts/gui.ps1` |
-| `code-review` | runtime + contracts + maintainability (size, nesting, params, ratchet) + perf budgets | both | build/test runners, `quality_scan.py` |
+| `code-review` | runtime + contracts + maintainability (size, nesting, params, ratchet) + perf budgets | both | build/test runners, `quality_scan.py`, `webhook_idempotency.py` |
 | `security-audit` | ASVS 5.0 + threat model; tenants, input, CVEs, secrets | both | dep/secret scanners |
 | `reliability-audit` | persistence, migrations, crash; diagnosability (logs, PII) | both | harnesses (project) |
 | `design-pro` | UX, WCAG 2.2 AA verdict, i18n | both | — (consumes ui-system, verify) |
