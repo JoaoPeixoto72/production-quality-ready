@@ -43,6 +43,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import re
 import sys
@@ -157,6 +158,30 @@ def strip_comments(text: str) -> str:
     return "".join(out)
 
 
+@functools.lru_cache(maxsize=8)
+def mask_strings(code: str) -> str:
+    """`code` with the inside of every string literal blanked, the quotes and the length
+    kept: what the structure is read from, so a `;`, a newline or a bracket inside a
+    (multi-line) SQL literal does not end a statement. `'` and `"` stop at a newline —
+    an unterminated one cannot swallow the file; a template literal spans lines and its
+    `${…}` is blanked with it."""
+    out = list(code)
+    i, n = 0, len(code)
+    while i < n:
+        q = code[i]
+        if q not in "\"'`":
+            i += 1
+            continue
+        i += 1
+        while i < n and code[i] != q and (q == "`" or code[i] != "\n"):
+            step = 2 if code[i] == "\\" else 1
+            for k in range(i, min(n, i + step)):
+                out[k] = " "
+            i += step
+        i += 1
+    return "".join(out)
+
+
 def iter_files(root: Path, sub: str | None):
     base = root / sub if sub else root
     if not base.exists():
@@ -209,14 +234,15 @@ def handler_body(code: str) -> tuple[str, int]:
     m = WEBHOOK_FN.search(code) or ROUTE_EXPORT.search(code)
     if not m:
         return code, 0
-    i = code.find("{", m.end())
+    s = mask_strings(code)  # a `{` inside a literal opens nothing
+    i = s.find("{", m.end())
     if i < 0:
         return code, 0
     depth = 0
-    for j in range(i, len(code)):
-        if code[j] == "{":
+    for j in range(i, len(s)):
+        if s[j] == "{":
             depth += 1
-        elif code[j] == "}":
+        elif s[j] == "}":
             depth -= 1
             if depth == 0:
                 return code[i:j + 1], i
@@ -230,10 +256,12 @@ def statement(body: str, off: int) -> tuple[str, int, int]:
     """The statement around `off`: back to the `;`, the enclosing block's `{`, or the
     newline that ended the previous statement (no-semicolon style) — skipping balanced
     brackets, so `const { rowCount } = await …(` stays one statement — and forward to
-    the `;` or newline where the brackets opened since `off` close."""
+    the `;` or newline where the brackets opened since `off` close. The structure is
+    read with string contents blanked; the text returned is the original."""
+    s = mask_strings(body)
     depth, start = 0, 0
     for j in range(off - 1, -1, -1):
-        c = body[j]
+        c = s[j]
         if c in ")]}":
             depth += 1
         elif c in "([":
@@ -247,14 +275,14 @@ def statement(body: str, off: int) -> tuple[str, int, int]:
             start = j + 1
             break
         elif depth == 0 and c == "\n":
-            before = body[max(0, j - 200):j].rstrip()
-            after = body[j + 1:off].lstrip()
+            before = s[max(0, j - 200):j].rstrip()
+            after = s[j + 1:off].lstrip()
             if before and not before.endswith(CONTINUES) and not after.startswith((".", "?", ":")):
                 start = j + 1
                 break
     depth, end, cap = 0, None, min(len(body), off + 800)
     for j in range(off, cap):
-        c = body[j]
+        c = s[j]
         if c in "([{":
             depth += 1
         elif c in ")]}":
@@ -266,8 +294,8 @@ def statement(body: str, off: int) -> tuple[str, int, int]:
             end = j
             break
         elif depth == 0 and c == "\n":
-            if not body[off:j].rstrip().endswith(CONTINUES) and \
-                    not body[j + 1:cap].lstrip().startswith("."):
+            if not s[off:j].rstrip().endswith(CONTINUES) and \
+                    not s[j + 1:cap].lstrip().startswith("."):
                 end = j
                 break
     end = cap if end is None else end

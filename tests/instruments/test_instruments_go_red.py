@@ -572,6 +572,35 @@ export async function webhook(req, env) {
         r = self._verdict({"webhook.ts": self.D1 % (claim + "\n" + self.EFFECTS)})
         self.assertEqual(r["result"], "PASS", r["reason"])
 
+    def test_a_multi_line_upsert_is_not_a_side_effect(self):
+        """The `ON CONFLICT` is three lines into the template literal: a statement cut at
+        the first newline would miss it and count the idempotent upsert as a side effect."""
+        upsert = ('  await env.DB.prepare(`\n'
+                  '    INSERT INTO contas (cliente)\n'
+                  '    VALUES (?)\n'
+                  '    ON CONFLICT DO NOTHING`).bind(ev.customer).run();')
+        r = self._verdict({"webhook.ts": self.D1 % (upsert + "\n" + self.CLAIM_IF_ABSENT)})
+        self.assertEqual(r["result"], "NOT_VERIFIED", r["reason"])
+
+    def test_a_multi_line_claim_whose_result_is_read_passes(self):
+        claim = ('  const r = await env.DB.prepare(`\n'
+                 '    INSERT INTO eventos (id) VALUES (?);\n'
+                 '    -- a `;` and a newline inside the literal end nothing\n'
+                 '    ON CONFLICT DO NOTHING`).bind(id).run();\n'
+                 '  if (r.meta.changes === 0) return json({ repetido: true });')
+        r = self._verdict({"webhook.ts": self.D1 % (claim + "\n" + self.EFFECTS)})
+        self.assertEqual(r["result"], "PASS", r["reason"])
+
+    def test_a_multi_line_insert_if_absent_left_unread_is_not_a_gate(self):
+        """The same cut the other way: missing the `ON CONFLICT` would read it as a plain
+        insert that throws on the duplicate, and pass a claim that does not gate."""
+        claim = ('  await env.DB.prepare(`\n'
+                 '    INSERT INTO eventos (id) VALUES (?)\n'
+                 '    ON CONFLICT DO NOTHING`).bind(id).run();')
+        r = self._verdict({"webhook.ts": self.D1 % (claim + "\n" + self.EFFECTS)})
+        self.assertEqual(r["result"], "NOT_VERIFIED", r["reason"])
+        self.assertIn("does not gate", r["reason"])
+
     def test_a_plain_create_on_the_event_key_passes(self):
         """Prisma `create` throws on the duplicate key: the claim gates by itself."""
         r = self._verdict({"app/api/stripe/webhook/route.ts": """
