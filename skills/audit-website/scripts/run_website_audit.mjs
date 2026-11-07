@@ -30,13 +30,13 @@ function parseArgs(args) {
 
   for (const arg of args) {
     if (arg === '--help' || arg === '-h') options.help = true;
-    else if (arg.startsWith('--url=')) options.url = arg.split('=')[1].trim();
-    else if (arg.startsWith('--dir=')) options.dir = arg.split('=')[1].trim();
-    else if (arg.startsWith('--psi-key=')) options.psiKey = arg.split('=')[1].trim();
-    else if (arg.startsWith('--spider-max=')) options.spiderMax = parseInt(arg.split('=')[1].trim(), 10) || 25;
+    else if (arg.startsWith('--url=')) options.url = arg.slice(arg.indexOf('=') + 1).trim();
+    else if (arg.startsWith('--dir=')) options.dir = arg.slice(arg.indexOf('=') + 1).trim();
+    else if (arg.startsWith('--psi-key=')) options.psiKey = arg.slice(arg.indexOf('=') + 1).trim();
+    else if (arg.startsWith('--spider-max=')) options.spiderMax = parseInt(arg.slice(arg.indexOf('=') + 1).trim(), 10) || 25;
     else if (arg === '--json') options.json = true;
     else if (arg === '--sarif') options.sarif = true;
-    else if (arg.startsWith('--out=')) options.out = arg.split('=')[1].trim();
+    else if (arg.startsWith('--out=')) options.out = arg.slice(arg.indexOf('=') + 1).trim();
   }
 
   return options;
@@ -60,6 +60,26 @@ Options:
   --out=FILE          Save Markdown report to designated file
   --help, -h          Show this help message
 `);
+}
+
+// Whether the `User-agent: *` group holds `Disallow: /` with nothing after it, read group by
+// group: a substring test took any `Disallow: /cart` for the whole site.
+function robotsDisallowsAll(text) {
+  let agents = [], rules = false, all = false;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.replace(/#.*/, '').trim();
+    const m = line.match(/^([A-Za-z-]+)\s*:\s*(.*)$/);
+    if (!m) continue;
+    const key = m[1].toLowerCase(), value = m[2].trim();
+    if (key === 'user-agent') {
+      if (rules) { agents = []; rules = false; }
+      agents.push(value);
+    } else {
+      rules = true;
+      if (key === 'disallow' && value === '/' && agents.includes('*')) all = true;
+    }
+  }
+  return all;
 }
 
 class WebsiteAuditor {
@@ -90,13 +110,18 @@ class WebsiteAuditor {
     });
   }
 
+  // Progress goes to stderr when stdout carries JSON or SARIF: mixed in, the report did not parse.
+  say(message) {
+    (this.options.json || this.options.sarif ? console.error : console.log)(message);
+  }
+
   async run() {
-    console.log(`\n🔍 Starting 360º Website Audit...`);
+    this.say(`\n🔍 Starting 360º Website Audit...`);
     if (this.options.url) {
-      console.log(`🎯 Target URL: ${this.options.url}`);
+      this.say(`🎯 Target URL: ${this.options.url}`);
       await this.auditLiveUrl(this.options.url);
     } else if (this.options.dir) {
-      console.log(`📁 Target Directory: ${this.options.dir}`);
+      this.say(`📁 Target Directory: ${this.options.dir}`);
       await this.auditDirectory(this.options.dir);
     } else {
       console.error(`❌ Error: Either --url or --dir must be provided.`);
@@ -177,7 +202,7 @@ class WebsiteAuditor {
     };
     findHtml(resolvedPath);
 
-    console.log(`📄 Found ${htmlFiles.length} HTML files to inspect.`);
+    this.say(`📄 Found ${htmlFiles.length} HTML files to inspect.`);
     for (const file of htmlFiles.slice(0, 10)) { // sample up to 10 files
       const content = fs.readFileSync(file, 'utf-8');
       const relPath = path.relative(resolvedPath, file);
@@ -267,7 +292,7 @@ class WebsiteAuditor {
       const robotsRes = await fetch(`${origin}/robots.txt`);
       if (robotsRes.status === 200) {
         const text = await robotsRes.text();
-        if (text.includes('Disallow: /') && !text.includes('Disallow: /admin')) {
+        if (robotsDisallowsAll(text)) {
           this.addFinding({
             check: 'robots-disallow-all',
             pillar: 'Technical SEO',
@@ -711,7 +736,7 @@ class WebsiteAuditor {
     const sample = Array.from(internalLinks).slice(0, this.options.spiderMax);
     this.stats.linksChecked = sample.length;
 
-    console.log(`🕷️  Spidering ${sample.length} internal links...`);
+    this.say(`🕷️  Spidering ${sample.length} internal links...`);
     for (const link of sample) {
       try {
         const res = await fetch(link, {
@@ -752,7 +777,7 @@ class WebsiteAuditor {
   }
 
   async auditPageSpeed(targetUrl) {
-    console.log(`⚡ Querying Google PageSpeed Insights API...`);
+    this.say(`⚡ Querying Google PageSpeed Insights API...`);
     try {
       const endpoint = new URL(PSI_ENDPOINT);
       endpoint.search = new URLSearchParams({ url: targetUrl, strategy: 'mobile', key: this.options.psiKey }).toString();
@@ -875,7 +900,7 @@ To close the verdict as \`READY\`:
 
     if (this.options.out) {
       fs.writeFileSync(path.resolve(process.cwd(), this.options.out), markdown, 'utf-8');
-      console.log(`\n💾 Report saved to: ${this.options.out}`);
+      this.say(`\n💾 Report saved to: ${this.options.out}`);
     }
 
     return { verdict, counts, findings: this.findings };
@@ -892,6 +917,8 @@ if (opts.help || (!opts.url && !opts.dir)) {
 const auditor = new WebsiteAuditor(opts);
 auditor.run().then(res => {
   if (res.counts.BLOCKER > 0) exitCleanly(2);
+  // A CRITICAL makes the verdict BLOCKED too; exiting 0 then let CI pass it.
+  if (res.verdict === 'BLOCKED' || res.verdict === 'FIX_BEFORE_LAUNCH') exitCleanly(1);
 }).catch(err => {
   console.error('Fatal audit error:', err);
   process.exit(1);

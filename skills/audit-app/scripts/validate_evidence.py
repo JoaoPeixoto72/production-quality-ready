@@ -44,10 +44,31 @@ IGNORED_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__",
 # ---------------------------------------------------------------- tiny YAML
 
 def _strip(v: str) -> str:
+    """A scalar without its quotes or a trailing `# comment` (CONTRACTS §3.1's own example
+    has them; kept, they made `PASS  # ...` an invalid result)."""
     v = v.strip()
-    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
-        v = v[1:-1]
-    return v
+    if v[:1] in ("\"", "'"):
+        end = v.find(v[0], 1)
+        if end > 0:
+            return v[1:end]
+    return "" if v.startswith("#") else re.split(r"\s+#", v, maxsplit=1)[0].strip()
+
+
+def _indent_flush_lists(lines: list[str]) -> list[str]:
+    """`key:` followed by `- item` at column 0 (what PyYAML's `safe_dump` writes) read as an
+    empty list: indent those items as the parser below expects."""
+    out, inside, flush = [], False, False
+    for line in lines:
+        if re.match(r"^[A-Za-z][A-Za-z0-9_-]*:\s*(#.*)?$", line):
+            inside, flush = True, False
+        elif inside and (line.startswith("- ") or line == "-"):
+            line, flush = "  " + line, True
+        elif flush and line.startswith("  "):
+            line = "  " + line  # a flush item's own keys
+        elif line.strip() and not line.startswith(" "):
+            inside = flush = False
+        out.append(line)
+    return out
 
 
 def parse_yaml_min(text: str) -> dict:
@@ -56,7 +77,7 @@ def parse_yaml_min(text: str) -> dict:
     maps. Anything deeper is kept as raw lines under the key. Good enough
     to validate fields; not a general YAML parser (by design — no deps)."""
     out: dict = {}
-    lines = text.splitlines()
+    lines = _indent_flush_lists(text.splitlines())
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -67,7 +88,7 @@ def parse_yaml_min(text: str) -> dict:
         if not m:
             i += 1
             continue
-        key, rest = m.group(1), m.group(2)
+        key, rest = m.group(1), _strip(m.group(2)) if not m.group(2).lstrip().startswith(("[", "|", ">")) else m.group(2).strip()
         if rest == "|" or rest == ">":
             buf = []
             i += 1

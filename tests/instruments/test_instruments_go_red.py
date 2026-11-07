@@ -15,6 +15,7 @@ import contextlib
 import http.server
 import json
 import re
+import shutil
 import subprocess
 import threading
 import sys
@@ -170,7 +171,7 @@ class SecretScanGoesRed(unittest.TestCase):
             run(["git", "add", "-A"], root)
             run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x"], root)
             _, payload = instrument_json(
-                "skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--no-history"], root)
+                "skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--no-history", "--engine", "builtin"], root)
             r = by_check(payload)["sec.secrets-not-committed"]
             self.assertEqual(r["result"], "FAIL")
             self.assertEqual(r["severity"], "BLOCKER")
@@ -182,10 +183,21 @@ class SecretScanGoesRed(unittest.TestCase):
             root = Path(tmp)
             (root / "notes.txt").write_text("nada\n", encoding="utf-8")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--no-history"], root)
+                "skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--no-history", "--engine", "builtin"], root)
             r = by_check(payload)["sec.secrets-not-committed"]
             self.assertEqual(r["result"], "NOT_VERIFIED")
             self.assertIn("nothing was scanned", r["reason"])
+
+    @unittest.skipUnless(shutil.which("gitleaks"), "gitleaks not on PATH")
+    def test_gitleaks_reading_nothing_never_passes(self):
+        """Outside a repository gitleaks prints `[]` and exits 0: that is not 'no secrets'."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "notes.txt").write_text("nada\n", encoding="utf-8")
+            _, payload = instrument_json(
+                "skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--engine", "gitleaks"], root)
+            r = by_check(payload)["sec.secrets-not-committed"]
+            self.assertEqual(r["result"], "NOT_VERIFIED")
 
 
 class MigrationHarnessGoesRed(unittest.TestCase):

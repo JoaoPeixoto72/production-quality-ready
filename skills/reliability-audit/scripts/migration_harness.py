@@ -83,7 +83,7 @@ def split_statements(sql: str) -> list[str]:
     """Split on ';' outside string literals and BEGIN...END trigger bodies."""
     out, cur, i, n = [], [], 0, len(sql)
     in_s = in_d = in_line = in_block = False
-    depth_begin = 0
+    depth_begin = depth_case = 0
     while i < n:
         ch = sql[i]
         nxt = sql[i + 1] if i + 1 < n else ""
@@ -113,11 +113,19 @@ def split_statements(sql: str) -> list[str]:
             in_s = True; cur.append(ch); i += 1; continue
         if ch == '"':
             in_d = True; cur.append(ch); i += 1; continue
-        word = sql[i:i + 5].upper()
-        if word == "BEGIN" and re.match(r"BEGIN\b", sql[i:], re.IGNORECASE):
-            depth_begin += 1
-        elif sql[i:i + 3].upper() == "END" and re.match(r"END\b", sql[i:], re.IGNORECASE) and depth_begin:
-            depth_begin -= 1
+        # Only a trigger's body holds `;` inside a statement. `BEGIN TRANSACTION` opens nothing to
+        # close, and a `CASE ... END` inside the body must not close the trigger early.
+        starts = i == 0 or not (sql[i - 1].isalnum() or sql[i - 1] == "_")
+        if starts and re.match(r"BEGIN\b", sql[i:], re.IGNORECASE):
+            if re.search(r"\bCREATE\s+(?:TEMP\w*\s+)?TRIGGER\b", "".join(cur), re.IGNORECASE):
+                depth_begin += 1
+        elif starts and depth_begin and re.match(r"CASE\b", sql[i:], re.IGNORECASE):
+            depth_case += 1
+        elif starts and re.match(r"END\b", sql[i:], re.IGNORECASE):
+            if depth_case:
+                depth_case -= 1
+            elif depth_begin:
+                depth_begin -= 1
         if ch == ";" and depth_begin == 0:
             cur.append(";")
             stmt = "".join(cur).strip()
@@ -312,7 +320,7 @@ def main() -> int:
             continue
         for p in sorted(d.rglob("*.md"))[:400]:
             parts = p.relative_to(repo).parts
-            if any(x in parts for x in (".git", "node_modules", ".agents", ".audit")):
+            if any(x in parts for x in (".git", "node_modules", ".agents", ".audit", ".claude", ".work")):
                 continue
             try:
                 text = p.read_text(encoding="utf-8", errors="replace")

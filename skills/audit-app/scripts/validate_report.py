@@ -359,6 +359,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--gates", default=None,
                     help="v1 registry as JSON; by default, the plugin's own v2 registry")
     args = ap.parse_args(argv)
+    # A Windows pipe is cp1252: a `—` in a reason crashed or garbled the report.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
 
     current_hash = current_contract()
     if current_hash is None:
@@ -396,12 +399,14 @@ def main(argv: list[str] | None = None) -> int:
         print("\nCANNOT ANALYSE")
         return EXIT_CANNOT_ANALYSE
 
-    skill_root = Path(__file__).resolve().parent.parent
+    # The project's baselines sit beside its reports (`docs/audits/baselines/`); the skill's own
+    # are only the template. Read from the skill, a reused number was never caught.
+    root = path.parent if (path.parent / "baselines").is_dir() else Path(__file__).resolve().parent.parent
     m_date = re.match(r"(\d{4}-\d{2}-\d{2})", path.name)
     problems, warnings = validate(
         text, registry, path, current_hash,
-        earlier_findings(skill_root, m_date.group(1) if m_date else None),
-        earlier_findings(skill_root))
+        earlier_findings(root, m_date.group(1) if m_date else None),
+        earlier_findings(root))
     print(f"# Validation of {path.name}\n")
     print(f"## Problems: {len(problems)}")
     for p in problems:

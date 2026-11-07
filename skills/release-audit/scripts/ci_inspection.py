@@ -73,6 +73,33 @@ def run(cmd: list[str], cwd: Path) -> tuple[int, str]:
         return 1, str(e)
 
 
+def run_lines(text: str) -> list[str]:
+    """Every command a CI step runs: `run: x`, and each line of a `run: |` / `run: >` block,
+    where multi-command steps (and most deploys) live."""
+    out: list[str] = []
+    lines = text.splitlines()
+    for k, line in enumerate(lines):
+        m = re.match(r"^(\s*)(?:-\s*)?run:\s*(.*)$", line)
+        if not m:
+            continue
+        rest = m.group(2).strip()
+        if rest and rest[0] not in "|>":
+            out.append(rest)
+            continue
+        indent = len(m.group(1))
+        for body in lines[k + 1:]:
+            if body.strip() and len(body) - len(body.lstrip()) <= indent:
+                break
+            if body.strip():
+                out.append(body.strip())
+    return out
+
+
+# Words that put a "rollback" line about releases, not about undoing an edit in the app.
+RELEASE_CONTEXT = re.compile(r"deploy|release|version|vers[ãa]o|publica|wrangler|migration|schema|produ",
+                             re.IGNORECASE)
+
+
 def find_ci_files(repo: Path) -> list[Path]:
     out: list[Path] = []
     for g in CI_GLOBS:
@@ -85,6 +112,12 @@ def rel(p: Path, repo: Path) -> str:
         return str(p.relative_to(repo)).replace("\\", "/")
     except ValueError:
         return str(p).replace("\\", "/")
+
+
+def sub_packages(repo: Path) -> list[str]:
+    """First-level folders with their own package.json (a worker beside an app)."""
+    return sorted(p.parent.name for p in repo.glob("*/package.json")
+                  if p.parent.name not in ("node_modules", ".git", ".work", ".claude"))
 
 
 def load_pkg(repo: Path) -> dict:
@@ -117,6 +150,9 @@ def check_ci_matrix(repo: Path, ci_files: list[Path]) -> dict:
         text = f.read_text(encoding="utf-8", errors="replace")
         for m in re.finditer(r"runs-on:\s*([^\n#]+)", text):
             runners.add(m.group(1).strip().strip("[]"))
+        if f.name == ".gitlab-ci.yml":  # GitLab names its runner by image or tags
+            for m in re.finditer(r"^\s*(?:image|tags):\s*([^\n#]+)", text, re.M):
+                runners.add(m.group(1).strip().strip("[]"))
         for m in re.finditer(r"(?:node-version|python-version|go-version|toolchain|rust-version):\s*([^\n#]+)", text):
             versions.add(m.group(1).strip())
         if re.search(r"^\s*(?:strategy:|\s+matrix:)", text, re.M):
@@ -163,23 +199,31 @@ def check_deploy(repo: Path, pkg: dict, ci_files: list[Path]) -> dict:
     scripts = pkg.get("scripts") or {}
     deploy_scripts = {k: v for k, v in scripts.items()
                       if k == "deploy" or k.startswith("deploy:") or DEPLOY_CMD.search(str(v))}
+    for d in sub_packages(repo):
+        for k, v in (load_pkg(repo / d).get("scripts") or {}).items():
+            if k == "deploy" or k.startswith("deploy:"):
+                deploy_scripts[f"{d}/{k}"] = v
     for k, v in sorted(deploy_scripts.items()):
         ev.append(f"package.json scripts.{k}: {v}")
     for f in ci_files:
         text = f.read_text(encoding="utf-8", errors="replace")
-        for m in re.finditer(r"^\s*run:\s*([^\n]+)$", text, re.M):
-            if DEPLOY_CMD.search(m.group(1)):
-                ev.append(f"{rel(f, repo)} run: {m.group(1).strip()}")
+        for cmd in run_lines(text):
+            if DEPLOY_CMD.search(cmd):
+                ev.append(f"{rel(f, repo)} run: {cmd}")
     if not deploy_scripts and not ev:
         return finding("release.deploy-single-command", "FAIL",
                        "no declared deploy command (no `deploy` script, no deploy step in CI)",
                        severity="HIGH")
     prod = scripts.get("deploy")
+    where = "" if prod else next((d for d in sub_packages(repo) if load_pkg(repo / d).get("scripts", {}).get("deploy")), "")
+    if where:  # a web part in its own folder, beside a desktop app (`servidor/`, `worker/`)
+        prod = load_pkg(repo / where)["scripts"]["deploy"]
     if prod:
         chained = prod.count("&&")
         ev.append(f"steps chained in `deploy`: {chained + 1}")
+        cd = f"cd {where} && " if where else ""
         return finding("release.deploy-single-command", "PASS",
-                       f"one command deploys from a clean clone: `npm run deploy` -> {prod}", ev)
+                       f"one command deploys from a clean clone: `{cd}npm run deploy` -> {prod}", ev)
     return finding("release.deploy-single-command", "FAIL",
                    "deploy commands exist but none is the single canonical entry point (`deploy`)",
                    ev, severity="MEDIUM")
@@ -201,7 +245,10 @@ def check_rollback(repo: Path, pkg: dict, ci_files: list[Path]) -> dict:
             continue
         for m in ROLLBACK_HINT.finditer(text):
             line = text[:m.start()].count("\n") + 1
-            ev.append(f"{rel(d, repo)}:{line}: {text.splitlines()[line-1].strip()[:110]}")
+            said = text.splitlines()[line - 1].strip()
+            if not RELEASE_CONTEXT.search(said):
+                continue  # "revert your last edit" is the app's undo, not a way back from a release
+            ev.append(f"{rel(d, repo)}:{line}: {said[:110]}")
             break
     for f in ci_files:
         text = f.read_text(encoding="utf-8", errors="replace")
@@ -224,8 +271,8 @@ def check_migrations_pipeline(repo: Path, pkg: dict, ci_files: list[Path]) -> di
     in_ci = False
     for f in ci_files:
         text = f.read_text(encoding="utf-8", errors="replace")
-        for m in re.finditer(r"^\s*(?:-\s*name:\s*([^\n]+)|run:\s*([^\n]+))$", text, re.M):
-            line = (m.group(1) or m.group(2) or "").strip()
+        names = [m.group(1).strip() for m in re.finditer(r"^\s*-\s*name:\s*([^\n]+)$", text, re.M)]
+        for line in names + run_lines(text):
             if MIGRATION_CMD.search(line):
                 ev.append(f"{rel(f, repo)}: {line[:110]}")
                 in_ci = True
@@ -300,6 +347,11 @@ def main() -> int:
         finding("release.reproducible-artifact", "NOT_VERIFIED",
                 "missing-instrument: needs two clean builds of the same commit on different machines and a hash compare; this instrument only reads the repository"),
     ]
+    if a.platform == "desktop":  # SKILL.md: these four are `platforms: web`
+        web = {"release.deploy-single-command", "release.rollback-declared",
+               "release.migrations-in-pipeline", "release.env-parity"}
+        results = [finding(r["check"], "NOT_APPLICABLE", "web-only check; the platform is desktop")
+                   if r["check"] in web else r for r in results]
 
     print(json.dumps({"repo": str(repo), "platform": a.platform,
                       "ci_files": [rel(f, repo) for f in ci_files],

@@ -246,6 +246,9 @@ switch ($Action) {
   }
 
   "drag" {
+    # Pinned like every action with coordinates: unpinned, they landed wherever the window had moved.
+    $h = Get-AppWindow -Name $Title
+    Lock-Window -H $h
     [void][Native]::SetCursorPos($X, $Y)
     Start-Sleep -Milliseconds 200
     [Native]::mouse_event($MOUSEEVENTF_LEFTDOWN, 0, 0, 0, [UIntPtr]::Zero)

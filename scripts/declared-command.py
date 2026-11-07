@@ -88,6 +88,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--checks", required=True, help="comma-separated obligations")
     ap.add_argument("--command", help="overrides the declared value (tests and manual use)")
     a = ap.parse_args(argv)
+    # A Windows pipe is cp1252: a `✔` in the command's output crashed the report, and
+    # run-all-owners read the empty output as NOT_VERIFIED instead of the FAIL it was.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
 
     repo = Path(a.repo).resolve()
     checks = [c.strip() for c in a.checks.split(",") if c.strip()]

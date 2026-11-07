@@ -14,7 +14,7 @@ Outcomes:
   - command exits != 0        → FAIL/BLOCKER (isolation broke)
   - command exits 0, no output → NOT_VERIFIED/no-output (nothing proves it ran)
   - command exits 0 with output → PASS (the log is the evidence)
-  - platform != web           → NOT_APPLICABLE/platform
+  - platform desktop          → NOT_APPLICABLE/platform
 
     python tenant_isolation.py --repo . --platform web
 
@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 HINT = "tenant-isolation-command"
-PLATFORMS = ("web",)
+PLATFORMS = ("web", "both")  # `both` (gates.json) has the web surface too
 
 
 def host_dir(repo: Path) -> Path | None:
@@ -59,6 +59,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--platform", default="web")
     ap.add_argument("--command", help="overrides the command declared in gates.json")
     a = ap.parse_args(argv)
+    # A Windows pipe is cp1252: a `—` in a reason crashed or garbled the report.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
 
     repo = Path(a.repo).resolve()
     evidence: list[str] = []

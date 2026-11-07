@@ -108,6 +108,27 @@ const findings = []
 let hardGateFailed = false
 const hardGateReasons = []
 
+// Whether the `User-agent: *` group holds `Disallow: /` with nothing after it. Read group by
+// group: one regex over the whole file ran into the next group (a `GPTBot` block) and took a
+// `Disallow: /cart` for the whole site.
+function robotsDisallowsAll(text) {
+  let agents = [], rules = false, all = false
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.replace(/#.*/, '').trim()
+    const m = line.match(/^([A-Za-z-]+)\s*:\s*(.*)$/)
+    if (!m) continue
+    const key = m[1].toLowerCase(), value = m[2].trim()
+    if (key === 'user-agent') {
+      if (rules) { agents = []; rules = false }
+      agents.push(value)
+    } else {
+      rules = true
+      if (key === 'disallow' && value === '/' && agents.includes('*')) all = true
+    }
+  }
+  return all
+}
+
 function record(def, out) {
   const { id, category, title, severity, evidenceClass } = def
   let status = out.status || 'NOT_VERIFIED'
@@ -224,7 +245,7 @@ async function runLiveAudit(url) {
   if (!robotsRes.ok) {
     record({ id: 'CRAWL-ROBOTS-01', category: 'crawling', title: 'robots.txt reachable', severity: 'Medium', evidenceClass: 'machine_verified' }, { status: 'WARN', message: `HTTP ${robotsRes.status}` })
   } else {
-    const disallowAll = /(^|\n)\s*User-agent:\s*\*\s*[\r\n]+([^\n]*\n)*\s*Disallow:\s*\/\s*(\n|$)/i.test(robotsText)
+    const disallowAll = robotsDisallowsAll(robotsText)
     record({ id: 'CRAWL-ROBOTS-01', category: 'crawling', title: 'robots.txt reachable', severity: 'Medium', evidenceClass: 'machine_verified' }, disallowAll ? { status: 'FAIL', message: 'robots.txt disallows the entire site for all user agents' } : { status: 'PASS', message: 'robots.txt reachable and does not disallow everything' })
 
     // LLM crawler policy — informational
@@ -491,7 +512,9 @@ for (const c of findings) {
   if (c.status === 'WARN') { warnCount++; penaltyWeighted += c.weight * 0.4 }
 }
 const score = totalWeighted > 0 ? Math.max(0, Math.round((1 - penaltyWeighted / totalWeighted) * 100)) : 0
-const materiallyIncomplete = notVerifiedCount >= Math.max(3, passCount / 2)
+// A site that never answered proves nothing: one NOT_VERIFIED for the network was READY.
+const unreachable = passCount === 0 || findings.some((c) => c.id === 'NET-01' && c.status === 'NOT_VERIFIED')
+const materiallyIncomplete = unreachable || notVerifiedCount >= Math.max(3, passCount / 2)
 let verdict = 'READY_WITH_FOLLOWUPS'
 if (hardGateFailed) verdict = 'BLOCKED'
 else if (failCount > 0) verdict = 'FIX_BEFORE_LAUNCH'
@@ -550,4 +573,4 @@ if (wantXml) {
   console.log('</seoAudit>')
 }
 
-exitCleanly(verdict === 'BLOCKED' || verdict === 'FIX_BEFORE_LAUNCH' ? 1 : 0)
+exitCleanly(verdict === 'BLOCKED' || verdict === 'FIX_BEFORE_LAUNCH' || unreachable ? 1 : 0)

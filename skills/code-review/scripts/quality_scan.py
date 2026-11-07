@@ -99,13 +99,17 @@ def git_lines(repo: Path, *args: str) -> list[str]:
     Git answers which files would ship (so ignored output never counts) and
     which ones a change touched; re-implementing .gitignore would be worse.
     """
-    out = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
+    # `quotepath=off` and UTF-8: an accented name came back quoted and octal-escaped, and
+    # the file was never measured.
+    out = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=repo, capture_output=True,
+                         text=True, encoding="utf-8", errors="replace", check=True)
     return [line for line in out.stdout.splitlines() if line]
 
 
 def changed_files(repo: Path, since: str) -> set[str]:
-    # `--end-of-options`: a ref like `--output=x` stays a ref, not an option.
-    changed = git_lines(repo, "diff", "--name-only", "--end-of-options", since)
+    # `--end-of-options`: a ref like `--output=x` stays a ref, not an option. `--relative`: paths
+    # from `--repo`, like `ls-files`, and not from the git root.
+    changed = git_lines(repo, "diff", "--name-only", "--relative", "--end-of-options", since)
     return set(changed) | set(git_lines(repo, "ls-files", "--others", "--exclude-standard"))
 
 
@@ -119,12 +123,14 @@ def candidate_paths(repo: Path) -> list[str]:
 
 def source_files(repo: Path, ignore_dirs: list[str], ignore_globs: list[str],
                  only: set[str] | None):
-    skip = SKIP_DIRS | set(ignore_dirs)
+    # A bare name skips that folder anywhere; one with a `/` is a path from the root.
+    nomes = SKIP_DIRS | {d for d in ignore_dirs if "/" not in d.strip("/")}
+    prefixos = tuple(d.strip("/") + "/" for d in ignore_dirs if "/" in d.strip("/"))
     for rel in candidate_paths(repo):
         path = repo / rel
         if path.suffix not in BRACE_LANGS.keys() | PY_EXTS or rel.endswith(".d.ts"):
             continue
-        if skip & set(Path(rel).parts[:-1]) or not path.is_file():
+        if nomes & set(Path(rel).parts[:-1]) or rel.startswith(prefixos) or not path.is_file():
             continue
         if any(fnmatch.fnmatch(rel, g) for g in ignore_globs):
             continue
@@ -136,7 +142,10 @@ def source_files(repo: Path, ignore_dirs: list[str], ignore_globs: list[str],
 # ------------------------------------------------------------ brace languages
 
 STRING_RE = {
-    "js": re.compile(r"//[^\n]*|/\*.*?\*/|'(?:\\.|[^'\\\n])*'|\"(?:\\.|[^\"\\\n])*\"|`(?:\\.|[^`\\])*`", re.S),
+    # A `'` after a letter is JSX text (`Don't`), not a string; a `/` after an operator opens a
+    # regex literal (`/\{/g`). Either one read wrong unbalanced the braces of the whole file.
+    "js": re.compile(r"//[^\n]*|/\*.*?\*/|(?<![\w$])'(?:\\.|[^'\\\n])*'|\"(?:\\.|[^\"\\\n])*\"|`(?:\\.|[^`\\])*`"
+                     r"|(?<=[(=,:!&|?;{}\[])\s*/(?![/*])(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^/\\\n\[])+/[a-z]*", re.S),
     "rust": re.compile(r"//[^\n]*|/\*.*?\*/|r#*\"(?:.|\n)*?\"#*|\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\\n])'", re.S),
 }
 CONTROL = {
@@ -188,8 +197,13 @@ def group_after(text: str, start: int) -> str:
 
 def count_params(group: str, lang: str) -> int:
     parts, depth, current = [], 0, ""
-    for c in group:
-        depth += {"(": 1, "[": 1, "{": 1, "<": 1, ")": -1, "]": -1, "}": -1, ">": -1}.get(c, 0)
+    for i, c in enumerate(group):
+        # The `>` of an arrow (`=>`, `->`) closes nothing; a comparison's `>` cannot take the
+        # depth below zero, where every later comma would be lost.
+        if c == ">" and i and group[i - 1] in "=-":
+            current += c
+            continue
+        depth = max(0, depth + {"(": 1, "[": 1, "{": 1, "<": 1, ")": -1, "]": -1, "}": -1, ">": -1}.get(c, 0))
         if c == "," and depth == 0:
             parts.append(current)
             current = ""
@@ -258,7 +272,7 @@ def brace_functions(text: str, lang: str) -> list[Function]:
             parens = max(0, parens - 1)
         elif c == "{":
             parent = stack[-1] if stack else None
-            stack.append(open_block(block_kind(code, pos, lang, parens), parens, parent))
+            stack.append(open_block(block_kind(code, pos, lang, parens, text), parens, parent))
             parens = 0
         elif c == "}" and stack:
             block = stack.pop()
@@ -269,7 +283,7 @@ def brace_functions(text: str, lang: str) -> list[Function]:
     return done
 
 
-def block_kind(code: str, pos: int, lang: str, parens: int) -> tuple[str, Function | None]:
+def block_kind(code: str, pos: int, lang: str, parens: int, text: str) -> tuple[str, Function | None]:
     """What the `{` at `pos` opens: ("function", Function) or ("control"|"other", None)."""
     if parens > 0 and not is_arrow_body(code, pos):
         return "other", None  # an object literal or a type inside a call's arguments
@@ -278,7 +292,20 @@ def block_kind(code: str, pos: int, lang: str, parens: int) -> tuple[str, Functi
     if kind != "function":
         return kind, None
     first = start + len(header) - len(header.lstrip())
+    if name == "<anonymous>":
+        name = call_label(text[start:pos]) or name
     return kind, Function(name, code.count("\n", 0, first) + 1, params=params)
+
+
+CALL_WITH_TEXT = re.compile(r"""([A-Za-z_$][\w$.]*)\s*\(\s*(['"`])((?:\\.|(?!\2).){0,60})\2""")
+
+
+def call_label(header: str) -> str:
+    """A callback's name from the call it is passed to and that call's first text, like
+    `it("saves twice")`: an ordinal (`<anonymous>#3`) changed when another callback was added
+    above it, and the baseline then read a recorded debt as new."""
+    m = CALL_WITH_TEXT.search(header)
+    return f'{m.group(1)}("{m.group(3)}")' if m else ""
 
 
 def open_block(opened: tuple[str, Function | None], parens: int, parent: dict | None) -> dict:
@@ -328,8 +355,9 @@ def py_depth(node: ast.AST, depth: int = 0) -> int:
 # ------------------------------------------------------------ measuring
 
 def measure_file(path: Path, rel: str) -> list[Measure]:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    found = [Measure("quality.file-size", rel, 1, "", text.count("\n") + 1)]
+    # `utf-8-sig`: a BOM made `ast.parse` fail and the file's functions went unmeasured.
+    text = path.read_text(encoding="utf-8-sig", errors="replace")
+    found = [Measure("quality.file-size", rel, 1, "", len(text.splitlines()))]
     lang = BRACE_LANGS.get(path.suffix)
     functions = brace_functions(text, lang) if lang else python_functions(text)
     seen: dict[str, int] = {}

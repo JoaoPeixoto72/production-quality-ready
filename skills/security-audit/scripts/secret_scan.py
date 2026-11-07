@@ -25,7 +25,7 @@ Output: JSON on stdout, human summary on stderr, exit 0.
 
 Usage:
   python secret_scan.py --repo . [--gitleaks-report .audit/gitleaks-report.json]
-                         [--max-commits N] [--no-history]
+                         [--max-commits N] [--no-history] [--engine auto|builtin|gitleaks]
 """
 
 from __future__ import annotations
@@ -86,8 +86,12 @@ SOFT_PATH = re.compile(r"(?:^|/)(?:tests?|__tests__|fixtures?|examples?|docs?|sp
 
 
 def run(cmd: list[str], cwd: Path, timeout: int = 300) -> tuple[int, str]:
+    # `quotepath=off` and UTF-8: an accented name came back quoted and octal-escaped, and
+    # that file was never read.
+    if cmd[0] == "git":
+        cmd = ["git", "-c", "core.quotepath=off", *cmd[1:]]
     try:
-        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8",
                            timeout=timeout, errors="replace")
         return p.returncode, (p.stdout or "")
     except Exception as e:  # noqa: BLE001
@@ -230,6 +234,8 @@ def main() -> int:
     ap.add_argument("--repo", default=".")
     ap.add_argument("--max-commits", type=int, default=2000)
     ap.add_argument("--no-history", action="store_true")
+    ap.add_argument("--engine", choices=("auto", "builtin", "gitleaks"), default="auto",
+                    help="auto: gitleaks when on PATH, else builtin (a report always wins)")
     ap.add_argument("--gitleaks-report", default="",
                     help="gitleaks JSON report from CI (needs a <report>.head sidecar)")
     a = ap.parse_args()
@@ -254,20 +260,31 @@ def main() -> int:
         else:
             evidence.append(note)
     if not engine:
-        engine = "gitleaks" if shutil.which("gitleaks") else "builtin"
+        engine = a.engine if a.engine != "auto" else ("gitleaks" if shutil.which("gitleaks") else "builtin")
 
+    # Set only when an engine ran but read nothing: gitleaks outside a repository, with no
+    # commit, or killed by the timeout, prints `[]` or nothing and exits 0 - never a PASS.
+    unread = ""
     if engine == "gitleaks-report":
         pass
     elif engine == "gitleaks":
-        code, out = run(["gitleaks", "detect", "--source", str(repo),
-                         "--no-banner", "--redact", "--report-format", "json",
-                         "--report-path", "-"], repo, timeout=900)
-        try:
-            data = json.loads(out) if out.strip().startswith("[") else []
-        except json.JSONDecodeError:
-            data = []
-        findings = gitleaks_findings(data)
-        evidence.append(f"engine: gitleaks (exit {code}), findings: {len(findings)}")
+        if run(["git", "rev-parse", "--verify", "-q", "HEAD"], repo)[0] != 0:
+            unread = "no commit to scan (not a repository, or an empty one)"
+        else:
+            code, out = run(["gitleaks", "detect", "--source", str(repo),
+                             "--no-banner", "--redact", "--report-format", "json",
+                             "--report-path", "-"], repo, timeout=900)
+            try:
+                data = json.loads(out)
+            except json.JSONDecodeError:
+                data = None
+            if not isinstance(data, list) or code not in (0, 1):
+                unread = f"gitleaks gave no report (exit {code})"
+            else:
+                findings = gitleaks_findings(data)
+                evidence.append(f"engine: gitleaks (exit {code}), findings: {len(findings)}")
+                if a.no_history:
+                    evidence.append("note: --no-history applies to the builtin engine; gitleaks read the history")
     else:
         wt, listed = scan_worktree(repo)
         for h in wt:
@@ -290,9 +307,10 @@ def main() -> int:
 
     # A scan that read nothing cannot pass.
     if engine == "builtin" and not listed:
+        unread = "`git ls-files` listed no file (not a repository, or git missing)"
+    if unread:
         result, severity = "NOT_VERIFIED", ""
-        reason = ("nothing was scanned: `git ls-files` listed no file (not a repository, or git "
-                  "missing) — an empty scan cannot pass")
+        reason = f"nothing was scanned: {unread} — an empty scan cannot pass"
     elif hard:
         result, severity = "FAIL", "BLOCKER"
         reason = (f"{len(hard)} credential-shaped value(s) found in tracked content or history "

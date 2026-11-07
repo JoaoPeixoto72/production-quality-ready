@@ -25,8 +25,8 @@ of variables once and forget them:
 
 ```bash
 G="<this skill folder>/scripts/gui.ps1"   # the directory holding this SKILL.md
-A="-Title MyApp -Process my_app"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File $G $A -Action content -Out "out\x.png"
+A=(-Title "My App" -Process my_app)       # an array: a title or path with spaces stays one argument
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$G" "${A[@]}" -Action content -Out "out\x.png"
 ```
 
 ## The ten actions

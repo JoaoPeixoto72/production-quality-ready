@@ -114,5 +114,40 @@ class Since(unittest.TestCase):
             self.assertEqual((code, trap.exists()), (2, False))
 
 
+class IgnoreDirs(unittest.TestCase):
+    def test_a_name_skips_anywhere_and_a_path_only_from_the_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            for rel in ("scripts/biblioteca/a.ts", "scripts/outra/b.ts", "src/biblioteca/c.ts", "spikes/d.ts", "x/spikes/e.ts"):
+                (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+                (repo / rel).write_text("function f() {}\n", encoding="utf-8")
+            vistos = {r for _, r in qs.source_files(repo, ["scripts/biblioteca", "spikes"], [], None)}
+            self.assertEqual(vistos, {"scripts/outra/b.ts", "src/biblioteca/c.ts"})
+
+
+class Shapes(unittest.TestCase):
+    def test_an_arrow_type_does_not_hide_the_commas_after_it(self):
+        js = by_name(qs.brace_functions("function many(cb: () => void, a, b, c, d) {}\n", "js"))
+        rs = by_name(qs.brace_functions("fn many(cb: &dyn Fn(u8) -> u8, a: u8, b: u8) {}\n", "rust"))
+        self.assertEqual((js["many"].params, rs["many"].params), (5, 3))
+
+    def test_a_regex_literal_and_a_jsx_apostrophe_keep_the_braces_balanced(self):
+        src = ("function A() {\n  return t.replace(/\\{/g, '(');\n}\n"
+               "function B(a, b, c, d, e) {\n  return <p>Don't {n ? 'x' : 'y'}</p>;\n}\n")
+        fns = by_name(qs.brace_functions(src, "js"))
+        self.assertEqual((fns["A"].end, fns["B"].params, fns["B"].end), (3, 5, 6))
+
+    def test_a_callback_is_named_by_its_call_not_by_its_place(self):
+        src = 'it("saves twice", () => {\n  a();\n});\n'
+        self.assertEqual([f.name for f in qs.brace_functions(src, "js")], ['it("saves twice")'])
+
+    def test_lines_are_counted_as_wc_does_and_a_bom_still_parses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "a.py"
+            f.write_text("﻿def f(a, b, c, d, e):\n    pass\n", encoding="utf-8")
+            got = {m.check: m.value for m in qs.measure_file(f, "a.py")}
+            self.assertEqual((got["quality.file-size"], got["quality.params"]), (2, 5))
+
+
 if __name__ == "__main__":
     unittest.main()

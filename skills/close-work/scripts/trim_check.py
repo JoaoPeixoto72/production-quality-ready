@@ -20,7 +20,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-HOSTS = (".claude", ".agents")
+HOSTS = (".agents", ".claude")  # the order every owner reads them in
 DEFAULTS = {
     "comment-lines": 3,
     "history": [
@@ -44,13 +44,19 @@ CONSTANT = re.compile(r"^\s*(pub(\([^)]*\))?\s+)?(export\s+)?(const|static|final
 NUMBER = re.compile(r"\b\d+(?:[.,]\d+)?\b")
 STRING = re.compile(r'"(?:[^"\\]|\\.)*"')
 TEST_MODULE = re.compile(r"#\[cfg\(test\)\]")
+TEST_MOD_OPEN = re.compile(r"\bmod\s+\w+\s*\{")
 # Lines that carry no text: comment delimiters and rulers (`// -----`, `/* ==== */`).
 BARE_DELIMITER = re.compile(r"^\s*(\{?/\*\*?|\*/\}?|\*|//[/!]?|#)?[\s\-=─*#/{}]*$")
 
 
 def git(repo: Path, *args: str) -> str:
-    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace").stdout
+    """`quotepath=off`: an accented name came back quoted and octal-escaped, and was skipped.
+    A failing git (a mistyped `--since`) stops here: read as empty, it said "nothing to trim"."""
+    p = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=repo, capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    if p.returncode != 0:
+        sys.exit(f"git {' '.join(args)}: {p.stderr.strip() or f'exit {p.returncode}'}")
+    return p.stdout
 
 
 def config(repo: Path) -> dict:
@@ -90,7 +96,8 @@ def added_lines(repo: Path, since: str | None) -> dict[str, set[int] | None]:
         return {f: None for f in git(repo, "ls-files").splitlines() if f}
     out: dict[str, set[int] | None] = {}
     current, n = None, 0
-    for l in git(repo, "diff", "-U0", "--no-color", since, "--").splitlines():
+    # `--relative`: paths from `--repo`, like `ls-files`, and not from the git root.
+    for l in git(repo, "diff", "-U0", "--no-color", "--relative", since, "--").splitlines():
         if l.startswith("+++ "):
             current = l[6:] if l.startswith("+++ b/") else None
         elif l.startswith("@@"):
@@ -124,9 +131,10 @@ def scan(repo: Path, since: str | None) -> dict[str, list[str]]:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         is_comment = comment_lines(ext, lines)
         new = (lambda k: True) if only is None else (lambda k: k + 1 in only)
-        # An inline `#[cfg(test)] mod x {` starts the tests; `#[cfg(test)] mod x;` lives elsewhere.
+        # An inline `#[cfg(test)] mod x {` starts the tests; `#[cfg(test)] mod x;` lives elsewhere,
+        # and `#[cfg(test)]` on a lone fn or struct is not where the tests begin.
         tests_from = next((k for k, l in enumerate(lines) if TEST_MODULE.search(l)
-                           and "{" in " ".join(lines[k:k + 3])), len(lines))
+                           and TEST_MOD_OPEN.search(" ".join(lines[k:k + 3]))), len(lines))
 
         k = 0
         while k < len(lines):
@@ -172,6 +180,9 @@ def main() -> int:
     ap.add_argument("--all", action="store_true", help="every tracked line, as if new")
     ap.add_argument("--format", choices=["json", "md"], default="json")
     a = ap.parse_args()
+    # A Windows pipe is cp1252: a `→` in a flagged line crashed the report.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     repo = Path(a.repo).resolve()
     found = scan(repo, None if a.all else a.since)
     failed = any(found.values())

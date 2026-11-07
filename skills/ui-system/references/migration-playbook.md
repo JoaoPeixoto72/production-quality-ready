@@ -27,7 +27,7 @@ stopping it from working or building.
 Before touching code, run the automated inspection on the target app:
 
 ```bash
-python .claude/skills/ui-system/scripts/audit_ui.py .
+python <this skill folder>/scripts/audit_ui.py .
 ```
 
 It finds:
@@ -87,7 +87,7 @@ This phase removes the flat look at once:
 
 1. Run the script again:
    ```bash
-   python .claude/skills/ui-system/scripts/audit_ui.py .
+   python <this skill folder>/scripts/audit_ui.py .
    ```
 2. Confirm that arbitrary hex colours dropped sharply or to zero, and no old UI library import is orphaned.
 3. Remove any old package no file imports any more:

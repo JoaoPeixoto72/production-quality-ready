@@ -22,7 +22,7 @@ DOC_CANDIDATES = ("docs/threat-model.md", "THREAT_MODEL.md", "docs/seguranca/thr
 
 # `src/x.ts:123`, `routes/y.ts` (relative to `src/`), `migrations/0033_x.sql:7` — a
 # path, optionally with a line. Extensions are a list, not `\w{1,6}`, so `event.id` is not a citation.
-CITATION = re.compile(r"`([A-Za-z0-9_][\w./-]*\.([A-Za-z0-9]{1,8}))(?::(\d+))?`")
+CITATION = re.compile(r"`([A-Za-z0-9_][\w./-]*\.([A-Za-z0-9]{1,8}))(?::(\d+)(?:-\d+)?)?`")  # `x.rs:1-5` too
 TEST_PATH = re.compile(r"(?:^|/)(?:tests?|__tests__)/|\.(?:test|spec)\.", re.IGNORECASE)
 
 # Extensions that count as files (`.id` and `.all` do not).
@@ -73,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", default=".")
     ap.add_argument("--doc", help="threat model path (otherwise the usual candidates)")
     a = ap.parse_args(argv)
+    # A Windows pipe is cp1252: a `—` in a reason crashed or garbled the report.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
 
     repo = Path(a.repo).resolve()
     evidence: list[str] = []
@@ -94,10 +97,14 @@ def main(argv: list[str] | None = None) -> int:
             if target is None:
                 dangling.append(f"{path} (file missing)")
                 continue
-            if TEST_PATH.search(path):
+            body = target.read_text(encoding="utf-8", errors="replace").splitlines()
+            # Rust keeps unit tests in the same file, below `#[cfg(test)]`.
+            in_rust_tests = (line is not None and path.endswith(".rs")
+                             and any("#[cfg(test)]" in l for l in body[:line - 1]))
+            if TEST_PATH.search(path) or in_rust_tests:
                 tests += 1
             if line is not None:
-                total = len(target.read_text(encoding="utf-8", errors="replace").splitlines())
+                total = len(body)
                 if line > total:
                     dangling.append(f"{path}:{line} (file has {total} lines)")
         evidence.append(f"doc: {rel_doc}; citations: {len(cites)}; into tests: {tests}")

@@ -61,8 +61,11 @@ def extract_description(text: str) -> str | None:
         body = re.sub(r"^\s+", "", body, flags=re.M)
         body = re.sub(r"\s+", " ", body)
     else:
-        # Inline. Collapse whitespace too, for consistency with folded.
-        body = re.sub(r"\s+", " ", body)
+        # Inline. Collapse whitespace too, for consistency with folded. The YAML quotes are
+        # syntax, not text: counted, every quoted description read two characters long.
+        body = re.sub(r"\s+", " ", body).strip()
+        if len(body) >= 2 and body[0] == body[-1] and body[0] in "'\"":
+            body = body[1:-1]
     return body.strip()
 
 
@@ -122,6 +125,8 @@ def main() -> int:
         "(use to diagnose python3-microsoft-store trap)",
     )
     args = ap.parse_args()
+    if hasattr(sys.stdout, "reconfigure"):  # the table's `—` on a cp1252 pipe
+        sys.stdout.reconfigure(encoding="utf-8")
 
     if args.print_interpreter:
         print(interpreter_line())
@@ -170,7 +175,7 @@ def main() -> int:
     print(f"| {'TOTAL'.ljust(name_w)} | {total:>5} |        |")
     print(f"\nFiles measured: {len(rows)}.")
 
-    over = [(name, status) for name, _, status in rows if status.startswith("OVER")]
+    over = [(name, status) for name, _, status in rows if status.startswith("OVER") or status == "no-description"]
     if over:
         worst = ", ".join(f"{name} ({status})" for name, status in over)
         print(f"OVER-BUDGET: {worst}", file=sys.stderr)

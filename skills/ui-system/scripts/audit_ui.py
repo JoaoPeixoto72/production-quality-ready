@@ -39,6 +39,7 @@ DEFAULT_IGNORED_DIRS = {
     "vendor",
     "tests",
     "migrations",
+    ".work",  # the plugin's own scratch folder (ignored by git)
 }
 
 HEX = re.compile(
@@ -85,14 +86,16 @@ REMOTE_LINK_TAG = re.compile(
     r"""<(?:link|script|img)\b[^>]*\b(?:href|src)\s*=\s*["']https?://""",
     re.IGNORECASE,
 )
+# A loaded resource, not a link the user follows: `<a href="https://...">` is navigation.
 REMOTE_JS_RESOURCE = re.compile(
-    r"""(?:\b(?:src|href)\s*=\s*["']https?://|\bfetch\s*\(\s*["']https?://|\bnew\s+FontFace\s*\([^,]+,\s*["']https?://)""",
+    r"""(?:\bsrc\s*=\s*["']https?://|<link\b[^>]*\bhref\s*=\s*["']https?://|\bfetch\s*\(\s*["']https?://|\bnew\s+FontFace\s*\([^,]+,\s*["']https?://)""",
     re.IGNORECASE,
 )
 
-DATA_UI = re.compile(r"""data-ui\s*=\s*["']([^"']+)["']""")
+# Unquoted `[data-ui=button]` is valid CSS, and `screen and (prefers-reduced-motion...)` too.
+DATA_UI = re.compile(r"""data-ui\s*[~|^$*]?=\s*["']?([\w-]+)""")
 TRANSITION = re.compile(r"\b(?:transition|animation)(?:-[\w-]+)?\s*:")
-REDUCED_MOTION = re.compile(r"@media\s*\([^)]*prefers-reduced-motion|\[data-reduce-motion")
+REDUCED_MOTION = re.compile(r"@media[^{]*prefers-reduced-motion|\[data-reduce-motion")
 BOOLEAN_STATE_SELECTOR = re.compile(
     r"""\[data-(pressed|disabled)\s*=\s*["'](?:true|false)["']\]""",
     re.IGNORECASE,
@@ -704,6 +707,17 @@ def resolve_settings(args: argparse.Namespace, root: Path) -> AuditSettings:
 
     ignored_dirs = set(DEFAULT_IGNORED_DIRS)
     ignored_dirs.update(args.ignore_dir or [])
+    # `owners.ui-system.ignore-dirs` (POLICY): read here too, so a run by hand ignores what
+    # run-all-owners would.
+    for host in (".agents", ".claude"):
+        gates = root / host / "gates.json"
+        if gates.is_file():
+            try:
+                own = json.loads(gates.read_text(encoding="utf-8")).get("owners", {}).get("ui-system", {})
+                ignored_dirs.update(own.get("ignore-dirs", []))
+            except (ValueError, AttributeError):
+                pass
+            break
 
     cfg_disp = None
     if config_path:
@@ -816,7 +830,10 @@ def scan(path: Path, root: Path, settings: AuditSettings):
         findings.extend(color_mix_percent_findings(body_css, rel))
         findings.extend(check_oklch_contrast_pairs(body_css, rel))
         for selector, block_body, block_line in extract_css_blocks(body_css):
-            if ":focus" not in selector:
+            # `:not(:focus-visible)` styles the unfocused state; a block with its own `outline`
+            # has its ring, and the shadow beside it is elevation.
+            focus_in = re.sub(r":not\([^)]*\)", "", selector)
+            if ":focus" not in focus_in or re.search(r"(?:^|[;{\s])outline\s*:", block_body):
                 continue
             if has_top_level_box_shadow(block_body):
                 findings.append(Finding("error" if settings.require_focus_visible else "warn", "focus-box-shadow", rel, block_line, selector[:120], "Focus ring via box-shadow. Prefer outline with outline-offset; forced-colors suppresses box-shadow."))
@@ -856,6 +873,9 @@ def main() -> int:
     parser.add_argument("--shadcn-alias-severity", choices=["error", "warn"], default="warn", help="Severity for legacy UI aliases. Default: warn.")
     parser.add_argument("--ignore-dir", action="append", default=None, help="Extra directory name to ignore. Repeatable.")
     args = parser.parse_args()
+    # A Windows pipe is cp1252: a `—` in a reason crashed or garbled the report.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
 
     target_root = args.repo if args.repo is not None else args.root
     root = Path(target_root).resolve()
@@ -865,6 +885,10 @@ def main() -> int:
 
     if args.out:
         args.markdown_output = args.out
+    if args.markdown_output and Path(args.markdown_output).is_dir():  # "directory/file", as documented
+        if args.json_output == "ui-audit.json":  # the JSON goes with it, not into the working folder
+            args.json_output = str(Path(args.markdown_output) / "ui-audit.json")
+        args.markdown_output = str(Path(args.markdown_output) / "ui-audit.md")
 
     settings = resolve_settings(args, root)
 

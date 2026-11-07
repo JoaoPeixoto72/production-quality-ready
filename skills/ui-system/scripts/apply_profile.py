@@ -84,7 +84,10 @@ def _profile_fonts(config: dict) -> tuple[list[str], list[str]]:
 def apply(skill: Path, project: Path, profile: str | None, dry: bool, ui_dir: str | None,
           with_tailwind: bool, with_react: bool = False) -> int:
     if profile:
-        profile_dir = skill / "profiles" / profile
+        # The project's own profile first, as audit_ui.py looks for it; then the skill's.
+        profile_dir = project / "profiles" / profile
+        if not profile_dir.is_dir():
+            profile_dir = skill / "profiles" / profile
         if not profile_dir.is_dir():
             print(f"Error: profile '{profile}' does not exist in {profile_dir}", file=sys.stderr)
             profiles = skill / "profiles"

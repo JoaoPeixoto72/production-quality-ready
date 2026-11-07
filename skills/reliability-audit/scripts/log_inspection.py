@@ -41,9 +41,11 @@ from pathlib import Path
 
 CODE_EXT = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".rs", ".py", ".go", ".java", ".kt", ".swift"}
 IGNORED = {".git", "node_modules", "dist", "build", "target", ".venv", "venv",
-           "__pycache__", ".wrangler", "coverage", ".audit", ".verify", ".agents"}
+           "__pycache__", ".wrangler", "coverage", ".audit", ".verify", ".agents", ".claude", ".work"}
 
 BARE_LOG = re.compile(r"(?<![\w.])(?:console\.(?:log|error|warn|info|debug)|print|println!|fmt\.Print\w*)\s*\(")
+# Rust's leveled macros are structured by construction (`tracing::info!(job_id, "...")`).
+LEVELED_MACRO = re.compile(r"(?<![\w])(?:(?:tracing|log)::)?(?:trace|debug|info|warn|error|event)!\s*\(")
 JSON_IN_LOG = re.compile(r"JSON\.stringify|serde_json|json\.dumps|structured|logfmt", re.IGNORECASE)
 LEVEL_WORD = re.compile(r"\b(?:ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL)\b")
 TIMESTAMP = re.compile(r"toISOString|Date\.now|time\.Now|datetime\.now|Utc::now|chrono::", re.IGNORECASE)
@@ -79,7 +81,7 @@ RETENTION = re.compile(
 )
 CONSENT = re.compile(r"\bconsent\w*|\bopt[-_ ]?in\b|\bconsentimento\b|\bRGPD\b|\bGDPR\b", re.IGNORECASE)
 VERSION_IN_REPORT = re.compile(
-    r"(?:version|commit|sha|build)\s*[:=]|process\.env\.npm_package_version|"
+    r"\b(?:version|commit|sha|build)\s*[:=]|process\.env\.npm_package_version|"
     r"CARGO_PKG_VERSION|__VERSION__|APP_VERSION|ASSET_VERSION",
     re.IGNORECASE,
 )
@@ -95,6 +97,12 @@ def iter_files(root: Path, sub: str | None = None):
         if any(part in IGNORED for part in p.relative_to(root).parts):
             continue
         yield p
+
+
+def without_comments(text: str, ext: str) -> str:
+    """Comments blanked, newlines kept: a `// TODO: add a requestId` is not a correlation id."""
+    pattern = r"#[^\n]*" if ext == ".py" else r"//[^\n]*|/\*.*?\*/"
+    return re.sub(pattern, lambda m: re.sub(r"[^\n]", " ", m.group(0)), text, flags=re.S)
 
 
 def rel(p: Path, root: Path) -> str:
@@ -123,7 +131,9 @@ def main() -> int:
         pass
 
     repo = Path(a.repo).resolve()
-    sub = a.src if a.src else ("src" if (repo / "src").is_dir() else None)
+    # The whole repo by default: `src/` alone left a Tauri app's `src-tauri/` and a worker's
+    # folder unread.
+    sub = a.src or None
     files = list(iter_files(repo, sub))
 
     helpers: list[tuple[str, str]] = []        # (file:line, name)
@@ -136,10 +146,11 @@ def main() -> int:
 
     for f in files:
         try:
-            text = f.read_text(encoding="utf-8", errors="replace")
+            text = without_comments(f.read_text(encoding="utf-8", errors="replace"), f.suffix.lower())
         except OSError:
             continue
         r = rel(f, repo)
+        structured_hits += [f"{r}:{text[:m.start()].count(chr(10)) + 1}" for m in LEVELED_MACRO.finditer(text)]
         for m in LOG_HELPER_DEF.finditer(text):
             line = text[:m.start()].count("\n") + 1
             helpers.append((f"{r}:{line}", m.group(1)))

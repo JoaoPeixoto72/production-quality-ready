@@ -311,5 +311,19 @@ class TestWaiver(unittest.TestCase):
         self.assertTrue(any("invalid-result" in x for x in v.reasons), v.reasons)
 
 
+class TinyYaml(unittest.TestCase):
+    def test_a_trailing_comment_is_not_part_of_the_value(self):
+        m = ve.parse_yaml_min('result: PASS   # the verdict\nowner: "code-review"  # slug\n')
+        self.assertEqual((m["result"], m["owner"]), ("PASS", "code-review"))
+
+    def test_a_list_at_column_zero_is_read_and_an_indented_one_is_untouched(self):
+        flush = ve.parse_yaml_min("methods:\n- test-execution\n- static-analysis\n"
+                                  "evidence:\n- path: a.ts:1\n  kind: source\nresult: PASS\n")
+        indented = ve.parse_yaml_min("methods:\n  - test-execution\n  - static-analysis\nresult: PASS\n")
+        self.assertEqual(flush["methods"], ["test-execution", "static-analysis"])
+        self.assertEqual(flush["evidence"][0].get("kind"), "source")
+        self.assertEqual(indented["methods"], flush["methods"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

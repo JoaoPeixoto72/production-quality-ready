@@ -12,7 +12,7 @@ allowed-tools: Read Glob Grep Bash
 ---
 ```
 
-The adapter body names the contract it is judged under, never a copy or a version: `production-quality-ready/CONTRACTS.md` (POLICY Â§3.1).
+The adapter body names the contract it is judged under, never a copy or a version: `production-quality-ready/CONTRACTS.md` (POLICY §3.1).
 
 ## Required body sections
 
