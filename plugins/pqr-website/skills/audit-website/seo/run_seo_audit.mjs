@@ -34,8 +34,7 @@ const DEFAULT_CONFIG = {
   thresholds: {
     titleMin: 30, titleMax: 60,
     descriptionMin: 70, descriptionMax: 160,
-    lcpGoodMs: 2500, inpGoodMs: 200, clsGood: 0.1,
-    targetPassScore: 90
+    lcpGoodMs: 2500, inpGoodMs: 200, clsGood: 0.1
   },
   profile: {}
 }
@@ -103,7 +102,6 @@ if (!targetUrl && !buildDir) {
   process.exit(1)
 }
 
-const SEVERITY_WEIGHTS = { Critical: 10, High: 6, Medium: 3, Low: 1 }
 const findings = []
 let hardGateFailed = false
 const hardGateReasons = []
@@ -141,8 +139,7 @@ function record(def, out) {
     status,
     confidence: out.confidence || (evidenceClass === 'machine_verified' ? 'high' : evidenceClass === 'heuristic' ? 'medium' : 'low'),
     message: out.message || '',
-    details: out.details || null,
-    weight: SEVERITY_WEIGHTS[severity] || 1
+    details: out.details || null
   }
   if (severity === 'Critical' && status === 'FAIL' && evidenceClass !== 'heuristic') {
     hardGateFailed = true
@@ -501,17 +498,15 @@ if (buildDir) await runBuildAudit(buildDir)
 // ---------------------------------------------------------------------------
 // Verdict
 // ---------------------------------------------------------------------------
-let totalWeighted = 0, penaltyWeighted = 0
+// No score: a number hides which control failed (CONTRACTS §7.2). The counts and the verdict are the output.
 let passCount = 0, failCount = 0, warnCount = 0, notVerifiedCount = 0, naCount = 0
 for (const c of findings) {
   if (c.status === 'NOT_APPLICABLE') { naCount++; continue }
   if (c.status === 'NOT_VERIFIED') { notVerifiedCount++; continue }
-  totalWeighted += c.weight
   if (c.status === 'PASS') passCount++
-  if (c.status === 'FAIL') { failCount++; penaltyWeighted += c.weight }
-  if (c.status === 'WARN') { warnCount++; penaltyWeighted += c.weight * 0.4 }
+  if (c.status === 'FAIL') failCount++
+  if (c.status === 'WARN') warnCount++
 }
-const score = totalWeighted > 0 ? Math.max(0, Math.round((1 - penaltyWeighted / totalWeighted) * 100)) : 0
 // A site that never answered proves nothing: one NOT_VERIFIED for the network was READY.
 const unreachable = passCount === 0 || findings.some((c) => c.id === 'NET-01' && c.status === 'NOT_VERIFIED')
 const materiallyIncomplete = unreachable || notVerifiedCount >= Math.max(3, passCount / 2)
@@ -529,7 +524,6 @@ console.log(`  FAIL:          ${failCount}`)
 console.log(`  WARN:          ${warnCount}`)
 console.log(`  NOT VERIFIED:  ${notVerifiedCount}`)
 console.log(`  N/A:           ${naCount}`)
-console.log(`  Score:         ${score}/100`)
 console.log(`  Verdict:       ${verdict}`)
 console.log(`  Confidence:    ${confidence}`)
 if (hardGateReasons.length) {
@@ -541,7 +535,7 @@ const report = {
   auditVersion: cfg.version,
   target: targetUrl || buildDir,
   profile: cfg.profile,
-  verdict, confidence, score,
+  verdict, confidence,
   counts: { pass: passCount, fail: failCount, warn: warnCount, notVerified: notVerifiedCount, notApplicable: naCount },
   timestamp: new Date().toISOString(),
   findings
@@ -568,7 +562,7 @@ fs.writeFileSync(path.join(OUT_DIR, 'seo-audit-report.sarif'), JSON.stringify(sa
 
 if (wantXml) {
   console.log('\n<seoAudit>')
-  console.log(`  <meta><target>${targetUrl || buildDir}</target><verdict>${verdict}</verdict><confidence>${confidence}</confidence><score>${score}</score></meta>`)
+  console.log(`  <meta><target>${targetUrl || buildDir}</target><verdict>${verdict}</verdict><confidence>${confidence}</confidence></meta>`)
   console.log(`  <counts><pass>${passCount}</pass><fail>${failCount}</fail><warn>${warnCount}</warn><not_verified>${notVerifiedCount}</not_verified><not_applicable>${naCount}</not_applicable></counts>`)
   console.log('</seoAudit>')
 }

@@ -4,7 +4,6 @@
     "titleMin": 30,
     "titleMax": 65,
     "descriptionMin": 80,
-    "descriptionMax": 170,
-    "targetPassScore": 90
+    "descriptionMax": 170
   }
 }

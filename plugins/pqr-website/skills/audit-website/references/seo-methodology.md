@@ -21,19 +21,15 @@
 
 ## 3. Severity model
 
-| Severity | Weight |
-|---|---:|
-| `Critical` | 10 |
-| `High` | 6 |
-| `Medium` | 3 |
-| `Low` | 1 |
+`Critical`, `High`, `Medium`, `Low`. A severity orders the fixes; it carries no
+weight.
 
-## 4. Scoring rules
+## 4. No score
 
-- `FAIL` consumes full weight.
-- `WARN` consumes 40% of weight.
-- `NOT_APPLICABLE` is excluded from the denominator.
-- `NOT_VERIFIED` is excluded from score but lowers confidence and can force `PARTIAL_AUDIT`.
+The engine prints the counts per status and a verdict, never a number out of
+100: a score hides which control failed, and the plugin's contract forbids one
+(`CONTRACTS §7.2`). `NOT_APPLICABLE` is left out of the counts that decide the
+verdict; `NOT_VERIFIED` lowers confidence and can force `PARTIAL_AUDIT`.
 
 ## 5. Release verdict rules
 

@@ -20,8 +20,7 @@
         "descriptionMax": { "type": "integer" },
         "lcpGoodMs": { "type": "number" },
         "inpGoodMs": { "type": "number" },
-        "clsGood": { "type": "number" },
-        "targetPassScore": { "type": "number", "minimum": 0, "maximum": 100 }
+        "clsGood": { "type": "number" }
       }
     },
     "profile": {
