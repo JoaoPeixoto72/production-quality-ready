@@ -698,6 +698,12 @@ command declared under another name is not read, and its check stays
 and every run names the `adapter-hints` keys it does not read (they may
 still serve the project's own skills; they settle no check).
 
+A declared command answers with its exit code: `0` is a `PASS`, `77` is
+`NOT_VERIFIED/cannot-run-here` — the command's own way of saying that what
+it needs (a running server, the network, a credential) is missing — and
+anything else is a `FAIL`. Without `77` a smoke test run with the server
+down could only lie: pass, or fail a build that is fine.
+
 | `adapter-hints` key | Settles |
 |---|---|
 | `build-command` | `code-audit` :: `runtime.build-passes` |

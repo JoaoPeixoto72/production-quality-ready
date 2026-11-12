@@ -22,6 +22,7 @@ The value is either:
 
 Verdict per obligation:
   - no command declared        → NOT_VERIFIED (the gap is said, not filled)
+  - command exits 77           → NOT_VERIFIED (the command says it could not run here)
   - command exits != 0         → FAIL/BLOCKER
   - command exits 0, no output → NOT_VERIFIED (nothing proves it ran)
   - command exits 0 with output → PASS (the log is the evidence)
@@ -41,6 +42,9 @@ import sys
 from pathlib import Path
 
 TIMEOUT = 1800
+# The command's own way of saying "I could not measure here" — servers down, no network,
+# no credentials. 77 is the skip code test harnesses already use (automake, meson).
+CANNOT_RUN = 77
 
 
 def host_dir(repo: Path) -> Path | None:
@@ -118,7 +122,14 @@ def main(argv: list[str] | None = None) -> int:
         log_rel = f".audit/{a.owner}/{a.hint}-{check}.log"
         evidence = [f"log: {log_rel}", f"exit: {code}"]
 
-        if code != 0:
+        if code == CANNOT_RUN:
+            results.append({
+                "check": check, "result": "NOT_VERIFIED", "severity": "",
+                "reason": (f"cannot-run-here: `{command}` exited {CANNOT_RUN}, its way of saying what it "
+                           f"needs is missing; the log says what"),
+                "evidence": evidence + [f"output tail: {l}" for l in output.strip().splitlines()[-3:]],
+            })
+        elif code != 0:
             results.append({
                 "check": check, "result": "FAIL", "severity": "BLOCKER",
                 "reason": (f"`{command}` exited {code}: the command the project declares as proof of "

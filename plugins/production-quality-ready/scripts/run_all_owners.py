@@ -43,6 +43,7 @@ import validate_evidence as ve  # noqa: E402
 PRODUCER_SCRIPT = "plugins/production-quality-ready/scripts/run_all_owners.py"
 OWN_STAMP = re.compile(r"^\s*producer-script:\s*\S*run_all_owners\.py\s*$", re.M)
 TIMEOUT = 1800
+CANNOT_RUN = 77  # a declared command's "I could not measure here" (the harness skip code): never a FAIL
 # Every `adapter-hints` key this runner reads, and what it settles (CONTRACTS §7.5.4). A project
 # that names its command differently gets a check that can never close, so the table is the contract.
 HINTS = {
@@ -70,6 +71,7 @@ class Runner:
         self.dry = dry_run
         self.website_url, self.website_dir = website_url, website_dir
         self.audit = repo / ".audit"
+        self.last_exit = 0
         self.results: dict[str, dict] = {}
         self.head = self._git("rev-parse", "--short", "HEAD")
         self.python = sys.executable or "python3"
@@ -187,9 +189,11 @@ class Runner:
             p = subprocess.run(cmd, shell=True, cwd=self.repo, capture_output=True, text=True,
                                timeout=TIMEOUT, encoding="utf-8", errors="replace")
             log.write_text((p.stdout or "") + (p.stderr or ""), encoding="utf-8")
+            self.last_exit = p.returncode
             return p.returncode == 0
         except subprocess.TimeoutExpired:
             log.write_text(f"[runner] timeout after {TIMEOUT}s\n", encoding="utf-8")
+            self.last_exit = 124
             return False
 
     def json_instrument(self, owner, script: Path, instrument, *, producer=None, check_override="",
@@ -249,6 +253,10 @@ class Runner:
             return
         if ok:
             self.write(owner, check, instrument, rule, "PASS", rule_version=rule_version, command=cmd, log=log_rel)
+        elif self.last_exit == CANNOT_RUN:
+            self.write(owner, check, instrument, rule, "NOT_VERIFIED", rule_version=rule_version,
+                       reason=f"cannot-run-here: `{cmd}` exited {CANNOT_RUN}, its way of saying what it needs "
+                              f"is missing; see {log_rel}")
         else:
             self.write(owner, check, instrument, rule, "FAIL", rule_version=rule_version,
                        severity=fail_severity, command=cmd, log=log_rel)

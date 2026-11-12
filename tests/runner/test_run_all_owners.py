@@ -98,6 +98,13 @@ class RunnerWritesTraces(unittest.TestCase):
         self.assertEqual(d["result"], "NOT_VERIFIED")
         self.assertNotIn("command", d)
 
+    def test_a_command_that_exits_77_could_not_run_and_is_not_a_fail(self):
+        pr = Project({"tests-command": f'"{PY}" -c "import sys; print(\'no server\'); sys.exit(77)"'})
+        pr.run()
+        _, d = pr.evidence("runtime.tests-pass")
+        self.assertEqual(d["result"], "NOT_VERIFIED")
+        self.assertIn("cannot-run-here", d["reason"])
+
     def test_refuses_to_write_a_pass_without_a_log(self):
         pr = Project({})
         r = rao.Runner(pr.root, ROOT, {"platform": "web"})

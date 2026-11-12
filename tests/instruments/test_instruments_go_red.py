@@ -355,6 +355,15 @@ class DeclaredCommandGoesRed(unittest.TestCase):
             self.assertEqual(r["result"], "NOT_VERIFIED")
             self.assertIn("smoke-command", r["reason"])
 
+    def test_a_command_that_says_it_cannot_run_here_is_not_verified_not_failed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, {"smoke-command": "node -e \"console.log('server is down'); process.exit(77)\""})
+            r = self._run(root, "smoke-command", "smoke-test-passes")["smoke-test-passes"]
+            self.assertEqual(r["result"], "NOT_VERIFIED")
+            self.assertIn("cannot-run-here", r["reason"])
+            self.assertTrue(any("server is down" in e for e in r["evidence"]))
+
     def test_a_silent_command_is_not_verified(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -392,6 +401,16 @@ class TenantIsolationGoesRed(unittest.TestCase):
             r = by_check(payload)["sec.tenant-isolation"]
             self.assertEqual(r["result"], "FAIL")
             self.assertEqual(r["severity"], "BLOCKER")
+
+    def test_a_command_that_says_it_cannot_run_here_is_not_verified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, "node -e \"console.log('no local database'); process.exit(77)\"")
+            _, payload = instrument_json(
+                "plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+            r = by_check(payload)["sec.tenant-isolation"]
+            self.assertEqual(r["result"], "NOT_VERIFIED")
+            self.assertIn("cannot-run-here", r["reason"])
 
     def test_a_silent_success_is_not_verified(self):
         with tempfile.TemporaryDirectory() as tmp:
