@@ -1,6 +1,6 @@
 ---
 name: drive-app-window
-description: "Test a change in a running desktop window on Windows: click, type, drag, scroll, full-content screenshot (Win32, WebView2, Tauri, Electron). Use when verify needs a desktop driver. Closes no verdict. Not for web apps (use a browser instead)."
+description: "Test a change in a running desktop window on Windows: click, type, drag, scroll, full-content screenshot (Win32, WebView2, Tauri, Electron). Use when proving a change needs a desktop driver. Closes no verdict. Not for web apps (use a browser)."
 allowed-tools: Read Glob Grep Bash Write
 ---
 

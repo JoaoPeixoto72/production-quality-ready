@@ -1,6 +1,6 @@
 ---
 name: spec
-description: "Write the spec before the code: problem, acceptance criteria each with its proof, invariants touched, out of scope. Use before a feature or a decision-heavy change. Not for reviewing a diff (review-change) or finding a cause (diagnose)."
+description: "Write the spec before the code: problem, acceptance criteria each with its proof, invariants touched, out of scope. Use before a feature or a decision-heavy change. Not for reviewing a diff (the project's review skill) or finding a cause (diagnose)."
 allowed-tools: Read Glob Grep Bash Write Edit
 ---
 
@@ -80,7 +80,6 @@ declared `spec-dir`. Ask only what code cannot tell:
 - **review-change** — reviews the diff against these criteria; it does not
   write them.
 - **grill** — runs the interview; this owner writes what it settles.
-- **prd** — a whole new app; this owner is one feature in an app that exists.
 - **slice** — sequences the work these criteria define.
 - **map** — charts a destination whose route is not visible yet; a spec
   needs a route.

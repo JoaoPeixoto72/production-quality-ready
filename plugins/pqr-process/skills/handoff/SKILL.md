@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: "Package finished work: a pull-request body with Summary, Evidence before and after, and Merge Danger, or a session handoff file for the next agent. Use when a change goes to review. Not for the state document (close-work)."
+description: "Package finished work: a pull-request body with Summary, Evidence before and after, and Merge Danger, or a session handoff file for the next agent. Use when a change goes to review. Not for the state document (the project's close skill)."
 allowed-tools: Read Glob Grep Bash Write
 ---
 

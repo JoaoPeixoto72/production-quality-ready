@@ -1,6 +1,6 @@
 ---
 name: diagnose
-description: "Diagnose a bug with a feedback loop that fails on it: reproduce, minimise, rank hypotheses, fix at the cause, lock it with a regression test. Use when something is broken and you cannot say why. Not for reviewing a diff (review-change)."
+description: "Diagnose a bug with a feedback loop that fails on it: reproduce, minimise, rank hypotheses, fix at the cause, lock it with a regression test. Use when something is broken and you cannot say why. Not for reviewing a diff (the project's review skill)."
 allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
@@ -164,6 +164,8 @@ hand it to `code-audit`'s structure axes.
 - **reliability-audit** — failure *handling* in production (logs, resume, PII
   redaction); this owner finds one cause.
 - **spec** — new behaviour; here, broken behaviour.
+- **triage** — decides what enters the queue and turns a report into a
+  claim worth reproducing; here, the reproduction and the cause.
 
 ## Does not
 

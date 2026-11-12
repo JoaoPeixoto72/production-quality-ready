@@ -71,7 +71,7 @@ on paper costs a round; discovered in code it costs the work.
   order, never one combined file. Deleted when the feature ships.
 
 Either way: no file paths or code snippets, which go stale. The exception is a
-snippet a `prototype` produced that encodes a decision better than prose can
+snippet a throwaway prototype produced that encodes a decision better than prose can
 (a state machine, a schema, a type shape) — inline the decision-rich part and
 say where it came from.
 
@@ -96,7 +96,6 @@ reason recorded, not quietly reshaped.
 - **spec** — writes the criteria each slice satisfies.
 - **map** — for a destination whose route is not yet clear; slicing needs a
   route.
-- **prototype** — answers a design question a slice would otherwise guess at.
 - **start-work** — opens the session; this owner decided what the session
   picks up.
 

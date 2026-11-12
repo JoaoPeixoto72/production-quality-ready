@@ -42,15 +42,17 @@ verified.
 Every skill wakes when its `description` matches the task. None
 invokes another.
 
-| Block | Skills |
-|---|---|
-| Generator (run first) | `bootstrap-project` |
-| Work cycle | `start-work`, `review-change`, `close-work` |
-| Proof | `verify` (+ `drive-app-window` on desktop) |
-| Audit owners | `code-audit`, `security-audit`, `reliability-audit`, `design-pro`, `ui-system`, `release-audit`, `commercial-readiness`, `audit-website` |
-| Orchestrator | `audit-app` |
+It ships as six plugins in one marketplace, so a project installs only
+what it uses and pays context only for those descriptions:
 
-15 skills; 14 owners of a subject plus one technical capability.
+| Plugin | Skills |
+|---|---|
+| `production-quality-ready` (core) | `audit-app` (orchestrator) and the owners `code-audit`, `security-audit`, `reliability-audit`, `release-audit`, `commercial-readiness`, `design-pro` |
+| `pqr-cycle` | `bootstrap-project`, which writes the project's own start, review, close, verify and ship skills from the rules it carries |
+| `pqr-process` | `spec`, `diagnose`, `grill`, `slice`, `map`, `triage`, `handoff`, `ship`, `improve` |
+| `pqr-website` | `audit-website` |
+| `pqr-desktop` | `drive-app-window` |
+| `pqr-ui-system` | `ui-system` |
 
 ---
 
@@ -146,7 +148,7 @@ the defect to look for.
 
 | Subject | Owner | Rule |
 |---|---|---|
-| What counts as proof · report format | `audit-app` | `CONTRACTS.md` |
+| What counts as proof · report format | `audit-app` | `plugins/production-quality-ready/CONTRACTS.md` |
 | Runtime: concurrency, state, types, panics, test strength | `code-audit` | *a test that has never failed proves nothing* |
 | Contracts: IPC, API, layers, integrations | `code-audit` | both sides crossed by test, not by reading |
 | Performance budgets | `code-audit` | **no measurement, no finding**; no budget, no rule |
@@ -162,16 +164,12 @@ the defect to look for.
 | Sale, activation or checkout, first run, legal | `commercial-readiness` | the failing paths were walked, not just the happy one |
 | Public web surface: SEO, GEO, CWV, cookies, CRO, links | `audit-website` | 7 pillars + deep SEO engine; consent prior to fire |
 | Requirements: problem, acceptance criteria, out of scope | `spec` | a criterion names the observable proof it needs |
-| New app: PRD, agent instructions, regression log | `prd` | only confirmed decisions; the rest is a pending decision with an owner |
 | Diagnosis: reproduction, cause, regression | `diagnose` | *a bug is fixed when a test that failed on it passes* |
 | Project vocabulary and decisions | `spec` | one term, one meaning; a decision recorded once, never edited |
 | Planning: the way when it is not visible | `map` | plan, don't do — the route is clear when nothing is left to decide |
 | Work breakdown | `slice` | a slice cuts every layer and is verifiable alone |
-| Investigation | `research` | the source that owns the claim, with the version it holds for |
-| Design questions | `prototype` | throwaway code that answers one question |
 | Intake of external work | `triage` | one category, one state, and the claim verified before any brief |
 | Release execution | `ship` | verified in production, and reversible before it starts |
-| Human-only setup | `wizard` | if an agent can run it, it is not a wizard step |
 | Structural debt | `improve` | no proof of no-change, no refactor |
 
 Every owner declares `platforms:` in its `instruments.yaml` (web, desktop, both). A project's
@@ -185,7 +183,7 @@ Some skills are not owners of a subject: `verify` and
 `start-work`/`review-change`/`close-work` are the work cadence; `grill` is
 the interview and `handoff` the package; and `bootstrap-project` is the
 generator — **and the first thing to run**,
-because it writes the four project adapters that make the generic
+because it writes the project's own cycle skills that make the generic
 owners bite on a concrete codebase.
 
 ---
@@ -221,11 +219,12 @@ Falsifiable criteria. The plugin refutes itself if it fails two.
 
 | Criterion | How you verify it |
 |---|---|
-| Every `description` ≤ 250 chars | `python scripts/measure-descriptions.py skills` — exit 0 |
-| Permanent context cost | same command over the plugin + the project's adapters; total declared in README |
-| No PASS without a trace | `python skills/audit-app/scripts/validate_evidence.py --repo <repo>` — 0 `no-log` downgrades |
+| Every `description` ≤ 250 chars | `python scripts/measure-descriptions.py plugins` — exit 0 |
+| Permanent context cost | the same command over the installed plugins and the project's skills prints the total; it is measured, never written down |
+| No PASS without a trace | `python plugins/production-quality-ready/skills/audit-app/scripts/validate_evidence.py --repo <repo>` — 0 `no-log` downgrades |
 | Manifests coherent | `python -m pytest tests -q` — every owner has `platforms:`, every accepted producer exists |
-| Bilateral pairs complete | every pair in `POLICY §1.2` is named by both sides (description or Boundaries) |
+| Bilateral pairs complete | `tests/docs/test_docs_coherent.py` — every pair in `POLICY §1.2` is named by both sides |
+| Gates decided by code | `apply_gates.py` — two runs over the same `.audit/` give the same verdict; `tests/audit-app/test_apply_gates.py` |
 | Coherent authority chain | every external `producer` listed in the owner's `instruments.yaml` |
 | Every subject owner has canonical checks | `CONTRACTS.md §7.4` against `POLICY.md §1` |
 | Generator produces skills that pass the same audit | instantiate the templates in an empty repo and run the linter |
@@ -238,9 +237,9 @@ release. The commands above are the source of truth; run them.
 
 ## 7. Deliberately out of scope
 
-- Does not correct anything. Audits, and the correction is another
-  session with another request.
-- Does not publish, does not bump versions, does not create tags.
+- The core plugin corrects nothing and publishes nothing: it audits.
+  Acting is `pqr-process` (`diagnose`, `improve`, `ship`), each on a
+  request of its own, and `ship` only when the user names it.
   `release-audit` audits the pipeline; it does not run it.
 - Does not do product analytics, growth, or usage metrics — usage is
   not quality.
@@ -257,11 +256,11 @@ release. The commands above are the source of truth; run them.
 |---|---|
 | `README.md` | how to install, first command, structure map |
 | `PURPOSE.md` | this document — what the plugin is for |
-| `CONTRACTS.md` | what counts as proof, and how proof travels (schema, channel, severity, gates) |
+| `plugins/production-quality-ready/CONTRACTS.md` | what counts as proof, and how proof travels (schema, channel, severity, gates) |
 | `POLICY.md` | who owns what — subject authority, activation, local adapter, discovery |
-| `skills/<name>/SKILL.md` | the verb, the trigger, and that owner's workflow |
-| `skills/<name>/instruments.yaml` | which external `(producer, instrument)` that owner accepts |
-| `adapter-contracts/<name>.md` | what a local adapter must provide |
+| `plugins/<plugin>/skills/<name>/SKILL.md` | the verb, the trigger, and that owner's workflow |
+| `plugins/<plugin>/skills/<name>/instruments.yaml` | which external `(producer, instrument)` that owner accepts |
+| `plugins/pqr-cycle/adapter-contracts/<name>.md` | what a project's cycle skill must provide |
 | `scripts/measure-descriptions.py` | the single source of truth on `description` counts |
 
 **What still remains.** One thing, and no file in the plugin can close
@@ -274,7 +273,7 @@ Extensions, not missing pieces:
 
 - `audit-app` speaks two vocabularies: `CONTRACTS` (`PASS`/`FAIL`/
   `NOT_VERIFIED`) and its report format (`PROVEN`/`CLEARED`/`UNPROVEN`).
-  The mapping is in `skills/audit-app/references/contract-and-evidence.md`;
+  The mapping is in `plugins/production-quality-ready/skills/audit-app/references/contract-and-evidence.md`;
   collapsing to one moves `validate_report.py` and its fixtures together.
 - More instruments the runner can execute without a project harness:
   Lighthouse for `web.core-web-vitals`, `cargo deny` for

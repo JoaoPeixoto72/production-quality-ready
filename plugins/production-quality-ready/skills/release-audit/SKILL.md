@@ -57,6 +57,12 @@ A dependency with a `CRITICAL` CVE is `security-audit`
 (`sec.deps-no-cve`). A lockfile regenerated in CI is
 `release.lockfiles-immutable`, here.
 
+## Boundary with `ship`
+
+This owner audits how releases are declared — reproducible, rollbackable.
+`ship` (pqr-process) executes a release by those rules and the project's
+ship skill; it does not audit them.
+
 ## Accepted instruments
 
 See `instruments.yaml`. `reproducibility-run` (two clean builds +

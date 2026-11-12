@@ -64,8 +64,12 @@ list" does not. The strongest criteria are both checkable and exhaustive.
 ## In this plugin
 
 - `description` ≤ 250 chars, starts with an action verb, names when it
-  runs, and names the sibling that owns the case it refuses
+  runs, and ends with the case it refuses and who owns it: `Not for X
+  (owner).` That clause is routing, not identity, so it stays
   (`POLICY.md §1.2`).
+- A project's own skill is written in the language of the project's agent
+  map, so the trigger words match how the people there ask. The plugin's
+  skills are in English.
 - Frontmatter carries only the [Agent Skills](https://agentskills.io)
   spec fields (`name`, `description`, `allowed-tools`). Host-specific
   behaviour goes in the body or in a host file such as
@@ -83,7 +87,7 @@ list" does not. The strongest criteria are both checkable and exhaustive.
   secrets: write `<REDACTED>` in their place, and build loops against
   environment variables so the credential never enters the transcript.
 - **Cite the source.** A claim about the outside world names the file,
-  the version or the URL it came from (`research`).
+  the version or the URL it came from.
 - **Re-pitch when it does not land.** If the person says the last
   message did not make sense, do not repeat it louder: give a line of
   context, then the same content in shorter sentences and the project's

@@ -1,7 +1,7 @@
 # Contract and evidence
 
 **Hierarchy.** This file is the **operational translation** of the plugin's
-root `CONTRACTS.md` for whoever runs an audit. It is not authoritative: where
+the core plugin's `CONTRACTS.md` for whoever runs an audit. It is not authoritative: where
 the two disagree, `CONTRACTS.md` wins and this file is the defect.
 
 | Here | `CONTRACTS.md` |

@@ -1,56 +1,53 @@
 # production-quality-ready
 
-Quality plugin that moves an app from *"works"* to *"can be sold"* —
+Quality plugins that move an app from *"works"* to *"can be sold"* —
 for **web** (Workers, Next, SvelteKit, SSR…) and **desktop** (Tauri,
 Electron, native) alike. No skill invokes another; every verdict is a
-file with a command and a log behind it.
+file with a command and a log behind it, and the gates are decided by
+code, not by a model.
 
 Read first:
 
-- [`PURPOSE.md`](PURPOSE.md) — what the plugin is for, what counts as well made.
+- [`PURPOSE.md`](PURPOSE.md) — what the plugins are for, what counts as well made.
 - [`POLICY.md`](POLICY.md) — who owns what.
-- [`CONTRACTS.md`](CONTRACTS.md) — what counts as proof.
+- [`CONTRACTS.md`](plugins/production-quality-ready/CONTRACTS.md) — what counts as proof.
 - [`rules/writing-for-agents.md`](rules/writing-for-agents.md) — how to write anything an agent reads.
 - [`tests/instruments/`](tests/instruments/) — the red case of every instrument: the fixture where it must fail.
-- [`scripts/declared-command.py`](scripts/declared-command.py) — runs the command a project declares as proof of a check it cannot ship (`smoke-command`, `billing-harness-commands`, `tenant-isolation-command`).
 
-## The idea in one paragraph
+## Six plugins, one marketplace
 
-The plugin is **generic**; your project is **not**. So the plugin ships
-generic *owners* (security, reliability, code review, design, release,
-commercial, website) and a generic *work cycle* (start → review → close
-→ verify), and the **first skill you run — `bootstrap-project` — writes
-the four project adapters** that give the cycle your real commands,
-your real invariants, your test credentials and your surfaces. The
-owners then bite on your codebase instead of on an imagined one.
+Install the core and `pqr-cycle`; add the rest when the project needs them.
+Each plugin pays context only for its own descriptions.
+
+| Plugin | What it holds |
+|---|---|
+| `production-quality-ready` | `audit-app` and the audit owners (`code-audit`, `security-audit`, `reliability-audit`, `release-audit`, `commercial-readiness`, `design-pro`), `run_all_owners.py`, `apply_gates.py`, `CONTRACTS.md` |
+| `pqr-cycle` | `bootstrap-project`, the universal cycle rules and the adapter contracts it writes from |
+| `pqr-process` | `spec`, `diagnose`, `grill`, `slice`, `map`, `triage`, `handoff`, `ship`, `improve` |
+| `pqr-website` | `audit-website` (SEO, GEO, Core Web Vitals, cookies) |
+| `pqr-desktop` | `drive-app-window` (Win32/WebView2 driver) |
+| `pqr-ui-system` | `ui-system` (OKLCH tokens, `data-ui` contract, `audit_ui.py`) |
 
 ## Install
 
-Copy or clone into the host's plugin folder of the target repo:
+Claude Code:
 
-```bash
-# OpenCode / Antigravity — .agents
-git clone https://github.com/JoaoPeixoto72/production-quality-ready.git .agents/plugins/production-quality-ready
-
-# Claude Code — .claude, or via marketplace
-git clone https://github.com/JoaoPeixoto72/production-quality-ready.git .claude/plugins/production-quality-ready
+```
 /plugin marketplace add JoaoPeixoto72/production-quality-ready
-/plugin install production-quality-ready@JoaoPeixoto72/production-quality-ready
+/plugin install production-quality-ready@production-quality-ready
+/plugin install pqr-cycle@production-quality-ready
 ```
 
-**Codex reads `.agents/skills`, not `.agents/plugins/`**, so it needs one
-extra step: link the skills into the user scope, which covers every
-repository.
+Other hosts: clone, then link the skills of the plugins you want.
 
 ```bash
-pwsh scripts/link-skills.ps1          # or: bash scripts/link-skills.sh
-pwsh scripts/link-skills.ps1 -Remove  # unlink
+git clone https://github.com/JoaoPeixoto72/production-quality-ready.git .agents/plugins/production-quality-ready
+bash scripts/link-skills.sh --plugins production-quality-ready,pqr-cycle   # or: pwsh scripts/link-skills.ps1 -Plugins …
 ```
 
-`install.ps1 -Codex` and `install.sh --codex` do it in the same run.
-
-One-liners (`-Global` / `--global` for machine-wide, `-Codex` / `--codex`
-to link for Codex):
+**Codex reads `.agents/skills`, not `.agents/plugins/`**, so the link step
+is what makes the skills visible there. `install.ps1 -Codex` and
+`install.sh --codex` do it in the same run.
 
 ```powershell
 irm https://raw.githubusercontent.com/JoaoPeixoto72/production-quality-ready/main/install.ps1 | iex
@@ -65,88 +62,56 @@ curl -fsSL https://raw.githubusercontent.com/JoaoPeixoto72/production-quality-re
 use the bootstrap-project skill
 ```
 
-It detects host (`.agents` / `.claude`), platform (`web` / `desktop` /
-`both`), stack and commands, asks only what code cannot tell (name,
-invariants you already paid for, test credentials), and writes:
+It detects host (`.agents` / `.claude`), platform, stack and commands, asks
+only what code cannot tell (name, invariants you already paid for, test
+credentials, how a change reaches production), and writes:
 
 - `<host>/gates.json` — platform, sales model, applicable owners, `adapter-hints`.
-- `<host>/skills/<local-name>/SKILL.md` × 4 — **pre-filled** adapters of start-work, review-change, close-work and verify, each under a name of its own.
+- `<host>/skills/<local-name>/SKILL.md` — the project's own **start, review,
+  close, verify and ship** skills, each under a name of its own. They are
+  self-contained: they work with no plugin loaded (cloud sessions, CI,
+  another machine), and they point at the project's agent map for the
+  invariants instead of copying them.
 - `ESTADO.md` (state) and `AGENTS.md`/`CLAUDE.md` (map) if missing.
 
-## Daily loop
+## Daily loop (the project's skills)
 
 | When | Skill | What it does |
 |---|---|---|
-| Start of a conversation | `start-work` | reads `ESTADO.md`, runs baseline, names the owner of the code you are about to touch; a bug is reproduced first |
-| After writing code | `review-change` | full diff → local invariants → adversarial matrix for your platform → proof commands → argue against the approval → verdict |
-| Need to *see* it | `verify` | launches the app, drives the flow (browser automation or `drive-app-window`), captures before/after |
-| End of session | `close-work` | rewrites `ESTADO.md`; one subject, one owner; numbers carry command + HEAD |
+| Start, before changing code | start | reads the state document, runs the cheapest baseline, names the owner of the code you are about to touch |
+| After writing code | review | full diff; spec and standards as two verdicts; only the axes the diff touches; one proof run per state of the tree |
+| Need to *see* it | verify | launches the app, drives the flow, captures before/after |
+| End of session | close | rewrites the state document; pass/fail beside the command, no stored counts |
+| To production | ship | the project's real deploy path, smoke, rollback, and what needs a person |
 
 ## Audit loop (when you want to ship or sell)
 
-```powershell
-pwsh <plugin>/scripts/run-all-owners.ps1 -RepoRoot . [-WebsiteUrl https://…]
+```bash
+python <core>/scripts/run_all_owners.py --repo . [--website-url https://…]
 ```
 
-Runs every instrument the plugin can run for your platform — build,
-typecheck, tests, `audit_ui.py`, `npm audit`/`cargo audit`, `gitleaks`,
-lockfile/SBOM checks, migration verifier, website engines — and writes
-`.audit/<owner>/*.evidence.yaml`. **A PASS is written only for a check
-it executed, with `command:` and `log:`.** What it cannot run is
-`NOT_VERIFIED/missing-instrument` — declared, not hidden. An owner whose
-instrument only the project can write (e.g. `design-pro`, which needs real
-screens) is wired through a command the project declares in
-`adapter-hints` (`design-pro-capture-command`); without one, the gap stays
-declared. The plugin never names the tool the project uses.
+Runs every instrument the plugin can run for your platform — the declared
+build, typecheck and tests, `quality_scan.py`, `npm`/`pnpm`/`yarn`/`cargo`
+audit, secret scan, lockfile/SBOM checks, migration verifier — and writes
+`.audit/<owner>/*.evidence.yaml`. **A PASS is written only for a check it
+executed, with `command:` and `log:`.** What it cannot run is
+`NOT_VERIFIED/missing-instrument` — declared, not hidden. It ends by
+running `apply_gates.py`, which validates every file and decides
+`release-candidate`, `production-ready` and `sellable` (exit 0 open, 1
+closed, 2 cannot judge). `--no-gates` stops before the verdict;
+`--dry-run` lists the owners for the platform and writes nothing.
 
-Then:
+Then, for the reading only a person or a model can do:
 
 ```
 use the audit-app skill
 ```
 
-`audit-app` reads `.audit/`, validates every file (`validate_evidence.py`
-— a PASS without a trace is downgraded), applies the gates
-(`release-candidate`, `production-ready`, `sellable`) and writes
-`docs/audits/<date>-<scope>.md`. Owners with no evidence show
-`BLOCKED (n/m)`; that is the honest state, not a bug.
-
-It can also **carry the audit itself**: with no owner evidence to aggregate, it
-reads the code by the H/V/T/C method — flows (H), layers (V), transitions (T)
-and the cross-audit (C), with the cross-cutting concerns verified on the relevant
-axes — and produces an Evidence Matrix, where a `✓` needs a proof and a `?` says
-what is missing.
-
-## The skills
-
-| Skill | Role | Platforms | Runs code? |
-|---|---|---|---|
-| `bootstrap-project` | generator — **run first** | both | writes files |
-| `spec` | requirements before code: criteria, out of scope, proof per criterion | both | — (writes the spec) |
-| `prd` | PRD of a new app: interview, confirmed decisions only, CLAUDE.md and regression log | both | — (writes the PRD) |
-| `diagnose` | cause before fix: a tight feedback loop, ranked hypotheses, regression test | both | repro + test |
-| `grill` | interrogate a plan: design tree, rounds, a recommended answer per question | both | — |
-| `slice` | tracer-bullet slices with blocking edges, expand–contract for wide refactors | both | — (writes the slices) |
-| `map` | chart work too large for one session: destination, frontier, fog, out of scope | both | — |
-| `research` | answer a question from primary sources, cited and versioned | both | source lookup |
-| `prototype` | throwaway artefact that answers one design question | both | runs one HTML file / route |
-| `triage` | incoming issues and PRs: roles, verified claim, agent brief | both | repro / test run |
-| `handoff` | pull-request body (Summary/Evidence/Merge Danger) and session handoff | both | — |
-| `ship` | release: version, tag, deploy, production smoke, rollback ready | both | deploy + smoke |
-| `wizard` | interactive script for the steps only a person can take | both | bash |
-| `improve` | rank the places that are hard to change into a refactor plan | both | — (writes the plan) |
-| `start-work` · `review-change` · `close-work` | work cycle (adapters per project) | both | proof commands |
-| `verify` | prove in the running app | both | browser driver / `gui.ps1` |
-| `drive-app-window` | Win32/WebView2 driver for `verify` | desktop | `scripts/gui.ps1` |
-| `code-audit` | runtime + contracts + maintainability (size, nesting, params, ratchet) + perf budgets | both | build/test runners, `quality_scan.py`, `webhook_idempotency.py` |
-| `security-audit` | ASVS 5.0 + threat model; tenants, input, CVEs, secrets | both | dep/secret scanners |
-| `reliability-audit` | persistence, migrations, crash; diagnosability (logs, PII) | both | harnesses (project) |
-| `design-pro` | UX, WCAG 2.2 AA verdict, i18n | both | — (consumes ui-system, verify) |
-| `ui-system` | OKLCH tokens, `data-ui` contract, `audit_ui.py`; React pack optional | both | `scripts/audit_ui.py` |
-| `release-audit` | reproducible build, lockfiles, SBOM; signing (desktop), deploy/rollback (web) | both | ci/sbom checks |
-| `commercial-readiness` | SELL-01..06 for licensed and subscription; legal; SLA | both | billing/licensing harness |
-| `audit-website` | 360º + deep SEO/GEO engines, SARIF | web | `run_website_audit.mjs`, `seo/run_seo_audit.mjs` |
-| `audit-app` | audit the app: H/V/T/C method + owner-evidence orchestrator | both | `validate_evidence.py` |
+`audit-app` reads the code by the H/V/T/C method — flows (H), layers (V),
+transitions (T) and the cross-audit (C) — and turns each backed finding
+into an evidence file like any other. Then it runs `apply_gates.py` again
+and pastes its output into the report. It never overrules the code's
+verdict; it adds evidence.
 
 Every skill is **model-invoked** except `bootstrap-project` and `ship`,
 which the user names by hand (`POLICY.md §2.1`): the first writes into
@@ -154,37 +119,31 @@ the repo, the second acts on production.
 
 Frontmatter follows the [Agent Skills](https://agentskills.io) spec
 (`name`, `description`, `allowed-tools`), so a skill loads in any host.
-Host-specific behaviour lives in the body or in a host file: each skill
-carries `agents/openai.yaml` for Codex's skill picker and its explicit
-invocation policy; Claude Code reads `SKILL.md` alone.
-
-Checks tagged for the other platform resolve `NOT_APPLICABLE/platform`
-automatically — a Tauri app is not asked about cookies, a Worker is not
-asked about installer signatures.
+Each skill carries `agents/openai.yaml` for Codex's skill picker; Claude
+Code reads `SKILL.md` alone.
 
 ## Structure
 
 ```
 production-quality-ready/
-├── PURPOSE.md · POLICY.md · CONTRACTS.md · README.md
-├── adapter-contracts/        # what each project adapter must provide
-├── rules/                    # writing-for-agents.md, anti-prompt-injection.md
-├── scripts/
-│   ├── measure-descriptions.py    # exit 1 if any description > 250 chars
-│   └── run-all-owners.ps1         # runs instruments, writes evidence (PASS ⇒ command+log)
-└── skills/                   # SKILL.md + instruments.yaml (platforms:) + agents/openai.yaml (Codex)
-    ├── audit-app/scripts/validate_evidence.py   # mechanical evidence validator + tests
-    ├── audit-website/{scripts,seo}/             # two engines
-    ├── ui-system/{assets,packs/react-components,scripts}/
-    └── bootstrap-project/templates/             # gates.json, AGENTS.md, ESTADO.md, 4 adapters
+├── PURPOSE.md · POLICY.md · README.md
+├── .claude-plugin/marketplace.json   # the six plugins
+├── rules/                            # source of the rule copies each plugin carries
+├── scripts/                          # measure-descriptions.py, link-skills.*
+├── plugins/
+│   ├── production-quality-ready/     # CONTRACTS.md, scripts/run_all_owners.py, skills/<owner>/
+│   │   └── skills/audit-app/scripts/ # apply_gates.py, validate_evidence.py, validate_report.py
+│   ├── pqr-cycle/                    # adapter-contracts/, skills/bootstrap-project/{references,templates}
+│   ├── pqr-process/ · pqr-website/ · pqr-desktop/ · pqr-ui-system/
+└── tests/                            # one red case per instrument, gates, runner, docs coherence
 ```
 
-## Verify the plugin itself
+## Verify the plugins themselves
 
 ```bash
-python scripts/measure-descriptions.py skills                     # exit 1 if any description > 250
-python -m pip install pytest && python -m pytest tests -q         # evidence, report and quality_scan tests
-pwsh scripts/run-all-owners.ps1 -RepoRoot <repo> -DryRun          # lists owners for the platform
+python scripts/measure-descriptions.py plugins      # exit 1 if any description > 250
+python -m pip install pytest && python -m pytest tests -q
+python plugins/production-quality-ready/scripts/run_all_owners.py --repo <repo> --dry-run
 ```
 
 ## What NVIDIA SkillSpector says about these skills
@@ -213,8 +172,8 @@ table does.
 
 ## What it does NOT
 
-- **Correct anything.** It audits. Correction is another session.
-- **Publish, bump versions, tag.**
+- **Correct anything from the core.** The core audits; `diagnose`,
+  `improve` and `ship` (pqr-process) act, each on a request of its own.
 - **Write a PASS from reading code.** CONTRACTS §4.6.
 - **Replace looking at the running app.** It forces you to say when you did not.
 

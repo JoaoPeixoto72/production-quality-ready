@@ -1,6 +1,6 @@
 ---
 name: code-audit
-description: "Audit code repo-wide and write .audit evidence: build, tests, oracles, races, IPC/API contracts, maintainability budgets (size, nesting, params), perf. Not for one diff before commit (review-change) or CVEs (security-audit)."
+description: "Audit code repo-wide and write .audit evidence: build, tests, oracles, races, IPC/API contracts, maintainability budgets (size, nesting, params), perf. Not for one diff before commit (the project's review skill) or CVEs (security-audit)."
 allowed-tools: Read Glob Grep Bash Write
 ---
 
@@ -52,7 +52,7 @@ It is the plugin's canonical mechanical producer — it runs the pipeline
 | Check | Predicate |
 |---|---|
 | `runtime.build-passes` | Release build passes with no ignored warnings. |
-| `runtime.tests-pass` | Suite passes; number + command + HEAD recorded. |
+| `runtime.tests-pass` | Suite passes; recorded as pass beside the command, with its log. No count. |
 | `runtime.types-check` | Stack type checker (tsc, rustc, mypy…) passes. |
 | `runtime.no-silent-panics` | No `unwrap`/`expect`/`panic!`/unhandled rejection on production paths without adjacent declared reason. |
 | `runtime.concurrency-safe` | Shared state has declared synchronization; no read-then-write (TOCTOU) on data stores; races caught by test or sanitizer. |
@@ -128,7 +128,8 @@ Loaded by the `stack` in `gates.json`:
 - **security-audit** — the adversary: threat model, CVEs, secrets. Here: correctness and shape of the contract.
 - **reliability-audit** — persistence, migrations, diagnosability. If the contract is the on-disk schema, bilateral pair applies.
 - **verify** — proof by looking at the running app. Here: automated evidence.
-- **review-change** — the pre-commit adversarial gate; it cites this owner's checks, it does not re-declare them.
+- **The project's review skill** (rule: pqr-cycle `review-change`) — the pre-commit gate over one diff; it cites this owner's checks, it does not re-declare them.
+- **improve** (pqr-process) — plans structural work against these budgets; the budgets and their verdict stay here.
 
 ## Accepted instruments
 

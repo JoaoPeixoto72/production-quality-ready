@@ -55,7 +55,7 @@ word and the decision that chose it stay together, or part for good.
 
 The decisions are the person's; the **facts are yours**. When a question
 needs something the environment can tell (a file, a version, an API shape, a
-config), find it — dispatch `research` for anything outside this repo — never
+config), find it — look anything outside this repo up in its primary source — never
 ask the person what you could look up. Do not block the round on it: a running
 look-up is an unsettled prerequisite, so only the questions downstream of it
 wait.
@@ -86,7 +86,6 @@ person to confirm that you share the same understanding.
   agreed.
 - **map** — charts work too large for one session as decision tickets; a
   single plan's interview is here.
-- **research** — supplies the facts this owner refuses to ask for.
 
 ## Does not
 

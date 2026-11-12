@@ -122,6 +122,14 @@ project's defects list (`close-work`).
 - `scripts/validate_evidence.py`, `scripts/validate_report.py` — validate form,
   not truth. Tests in `tests/audit-app/` and `tests/runner/`.
 
+## Boundaries
+
+- **design-pro** — one screen or flow, judged against WCAG and the heuristics;
+  here, the whole app and the gates.
+- **audit-website** (pqr-website) — the public web surface (SEO, Core Web
+  Vitals, cookies); here, the software behind the login.
+- **The project's review skill** — one diff before commit; here, the app.
+
 ## Scope
 
 `audit-app` reads code and evidence and writes one report. It invokes no other

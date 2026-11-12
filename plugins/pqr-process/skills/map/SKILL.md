@@ -72,8 +72,8 @@ the agent standing in for the person.
 
 | Type | Kind | Resolves by |
 |---|---|---|
-| `research` | AFK | `research` — a fact from outside this working directory |
-| `prototype` | HITL | `prototype` — a rough artefact to react to |
+| `research` | AFK | the host's own research tools — a fact from outside this working directory, cited with its version |
+| `prototype` | HITL | a throwaway artefact the person reacts to |
 | `grill` | HITL | `grill` — conversation, the default |
 | `task` | either | work that must happen before a decision is possible: provisioning, access, moving data so its shape can be seen |
 

@@ -111,7 +111,7 @@ goes stale.
    `.agents`, `CLAUDE.md` for `.claude`). If one exists, propose the
    "code is the source" paragraph (`PURPOSE.md §3.5`) when it lacks one,
    and an "Installed skills" block.
-6. **`.gitignore`** — propose `/.work/` (what `map`, `slice`, `research`
+6. **`.gitignore`** — propose `/.work/` (what `map`, `slice`
    and `spec` write while working) and the audit output (`/.audit/`,
    `/docs/audits/`), so a skill's working files never reach a commit.
 

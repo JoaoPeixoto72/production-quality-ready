@@ -31,16 +31,14 @@ history (`git log` keeps it). Files stay small, one subject each.
 
 ## Installed skills
 
-- Plugin `production-quality-ready`
-  — generic owners; `platform: {{PLATFORM}}` in `{{HOST}}/gates.json`.
-- Project adapters in `{{HOST}}/skills/`:
-  - `start-work` — open a session: state, baseline, ownership table.
-  - `review-change` — pre-close gate: invariants + adversarial axes {{AXES_THAT_APPLY}}.
-  - `close-work` — rewrite `ESTADO.md`, one subject one owner.
-  - `verify` — run and prove in the real app.
+- Plugins `production-quality-ready` (audits) and `pqr-cycle`
+  (`bootstrap-project`); `platform: {{PLATFORM}}` in `{{HOST}}/gates.json`.
+- The project's own skills in `{{HOST}}/skills/`, which work with no plugin
+  loaded: start, review, close, verify and ship, under the names in
+  `owners.<rule>.adapter` of `gates.json`.
 
 ## Contribution rules
 
 - Run `{{TYPECHECK_COMMAND}}`, `{{LINT_COMMAND}}`, `{{TEST_COMMAND}}` and
-  the `review-change` matrix before calling any change done.
+  the project's review skill before calling any change done.
 {{CONTRIBUTION_RULES}}

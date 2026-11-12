@@ -1,6 +1,6 @@
 ---
 name: improve
-description: "Find where a codebase is hard to change, rank the candidates by what they unblock against their blast radius, and write the refactor plan a slice can execute. Use when the structure is the problem. Not for the pre-commit review (review-change)."
+description: "Find where a codebase is hard to change, rank the candidates by what they unblock against their blast radius, and write the refactor plan a slice can execute. Use when the structure is the problem. Not for reviewing one diff before commit."
 allowed-tools: Read Glob Grep Bash Write
 ---
 
@@ -110,7 +110,6 @@ other work.
   owner plans against them.
 - **slice** — turns the plan into slices with edges.
 - **review-change** — reviews each diff; the plan's proof commands run there.
-- **prototype** — answers a design question the plan depends on.
 - **map** — charts work when even the route is unclear.
 
 ## Does not
