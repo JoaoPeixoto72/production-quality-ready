@@ -1,10 +1,9 @@
----
-name: review-change
-description: "Review a diff on two axes that never merge: does it do what the spec asked, and is it built right (invariants, adversarial matrix, maintainability, proof commands). Use after writing code, before close-work. Not for full audits (audit-app)."
-allowed-tools: Read Glob Grep Bash Edit Write
----
 
-# review-change
+# review-change — the rule
+
+The rule a project's review-change adapter is written from. It is not a skill:
+`bootstrap-project` turns it into the project's own, self-contained skill
+(`adapter-contracts/review-change.md`), so the cycle works with no plugin loaded.
 
 The last honest checkpoint between "code written" and "task closed".
 It is a **gate**, not a re-declaration of the owners: each axis names
@@ -67,15 +66,18 @@ and carries a criterion with no proof is that axis's first `BLOCKED`.
 3. **Local invariants.** The adapter enumerates them with the concrete
    incident that motivated each. Every touched invariant is either
    preserved (say how) or the change is BLOCKED.
-4. **Adversarial matrix.** Apply every axis tagged for the project's
-   `platform` (from `gates.json`). Each axis gets one of: `not touched`
-   (the diff cannot affect it — say why), `preserved` (name the test or
-   line), or `VIOLATED` → BLOCKED.
-5. **Maintainability.** Run `../code-audit/scripts/quality_scan.py
-   --since <base>` and walk M1–M7 below over the diff. A budget grown or
-   crossed is `VIOLATED` unless the change splits it first.
-6. **Proof commands.** Run exactly what the adapter declares (build,
-   typecheck, lint, tests, migrations). Report number + command + HEAD.
+4. **Adversarial matrix, proportional.** Map the diff's files to axes with
+   the adapter's *Where to look* table. An axis the diff cannot reach is
+   listed in one line (`not touched: A5, A7`) — no prose. A touched axis gets
+   `preserved` (name the test or line) or `VIOLATED` → BLOCKED.
+5. **Maintainability.** Run the project's quality command (or
+   `quality_scan.py --since <base>` from the core plugin) and walk M1–M7
+   below over the touched functions. A budget grown or crossed is
+   `VIOLATED` unless the change splits it first.
+6. **Proof commands.** Run what the adapter declares (build, typecheck,
+   lint, tests, migrations) once per state of the tree — keyed by HEAD and
+   the hash of the diff, recorded in `.work/proof.txt`, reused by close-work
+   while the key holds. Report pass or fail + command + HEAD; no counts.
 7. **Argue against your own approval.** Name the single input or
    sequence most likely to break this change, and point at the line or
    test that handles it. If you cannot name one, you have not read the
@@ -90,7 +92,7 @@ and carries a criterion with no proof is that axis's first `BLOCKED`.
 | Excuse | Answer |
 |---|---|
 | "Tests are green." | The founding rule. Green is the minimum. |
-| "It's a one-line change; the matrix is overkill." | One line is where TOCTOU and a dropped escape hide. Marking an axis `not touched` with a reason costs a sentence. |
+| "It's a one-line change; the matrix is overkill." | The matrix is proportional already: untouched axes cost one line together. The touched ones are where TOCTOU and a dropped escape hide. |
 | "I read it; it's correct." | Reading is not proof (`CONTRACTS §4.6`). Name the test or the command. |
 | "I'll add the test later." | Then it's `APPROVED WITH FOLLOW-UPS` with owner and date — or `BLOCKED`. Never silent. |
 | "It works; the structure is fine as it is." | Working is the floor. A change that grows an over-budget function or adds a branch to an unrelated flow is `VIOLATED` on M1/M2. |
@@ -102,7 +104,7 @@ and carries a criterion with no proof is that axis's first `BLOCKED`.
 ## Maintainability axes · `both` · [code-audit]
 
 Full text, sources and the reporting rules:
-`../code-audit/references/maintainability.md`. One line each here:
+`the core plugin's `skills/code-audit/references/maintainability.md``. One line each here:
 
 - **M1 · Size** — no function or file grows past its budget, or grows while over it.
 - **M2 · Spaghetti** — no branch bolted onto an unrelated flow; repeated conditionals become a model.
@@ -212,10 +214,9 @@ these.
   verdict on them is here.
 - **audit-app** — whole app; here one diff.
 
-## Contract for the local adapter
+## The project's adapter
 
-The adapter lives under the local name in `gates.json`
-(`owners.review-change.adapter`) and supplies the platform line, this
-project's invariants with the incident behind each, the proof commands
-in order, and optional axes A12+. Required shape:
-`adapter-contracts/review-change.md`.
+Named in `gates.json` (`owners.review-change.adapter`). It carries the steps
+above in one screen, one line per applicable axis, the *Where to look* table,
+a pointer to the agent-map sections that hold the invariants (never a copy),
+and the proof commands. Shape: `adapter-contracts/review-change.md`.

@@ -1,10 +1,9 @@
----
-name: verify
-description: "Test a change in the running app: launch it, drive real actions, capture before/after artefacts and compare. Web via browser automation, desktop via drive-app-window. Use for 'see this working'. Not for running the test suite (code-audit)."
-allowed-tools: Read Glob Grep Bash Write
----
 
-# verify
+# verify — the rule
+
+The rule a project's verify adapter is written from. It is not a skill:
+`bootstrap-project` turns it into the project's own, self-contained skill
+(`adapter-contracts/verify.md`), so the cycle works with no plugin loaded.
 
 It drives the running app and captures artefacts; it never edits the code.
 

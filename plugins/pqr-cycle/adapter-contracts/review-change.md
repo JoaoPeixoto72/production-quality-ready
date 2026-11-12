@@ -1,43 +1,45 @@
 # adapter-contract — review-change
 
-Contract a local `review-change` adapter must provide.
+What a project's review adapter must hold. `bootstrap-project` writes it from
+`templates/skills/review-change.SKILL.md.template` and the rule in
+`references/universal/review-change/RULE.md`.
 
-## Required frontmatter
+## Frontmatter
 
 ```yaml
 ---
-name: <local-name>                        # not the plugin skill's name (POLICY §3.2)
-extends: production-quality-ready:review-change
-allowed-tools: Read Glob Grep Bash Edit Write
+name: <local-name>        # its own name, never the rule's (start-work, review-change…)
+description: "…"          # ≤ 250 characters, says when to use it and when not
+allowed-tools: …
 ---
 ```
 
-The adapter body names the contract it is judged under, never a copy or a version: `production-quality-ready/CONTRACTS.md` (POLICY §3.1).
+Nothing else: no `extends:`, no `contract:`. No host implements them, and the
+adapter must work with the plugin not installed — that is the point of it.
 
-## Division of responsibilities
+## Self-contained
 
-1. **The plugin's universal `review-change` provides:**
-   - The adversarial matrix, axes tagged `both` / `web` / `desktop`
-     (A1–A11), each citing its owner.
-   - The founding rule: green tests are the minimum, never the approval.
-   - The 5-step order: diff → local invariants → matrix → proof commands → verdict.
+The adapter carries every step it needs, in the project's words. It cites a
+project file by path; it never asks the reader to load a plugin skill to make
+sense of it. It never copies what the agent map (`CLAUDE.md`/`AGENTS.md`)
+already says — that file is always in context; the adapter points at its
+section.
 
-2. **The local adapter provides:**
-   - `## Platform` — one line: `platform: web | desktop | both` (copied
-     from `gates.json`) and the resulting list of axes that apply.
-   - `## This project's invariants` — numbered; each with the concrete
-     incident, decision or error code that motivated it. These are the
-     things the project paid for once and must not pay for again.
-   - `## Proof commands` — exact commands in order (build, typecheck,
-     lint, tests, migrations). No counts in the adapter — counts live in
-     `ESTADO.md` (or the project's state document).
-   - Optional `## Project axes` (A12+), same shape as the universal ones.
-   - Optional `## Where to look` — table of concrete files per axis
-     (e.g. "A3 → `src/routes/tenant.ts` `tenantFromToken`").
+## Required sections
 
-## What the adapter must NOT do
+1. **Steps** — the eight of the rule: diff → spec axis → invariants → axes →
+   maintainability → proof → argue against approval → verdict per axis.
+2. **Invariants** — a pointer to the agent-map sections that hold them, never a
+   copy. Only a project with no agent map lists them here, each with the
+   incident that paid for it.
+3. **Axes for the platform** — one line per applicable axis (A1–A11 of the
+   rule, plus A12+ of the project): the scenario and what is required.
+4. **Where to look** — the project's files per axis. This table is what makes
+   the review proportional: an axis whose files the diff does not touch is
+   listed in one line, not judged.
+5. **Proof commands** — in order, run once per state of the tree (the key and
+   `.work/proof.txt` of the template).
 
-- Re-copy the universal axis text. Cite the axis id.
-- Store measured numbers (asserts, migrations). They go stale; state
-  documents own them.
-- Reference documents that do not exist in the repo.
+## Not in it
+
+Counts; the full axis text of the rule; invariants the agent map already holds.

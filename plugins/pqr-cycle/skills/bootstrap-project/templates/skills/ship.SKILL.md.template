@@ -1,0 +1,29 @@
+---
+name: {{ADAPTER_NAME}}
+description: "Ship {{PROJECT_NAME}} to production: the deploy order, what runs it, the smoke test after, how to roll back, what needs a person. Use when a change is merged and must go live. Not for review."
+allowed-tools: Read, Glob, Grep, Bash
+---
+
+# Ship {{PROJECT_NAME}}
+
+Verified in production, and reversible before it starts.
+
+## How it deploys
+
+{{DEPLOY_HOW}}
+
+## Order
+
+{{DEPLOY_ORDER}}
+
+## After deploy
+
+{{SMOKE_AFTER_DEPLOY}}
+
+## Roll back
+
+{{ROLLBACK_STEP}}
+
+## Needs a person
+
+{{HUMAN_GATES}}

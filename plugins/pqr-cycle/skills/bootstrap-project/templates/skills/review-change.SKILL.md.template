@@ -1,25 +1,42 @@
 ---
 name: {{ADAPTER_NAME}}
-description: "Review a change to {{PROJECT_NAME}} after writing code, before close-work: this project's invariants, the adversarial axes for its platform, the proof commands. Adapter of review-change; not for whole-app audits."
-contract: production-quality-ready/CONTRACTS.md
-extends: "production-quality-ready:review-change"
+description: "Review a change to {{PROJECT_NAME}} after writing code, before closing: spec and standards as two verdicts, only the axes the diff touches, one proof run. Not for whole-app audits."
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
-# review-change in {{PROJECT_NAME}}
+# Review a change to {{PROJECT_NAME}}
 
-Local adapter. The adversarial matrix (A1–A11) and the rationalisations
-table live in the plugin skill `production-quality-ready:review-change`;
-this file only instantiates them.
+Green tests are the minimum, never the approval. A fix carries the test that
+was red without it: break the fix, watch the test fail, restore it.
 
-## Platform
+## Steps
 
-`platform: {{PLATFORM}}` (from `{{HOST}}/gates.json`). Axes that apply:
-{{AXES_THAT_APPLY}}.
+1. Read the full diff (`git diff` staged and unstaged). Nothing before it.
+2. **Spec axis.** The spec it implements ({{SPEC_SOURCE}}); each criterion
+   `met` (its proof), `not met`, or `not touched`. No spec:
+   `NOT_VERIFIED/no-spec`, said once.
+3. **Invariants.** They live in `{{HOST_AGENT_FILE}}` ({{INVARIANT_SECTIONS}}),
+   always in context, and are not copied here. Check the ones whose files the
+   diff touches: preserved (say how) or `BLOCKED`.
+4. **Axes.** Map the diff's files to axes with *Where to look*. An axis the
+   diff does not reach goes in one line (`not touched: A5, A7`). A touched
+   axis gets `preserved` (name the test or line) or `VIOLATED`.
+5. **Maintainability.** `{{QUALITY_COMMAND}}`; walk M1–M7 over the touched
+   functions only.
+6. **Proof.** The commands below, once per state of the tree.
+7. **Argue against your approval.** The one input most likely to break the
+   change, and the line or test that handles it.
+8. **Verdict, per axis:** Standards and Spec each `APPROVED`,
+   `APPROVED WITH FOLLOW-UPS` (owner, date) or `BLOCKED` (axis, line, the
+   test that would have caught it). Never one merged verdict.
 
-## This project's invariants
+## Axes for platform `{{PLATFORM}}`
 
-{{PROJECT_INVARIANTS}}
+{{AXES_ONE_LINE}}
+
+M1 size · M2 no branch bolted onto an unrelated flow · M3 reuse the owner,
+extract on the third copy · M4 decisions in named values · M5 no pass-through
+wrappers or flag params · M6 nothing swallowed · M7 comments say why, ≤ 3 lines.
 
 ## Where to look
 
@@ -28,11 +45,17 @@ this file only instantiates them.
 ## Proof commands
 
 ```bash
-{{TYPECHECK_COMMAND}}
-{{LINT_COMMAND}}
-{{BUILD_COMMAND}}
-{{TEST_COMMAND}}
-{{MIGRATIONS_VERIFY_COMMAND}}
+{{PROOF_COMMANDS}}
 ```
 
-Counts live in `ESTADO.md` — never here.
+## One proof run per state of the tree
+
+A proof run is keyed by the tree it ran on:
+
+```bash
+echo "$(git rev-parse --short HEAD)-$({ git diff HEAD; git ls-files --others --exclude-standard; } | git hash-object --stdin | cut -c1-8)"
+```
+
+Run the proof commands once per key and append `<key> pass|fail <command>`
+to `.work/proof.txt` (gitignored). A later step with the same key reads that
+file instead of running them again; a different key runs them again.

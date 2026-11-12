@@ -9,7 +9,7 @@ every work session by `{{HOST}}/skills/close-work`.
 - Build: {{BUILD_STATUS}} (`{{BUILD_COMMAND}}`)
 - Tests: {{TEST_STATUS}} (`{{TEST_COMMAND}}`)
 - Typecheck: {{TYPECHECK_STATUS}} (`{{TYPECHECK_COMMAND}}`)
-- Last audit: none yet — run `run-all-owners.ps1` then `audit-app`.
+- Last audit: none yet — run `run_all_owners.py` (core plugin) then `audit-app`.
 
 ## 2. Next
 

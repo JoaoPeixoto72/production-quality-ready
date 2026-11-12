@@ -1,10 +1,9 @@
----
-name: close-work
-description: "Run at the end of every session, after review-change, before commit: rewrite ESTADO.md ('one subject, one owner; reason stays, history goes') writing only what the code cannot say. Not for opening a session (start-work)."
-allowed-tools: Read Glob Grep Bash Edit Write
----
 
-# close-work
+# close-work — the rule
+
+The rule a project's close-work adapter is written from. It is not a skill:
+`bootstrap-project` turns it into the project's own, self-contained skill
+(`adapter-contracts/close-work.md`), so the cycle works with no plugin loaded.
 
 Universal contract for closing a work session. **The next conversation
 only knows what is written** — if the document is out of date, it doesn't
@@ -37,7 +36,7 @@ anywhere: the diff, the comments and `git log` already say it. Written
 down is only:
 
 - **state** — where the work is, what is next, what was not seen — in
-  `ESTADO.md`, every time;
+  `ESTADO.md`, every session that changed code;
 - **a non-obvious reason** — as a comment beside the code it explains;
 - **a rule that ties two distant places** — as a test, when it can be one;
 - **a measured fact about an external tool** — one line in the facts
@@ -55,7 +54,7 @@ does not need is paid for each time, and drifts. Run the instrument on the
 lines this work added:
 
 ```bash
-python <plugin>/skills/close-work/scripts/trim_check.py --repo . --format md
+python <pqr-cycle>/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py --repo . --format md
 ```
 
 It must say `nothing to trim`; what stays, the reply says why. It finds
@@ -103,9 +102,7 @@ Fixed structure (the adapter says where it lives):
 | "I'll document this change." | The code and its comments are the documentation; a document takes only the five things above. |
 | "I'll summarise and link." | A summary next to a link is a second copy. Keep the link; cut the summary. |
 
-## Contract for the local adapter
+## The project's adapter
 
-Document→subject table for the project; proof command; rule on when to
-bump version.
-
-See `adapter-contracts/close-work.md`.
+Document → subject table; trim command; reuse of the review's proof run for
+the same tree; when to bump the version. Shape: `adapter-contracts/close-work.md`.

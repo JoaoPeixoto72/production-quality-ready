@@ -1,16 +1,22 @@
 ---
 name: bootstrap-project
-description: "Write gates.json and the four adapters (start-work, review-change, close-work, verify) from what the repo already declares. Run once after installing the plugin, and again after a plugin major upgrade. Not for audits. User-invoked only."
+description: "Write gates.json and the project's own work-cycle skills (start, review, close, verify, ship) from what the repo declares. Run after installing, and after a major upgrade. Not for audits. User-invoked only."
 allowed-tools: Read Glob Grep Bash Edit Write
 ---
 
 # bootstrap-project
 
 The plugin is generic. The project is not. This skill closes the gap by
-writing the **four adapters that make the generic owners bite on this
-codebase** — with the project's real commands, real invariants and real
-surfaces — plus the `gates.json` that tells every owner which platform,
+writing **the project's own work-cycle skills** — start, review, close, verify
+and ship — with the project's real commands, real invariants and real
+surfaces, plus the `gates.json` that tells every audit owner which platform,
 sales model and stack they are looking at.
+
+The skills it writes are **self-contained**: each carries its steps in one
+screen and points at the agent map for what that already says. They work with
+no plugin loaded — in a cloud session, in CI, on another machine. The rules
+they are written from are `references/universal/*/RULE.md`; the shape each
+must have is `../../adapter-contracts/*.md`.
 
 Run it first. Run it again after a plugin major upgrade (it re-reads the
 existing adapters and only proposes diffs).
@@ -55,15 +61,16 @@ user before writing anything.
 6. Which owners are `not-applicable` and why (e.g. `drive-app-window`
    on web, `audit-website` on desktop). Propose from platform; confirm.
 7. **Maintainability budgets** — propose the defaults from
-   `../code-audit/references/maintainability.md` §1, show what
-   `../code-audit/scripts/quality_scan.py --format md` finds with them, and let the user set the numbers
+   the core plugin's `skills/code-audit/references/maintainability.md` §1, show what
+   its `skills/code-audit/scripts/quality_scan.py --format md` finds with them, and let the user set the numbers
    (`owners.code-audit.budgets`). Existing debt goes into the baseline
    (`--write-baseline`), never into looser numbers.
-8. **Adapter names** — each adapter gets a local name different from
-   the plugin skill it extends: `<project>-<skill>` (`<project>-start-work`).
-   Two skills with one short name leave the host to pick by chance. Record
-   each in `owners.<skill>.adapter`. Adapters are written in English, names
-   and body, whatever the project's language (POLICY §3.2).
+8. **Names** — each skill gets a name of its own, never the rule's
+   (`start-work`, `review-change`…): two skills with one short name leave the
+   host to pick by chance. Record each in `owners.<rule>.adapter`. Write them
+   in the language the project's agent map is written in.
+9. **Ship** — how a change reaches production (command or pipeline, and on
+   what event), the order, the smoke after, the rollback, what needs a person.
 
 ## Phase 2 — Write
 
@@ -80,14 +87,18 @@ goes stale.
    until the project accepts a `FAIL` with a dated reason, CONTRACTS §4.7),
    `gates`.
 2. **`<host>/skills/<local-name>/SKILL.md`** for each of start-work,
-   review-change, close-work and verify, from `templates/skills/*.template`
+   review-change, close-work, verify and ship, from `templates/skills/*.template`
    with every `{{PLACEHOLDER}}` replaced. Pre-fill:
-   - `start-work`: ownership table from detected hotspots.
-   - `review-change`: platform line, axes that apply, invariants from
-     Phase 1, proof commands in order (including `quality_scan.py --since`).
-   - `close-work`: document → subject table from the docs that exist.
+   - `start-work`: state document, the cheapest baseline command, ownership
+     table from detected hotspots.
+   - `review-change`: one line per axis that applies (from the rule), the
+     *Where to look* table, the agent-map sections that hold the invariants
+     (Phase 1 items go there, not into the skill), proof commands in order.
+   - `close-work`: document → subject table from the docs that exist, the
+     trim command.
    - `verify`: launch command, surfaces table, credentials pointer,
      artefact paths (local DB / object store / logs), driver by platform.
+   - `ship`: Phase 1 item 9.
 3. **`<host>/skills/<local-name>/agents/openai.yaml`** beside each adapter,
    from `templates/skills/openai.local.yaml.template`. Codex reads it for
    the skill picker; without it the adapter still loads, but shows no
@@ -111,8 +122,9 @@ goes stale.
    from.
 3. `python <plugin>/scripts/measure-descriptions.py <host>/skills` —
    every adapter description ≤ 250 chars.
-4. `pwsh <plugin>/scripts/run-all-owners.ps1 -RepoRoot . -DryRun` lists
-   the expected owners for the platform.
+4. `python <core>/scripts/run_all_owners.py --repo . --dry-run` lists the
+   expected owners for the platform, and `apply_gates.py` does not abort
+   (every owner with canonical checks is declared).
 5. Every document the adapters reference exists (`ESTADO.md`,
    …). If not, drop the line — never create an empty document or folder
    to satisfy a reference.
@@ -138,6 +150,7 @@ Tests: pass (`npm test`)
 - `templates/skills/review-change.SKILL.md.template`
 - `templates/skills/close-work.SKILL.md.template`
 - `templates/skills/verify.local.SKILL.md.template`
+- `templates/skills/ship.SKILL.md.template`
 - `templates/skills/openai.local.yaml.template`
 
 ## Placeholders
@@ -149,7 +162,11 @@ Tests: pass (`npm test`)
 | `DISPLAY_NAME`, `SHORT_DESCRIPTION` | adapter's human name and one-line summary (Codex picker) |
 | `HOST`, `HOST_AGENT_FILE` | Phase 0 (`.agents` → `AGENTS.md`; `.claude` → `CLAUDE.md`) |
 | `PLATFORM`, `SALES_MODEL`, `STACK_JSON` | Phase 0 / 1 |
-| `AXES_THAT_APPLY` | derived from `PLATFORM` (review-change A1–A11 tags) |
+| `AXES_ONE_LINE` | one line per axis tagged for `PLATFORM` in the review rule (A1–A11), scenario and requirement |
+| `STATE_DOC`, `STATE_DOC_SECTIONS`, `BASELINE_COMMAND` | Phase 0 — the state document and the cheapest sound-tree command (status, else typecheck) |
+| `SPEC_SOURCE`, `INVARIANT_SECTIONS` | Phase 0 / 1 — where specs live; the agent-map sections holding the invariants |
+| `QUALITY_COMMAND`, `PROOF_COMMANDS`, `TRIM_COMMAND` | Phase 0 — project commands, else the plugin scripts by path |
+| `DEPLOY_HOW`, `DEPLOY_ORDER`, `SMOKE_AFTER_DEPLOY`, `ROLLBACK_STEP`, `HUMAN_GATES` | Phase 1 item 9 |
 | `BUILD_COMMAND`, `TEST_COMMAND`, `TYPECHECK_COMMAND`, `LINT_COMMAND`, `MIGRATIONS_VERIFY_COMMAND`, `RUN_COMMAND` | Phase 0 |
 | `BASE_URL` | dev-command port, or "n/a" |
 | `PROJECT_INVARIANTS`, `INVARIANTS_LIST` | Phase 1 (numbered, with reason) |

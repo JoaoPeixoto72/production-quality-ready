@@ -1,30 +1,26 @@
 ---
 name: {{ADAPTER_NAME}}
-description: "Open work on {{PROJECT_NAME}} at the start of every conversation, before touching files: read ESTADO.md, run the baseline, find the owner of the code to change. Adapter of start-work; not for review or close."
-contract: production-quality-ready/CONTRACTS.md
-extends: "production-quality-ready:start-work"
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+description: "Open work on {{PROJECT_NAME}} before changing code: read the state, find the owner of the code to change, reproduce a bug first. Not for reviewing a diff or closing work."
+allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# start-work in {{PROJECT_NAME}}
+# Open work on {{PROJECT_NAME}}
 
-Local adapter of the plugin skill `production-quality-ready:start-work`,
-which holds the rule; this file holds only what is {{PROJECT_NAME}}'s.
+One owner per subject: before writing, find the file or function that already
+owns it and extend it. A new copy is a defect, not a shortcut.
 
-## Where the state is
+## Steps
 
-`ESTADO.md` at the repo root. Read §1 and §2 before anything else.
+1. Read the state: `{{STATE_DOC}}` — {{STATE_DOC_SECTIONS}}.
+2. A question needs nothing else. A change to code: run `{{BASELINE_COMMAND}}`
+   and report pass or fail beside it; a red tree is said before new work.
+   The full proof runs once, at review.
+3. Find the owner of what is about to change (table below; then `grep`).
+4. A bug is reproduced first — a command, a test, or the steps in the
+   running app. Unreproduced is unproven.
+5. Then write.
 
-## Baseline
-
-```bash
-{{BUILD_COMMAND}}
-{{TEST_COMMAND}}
-```
-
-Report pass or fail; store no counts.
-
-## Where code tends to repeat in this project
+## Where code tends to repeat
 
 {{PROJECT_SPECIFIC_OWNERSHIP_TABLE}}
 

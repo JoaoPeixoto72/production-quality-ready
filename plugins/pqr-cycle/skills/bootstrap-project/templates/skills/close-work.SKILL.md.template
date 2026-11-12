@@ -1,30 +1,39 @@
 ---
 name: {{ADAPTER_NAME}}
-description: "Close work on {{PROJECT_NAME}} after review, before commit: rewrite ESTADO.md, one subject per document, reason stays and history goes, only what the code cannot say. Adapter of close-work; not for opening."
-contract: production-quality-ready/CONTRACTS.md
-extends: "production-quality-ready:close-work"
+description: "Close work on {{PROJECT_NAME}} after review, before commit: rewrite the state document, keep the reason and drop the history, trim what nobody needs. Not for opening work."
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
-# close-work in {{PROJECT_NAME}}
+# Close work on {{PROJECT_NAME}}
 
-Local adapter of the plugin skill `production-quality-ready:close-work`,
-which holds the rule; this file holds only what is {{PROJECT_NAME}}'s.
+The code is the source. A document holds only what no file can say; history
+is `git log`; a number lives beside the command that measures it, or nowhere.
 
-## Document → subject table (one subject, one owner)
+## Steps
+
+1. Reuse the review's proof run if the tree did not change since (same key);
+   otherwise run the proof commands once.
+2. `{{TRIM_COMMAND}}` — every finding is trimmed or kept with a reason.
+3. Rewrite `{{STATE_DOC}}`: focus, next step, open items; pass or fail beside
+   each command, with HEAD. No counts.
+4. Each new fact goes to the one document that owns its subject (table).
+
+## Document → subject
 
 {{DOC_OWNERSHIP_TABLE}}
 
-## Pre-commit proof
-
-```bash
-{{BUILD_COMMAND}}
-{{TEST_COMMAND}}
-python <plugin>/skills/close-work/scripts/trim_check.py --repo . --format md   # must say: nothing to trim
-```
-
-Write pass or fail beside each command in `ESTADO.md` §1 — no counts.
-
-## When to bump version
+## When to bump the version
 
 {{VERSION_BUMP_RULES}}
+
+## One proof run per state of the tree
+
+A proof run is keyed by the tree it ran on:
+
+```bash
+echo "$(git rev-parse --short HEAD)-$({ git diff HEAD; git ls-files --others --exclude-standard; } | git hash-object --stdin | cut -c1-8)"
+```
+
+Run the proof commands once per key and append `<key> pass|fail <command>`
+to `.work/proof.txt` (gitignored). A later step with the same key reads that
+file instead of running them again; a different key runs them again.

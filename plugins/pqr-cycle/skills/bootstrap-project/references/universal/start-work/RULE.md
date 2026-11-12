@@ -1,10 +1,9 @@
----
-name: start-work
-description: "Run at the start of every conversation and before new code: read the state document, confirm build and tests at HEAD, name the canonical owner of the code about to change, prevent duplication. Not for review or close (close-work)."
-allowed-tools: Read Glob Grep Bash Edit Write
----
 
-# start-work
+# start-work — the rule
+
+The rule a project's start-work adapter is written from. It is not a skill:
+`bootstrap-project` turns it into the project's own, self-contained skill
+(`adapter-contracts/start-work.md`), so the cycle works with no plugin loaded.
 
 Universal contract for opening a work session. **Every conversation is
 born without memory**, and that makes it always cheaper to rewrite than
@@ -22,10 +21,11 @@ defect, not a shortcut.
 
 1. **Read the state.** The adapter says where `ESTADO.md` (or equivalent)
    lives, and which part of it decides anything.
-2. **Confirm the tree is sound.** Run the project's proof command
-   (build + tests). Report pass or fail beside the command; store no
-   counts. A red baseline is reported before any new work — otherwise the
-   next failure has no owner.
+2. **Confirm the tree is sound — when the task changes code.** A question
+   needs no baseline. A change runs the project's cheapest sound-tree
+   command (a status or typecheck command), reported pass or fail beside it;
+   the full suite runs once, at review. A red baseline is reported before
+   new work — otherwise the next failure has no owner.
 3. **Look up what is not reopened** — the measured facts, the known
    defects and the closed decisions the adapter points at.
 4. **Search for the owner** of the subject about to change.
@@ -40,17 +40,11 @@ defect, not a shortcut.
 |---|---|
 | "I know where this lives." | The conversation has no memory; search anyway. It takes a `grep`. |
 | "Writing it fresh is faster." | Faster today, a second owner forever. Extend the one that exists. |
-| "Tests were green last session." | Last session is not HEAD. Run the baseline. |
+| "Tests were green last session." | Last session is not HEAD. Run the baseline before changing code. |
 | "The bug is obvious, no need to reproduce." | Then reproducing is cheap. Without it, "fixed" is an opinion. |
 
-## Contract for the local adapter
+## The project's adapter
 
-The adapter is a local skill in the project's repo that:
-
-- names the state file (path);
-- gives the exact proof command (with the format for numbers);
-- lists places where code tends to repeat in this project;
-- lists documents of decisions/facts/audits that must not be reopened.
-
-See `adapter-contracts/start-work.md` for the required frontmatter and
-sections.
+It names the state file, the baseline command, the places where code tends
+to repeat and the documents that are not reopened. Shape:
+`adapter-contracts/start-work.md`.
