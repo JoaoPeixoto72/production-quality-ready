@@ -88,6 +88,23 @@ class Docs(unittest.TestCase):
                 with self.subTest(template=t.name, placeholder=ph):
                     self.assertIn(ph, documented)
 
+    def test_the_workflows_are_yaml_a_runner_can_start(self):
+        """A workflow that does not parse starts no job: every push shows red and nothing ran.
+        A `run:` or `name:` on one line is a plain scalar, where `: ` and ` #` end the value."""
+        for wf in (ROOT / ".github" / "workflows").glob("*.y*ml"):
+            text = wf.read_text(encoding="utf-8")
+            for n, line in enumerate(text.splitlines(), 1):
+                m = re.match(r"\s*(?:-\s*)?(?:run|name):\s*(\S.*)$", line)
+                if m and m.group(1)[0] not in "|>'\"":
+                    with self.subTest(file=wf.name, line=n):
+                        self.assertNotRegex(m.group(1), r": | #", "quote it, or use a `|` block")
+            try:
+                import yaml
+            except ImportError:
+                continue
+            with self.subTest(file=wf.name):
+                self.assertIn("jobs", yaml.safe_load(text))
+
     def test_documented_paths_exist(self):
         for f in (ROOT / "README.md", ROOT / "PURPOSE.md"):
             for path in re.findall(r"`((?:plugins|scripts|tests|rules)/[\w./-]+?)`", f.read_text(encoding="utf-8")):

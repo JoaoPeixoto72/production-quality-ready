@@ -118,6 +118,14 @@ class Islands(unittest.TestCase):
             with self.subTest(plugin=name):
                 self.assertEqual(manifest(name).get("dependencies"), [BASE])
 
+    def test_every_manifest_carries_the_same_version(self):
+        market = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
+        versions = {"plugin.json": json.loads((ROOT / "plugin.json").read_text(encoding="utf-8"))["version"],
+                    "marketplace": market["metadata"]["version"]}
+        versions.update({f"marketplace:{p['name']}": p["version"] for p in market["plugins"]})
+        versions.update({name: manifest(name)["version"] for name in (BASE, *OTHERS)})
+        self.assertEqual(len(set(versions.values())), 1, versions)
+
     def test_the_marketplace_lists_the_plugin_folders(self):
         market = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
         self.assertEqual(sorted(p["name"] for p in market["plugins"]), sorted([BASE, *OTHERS]))
