@@ -44,8 +44,9 @@ EVIDENCE_CAP = 50
 BRACE_LANGS = {".ts": "js", ".tsx": "js", ".js": "js", ".jsx": "js", ".mjs": "js",
                ".cjs": "js", ".rs": "rust"}
 PY_EXTS = {".py"}
-SFC_EXTS = {".svelte", ".vue"}  # single-file components: only <script> holds functions
+SFC_EXTS = {".svelte", ".vue", ".astro"}  # single-file components: only their code holds functions
 SCRIPT_BLOCK = re.compile(r"(<script\b[^>]*>)(.*?)(</script>)", re.S | re.I)
+ASTRO_FENCE = re.compile(r"\A(---[ \t]*\r?\n)(.*?)(\r?\n---[ \t]*(?:\r?\n|\Z))", re.S)  # the component script
 TEST_RUNNER_CALL = re.compile(r"^\s*(?:describe|it|test|suite|bench|beforeEach|afterEach|beforeAll|afterAll)"
                               r"(?:\.(?:each|only|skip|todo|concurrent))*\b")
 SKIP_DIRS = {".git", "node_modules", "target", "dist", "build", "coverage", ".venv",
@@ -368,14 +369,19 @@ def py_depth(node: ast.AST, depth: int = 0) -> int:
 
 # ------------------------------------------------------------ measuring
 
-def script_only(text: str) -> str:
-    """A Svelte/Vue file with everything outside <script> blanked, newlines kept, so
-    the brace scanner sees only code and line numbers stay true."""
+def script_only(text: str, fence: bool = False) -> str:
+    """A Svelte/Vue/Astro file with everything outside its code blanked, newlines kept, so
+    the brace scanner sees only code and line numbers stay true. The code is every
+    <script>, plus (`fence`) the `---` block that opens an Astro component."""
+    keep = [(m.start(2), m.end(2)) for m in SCRIPT_BLOCK.finditer(text)]
+    top = ASTRO_FENCE.match(text) if fence else None
+    if top:
+        keep = [(top.start(2), top.end(2))] + [k for k in keep if k[0] >= top.end()]
     out, last = [], 0
-    for m in SCRIPT_BLOCK.finditer(text):
-        out.append(re.sub(r"[^\n]", " ", text[last:m.start(2)]))
-        out.append(m.group(2))
-        last = m.end(2)
+    for start, end in keep:
+        out.append(re.sub(r"[^\n]", " ", text[last:start]))
+        out.append(text[start:end])
+        last = end
     out.append(re.sub(r"[^\n]", " ", text[last:]))
     return "".join(out)
 
@@ -385,7 +391,7 @@ def measure_file(path: Path, rel: str) -> list[Measure]:
     text = path.read_text(encoding="utf-8-sig", errors="replace")
     found = [Measure("quality.file-size", rel, 1, "", len(text.splitlines()))]
     if path.suffix in SFC_EXTS:
-        functions = brace_functions(script_only(text), "js")
+        functions = brace_functions(script_only(text, fence=path.suffix == ".astro"), "js")
     else:
         lang = BRACE_LANGS.get(path.suffix)
         functions = brace_functions(text, lang) if lang else python_functions(text)
@@ -421,7 +427,10 @@ def baseline_of(debts: list[Measure]) -> dict:
 
 # ------------------------------------------------------------ reporting
 
-def results(debts: list[Measure], baseline: dict, budgets: dict, declared: bool) -> list[dict]:
+def results(debts: list[Measure], baseline: dict, budgets: dict, declared: bool,
+            files: int | None = None) -> list[dict]:
+    """`files` is how many source files the repo has for this instrument; None when the
+    caller did not count. Zero is not a pass: nothing was measured (CONTRACTS §4.6.4)."""
     new, known = split_by_baseline(debts, baseline)
     out = [{"check": "quality.budgets-declared",
             "result": "PASS" if declared else "FAIL",
@@ -429,6 +438,12 @@ def results(debts: list[Measure], baseline: dict, budgets: dict, declared: bool)
             "reason": "budgets in gates.json owners.code-audit.budgets" if declared
                       else f"no budgets declared; plugin defaults used: {DEFAULT_BUDGETS}",
             "evidence": []}]
+    if files == 0:
+        reads = ", ".join(sorted(BRACE_LANGS.keys() | PY_EXTS | SFC_EXTS))
+        why = (f"nothing-measured: the repo tracks no file this instrument reads ({reads}); "
+               "a pass over zero files would mean nothing")
+        return out + [{"check": c, "result": "NOT_VERIFIED", "reason": why, "evidence": []}
+                      for c in (*CHECKS, "quality.budgets-met")]
     for check, (key, what) in CHECKS.items():
         mine = [m for m in new if m.check == check]
         tolerated = sum(1 for m in known if m.check == check)
@@ -440,7 +455,9 @@ def results(debts: list[Measure], baseline: dict, budgets: dict, declared: bool)
     failed = any(r["result"] == "FAIL" for r in out[1:])
     out.append({"check": "quality.budgets-met", "result": "FAIL" if failed else "PASS",
                 "severity": "MEDIUM" if failed else None,
-                "reason": "every size/nesting/params budget met, baseline debts not grown", "evidence": []})
+                "reason": "every size/nesting/params budget met, baseline debts not grown"
+                          + ("" if files is None else f"; {files} source file(s) in the repo"),
+                "evidence": []})
     return [{k: v for k, v in r.items() if v is not None} for r in out]
 
 
@@ -484,6 +501,7 @@ def main(argv: list[str] | None = None) -> int:
 
     measures = [m for path, rel in source_files(repo, ignore_dirs, ignore_globs, only)
                 for m in measure_file(path, rel)]
+    files = sum(1 for _ in source_files(repo, ignore_dirs, ignore_globs, None))  # the repo, not the diff
     debts = over_budget(measures, budgets)
     if a.write_baseline:
         baseline_path.write_text(json.dumps(baseline_of(debts), indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -499,7 +517,7 @@ def main(argv: list[str] | None = None) -> int:
                                         "reason": why, "evidence": []}]}, indent=2))
         print(why, file=sys.stderr)
         return 2
-    rows = results(debts, baseline, budgets, declared)
+    rows = results(debts, baseline, budgets, declared, files)
     print(as_markdown(rows) if a.format == "md" else json.dumps({"results": rows}, indent=2))
     return 1 if any(r["result"] == "FAIL" and r["check"] != "quality.budgets-declared" for r in rows) else 0
 
