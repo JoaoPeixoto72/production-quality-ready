@@ -75,9 +75,10 @@ and carries a criterion with no proof is that axis's first `BLOCKED`.
    below over the touched functions. A budget grown or crossed is
    `VIOLATED` unless the change splits it first.
 6. **Proof commands.** Run what the adapter declares (build, typecheck,
-   lint, tests, migrations) once per state of the tree — keyed by HEAD and
-   the hash of the diff, recorded in `.work/proof.txt`, reused by close-work
-   while the key holds. Report pass or fail + command + HEAD; no counts.
+   lint, tests, migrations) once per state of the tree — keyed by HEAD, the
+   hash of the diff and the contents of the untracked files, recorded in
+   `.work/proof.txt`, reused by close-work while the key holds. Report pass
+   or fail + command + HEAD; no counts.
 7. **Argue against your own approval.** Name the single input or
    sequence most likely to break this change, and point at the line or
    test that handles it. If you cannot name one, you have not read the

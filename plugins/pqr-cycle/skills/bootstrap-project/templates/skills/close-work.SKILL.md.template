@@ -28,10 +28,11 @@ is `git log`; a number lives beside the command that measures it, or nowhere.
 
 ## One proof run per state of the tree
 
-A proof run is keyed by the tree it ran on:
+A proof run is keyed by the tree it ran on — HEAD, the diff, and the contents of the
+files git does not track yet:
 
 ```bash
-echo "$(git rev-parse --short HEAD)-$({ git diff HEAD; git ls-files --others --exclude-standard; } | git hash-object --stdin | cut -c1-8)"
+echo "$(git rev-parse --short HEAD)-$({ git diff HEAD; git ls-files --others --exclude-standard; git ls-files --others --exclude-standard | git hash-object --stdin-paths; } | git hash-object --stdin | cut -c1-8)"
 ```
 
 Run the proof commands once per key and append `<key> pass|fail <command>`
