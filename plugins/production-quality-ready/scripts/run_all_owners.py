@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -40,7 +41,23 @@ sys.path.insert(0, str(AUDIT_APP))
 import validate_evidence as ve  # noqa: E402
 
 PRODUCER_SCRIPT = "plugins/production-quality-ready/scripts/run_all_owners.py"
+OWN_STAMP = re.compile(r"^\s*producer-script:\s*\S*run_all_owners\.py\s*$", re.M)
 TIMEOUT = 1800
+# Every `adapter-hints` key this runner reads, and what it settles (CONTRACTS §7.5.4). A project
+# that names its command differently gets a check that can never close, so the table is the contract.
+HINTS = {
+    "build-command": "code-audit :: runtime.build-passes",
+    "typecheck-command": "code-audit :: runtime.types-check",
+    "tests-command": "code-audit :: runtime.tests-pass",
+    "smoke-command": "verify :: smoke-test-passes",
+    "design-pro-capture-command": "design-pro :: a11y-critical-flows",
+    "tenant-isolation-command": "security-audit :: sec.tenant-isolation",
+    "migrations-verify-command": "reliability-audit :: reliability.migration-immutable",
+    "atomic-write-command": "reliability-audit :: reliability.atomic-write",
+    "reproducible-build-command": "release-audit :: release.reproducible-artifact",
+    "core-web-vitals-command": "audit-website :: web.core-web-vitals",
+    "billing-harness-commands": "commercial-readiness :: sell-01 … sell-06 (a map check -> command)",
+}
 ASVS = "owasp-asvs-5.0"  # chapter numbers below are ASVS 5.0.0 (OWASP/ASVS tag v5.0.0, 5.0/en)
 
 
@@ -70,6 +87,39 @@ class Runner:
         d = ve.skill_dir(self.plugin, owner)
         return (d / rel) if d else self.plugin / "missing" / owner / rel
 
+    def cfg(self, owner: str) -> dict:
+        """The owner's own settings in gates.json (`owners.<owner>`), under its current or old name."""
+        for raw, value in (self.gates.get("owners") or {}).items():
+            if ve.canonical_owner(raw) == owner and isinstance(value, dict):
+                return value
+        return {}
+
+    @staticmethod
+    def is_own(path: Path) -> bool:
+        """Did an earlier run of this script write the file? Its stamp says so."""
+        try:
+            return bool(OWN_STAMP.search(path.read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            return False
+
+    def clear_own(self, owner: str):
+        """A check this run no longer writes must not survive from an earlier run — but only
+        this script's own files go. What an owner skill or audit-app's reading wrote by hand,
+        and the logs those files cite, are theirs to replace (CONTRACTS §4.1.5)."""
+        d = self.audit / owner
+        if not d.is_dir():
+            return
+        kept = [p for p in d.rglob("*.evidence.yaml") if not self.is_own(p)]
+        cited = "\n".join(p.read_text(encoding="utf-8", errors="replace") for p in kept)
+        for p in sorted(d.rglob("*"), reverse=True):  # children before their folder
+            if p.is_dir():
+                if not any(p.iterdir()):
+                    p.rmdir()
+            elif p not in kept and p.relative_to(self.repo).as_posix() not in cited:
+                p.unlink()
+        if not any(d.iterdir()):
+            d.rmdir()
+
     def tally(self, owner: str, result: str):
         r = self.results.setdefault(owner, {"ran": 0, "PASS": 0, "FAIL": 0, "NOT_VERIFIED": 0, "NOT_APPLICABLE": 0})
         r["ran"] += 1
@@ -78,6 +128,11 @@ class Runner:
     def write(self, owner, check, instrument, rule, result, *, producer=None, rule_version="",
               severity="", command="", log="", reason="", evidence=()):
         producer = producer or owner
+        target = self.audit / owner / f"{producer}--{check}.evidence.yaml"
+        if result == "NOT_VERIFIED" and target.is_file() and not self.is_own(target):
+            # A gap this script cannot fill never replaces what the owner settled by hand.
+            print(f"       [keep] {owner}::{check} — settled in {target.name}; the runner has no instrument for it")
+            return
         if result == "PASS" and (not command or not log):
             raise RuntimeError(f"refusing to write PASS for {owner}::{check} without command+log (CONTRACTS §4.6)")
         if result == "PASS" and not (self.repo / log).is_file():
@@ -114,9 +169,8 @@ class Runner:
         out += ["context:", f"  head: {self.head or 'unknown'}", f"  platform: {self.platform}",
                 f"  captured-at: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}",
                 f"  producer-script: {PRODUCER_SCRIPT}"]
-        d = self.audit / owner
-        d.mkdir(parents=True, exist_ok=True)
-        (d / f"{producer}--{check}.evidence.yaml").write_text("\n".join(out) + "\n", encoding="utf-8")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("\n".join(out) + "\n", encoding="utf-8")
 
     def missing(self, owner, instrument, why):
         self.write(owner, f"{owner}.instrument-available", instrument, "instrument-present",
@@ -139,9 +193,10 @@ class Runner:
             return False
 
     def json_instrument(self, owner, script: Path, instrument, *, producer=None, check_override="",
-                        only_results=(), rule="declared-by-owner", rule_version="", extra=()):
+                        only_results=(), skip_checks=(), rule="declared-by-owner", rule_version="", extra=()):
         """A Python instrument that prints {results:[{check,result,severity,reason,evidence}]}.
-        Its stdout is the log, so every PASS carries command + log."""
+        Its stdout is the log, so every PASS carries command + log. `skip_checks` are the
+        checks another instrument of this run settles."""
         if not script.is_file():
             self.missing(owner, instrument, f"instrument not found at {script}")
             return
@@ -171,9 +226,10 @@ class Runner:
             return
         for r in report.get("results", []):
             res = str(r.get("result", ""))
-            if only_results and res not in only_results:
+            if only_results and res not in only_results or str(r.get("check")) in skip_checks:
                 continue
-            traced = res in ("PASS", "FAIL")  # only an observed result carries the trace
+            # What the instrument observed carries its trace; "does not apply" is observed too (§4.3.4).
+            traced = res in ("PASS", "FAIL", "NOT_APPLICABLE")
             self.write(owner, check_override or str(r.get("check")), instrument, rule, res,
                        producer=producer, rule_version=rule_version, severity=str(r.get("severity") or ""),
                        command=cmd if traced else "", log=json_rel if traced else "",
@@ -267,9 +323,14 @@ class Runner:
             return self.missing(o, "run_website_audit.mjs", "node not on PATH")
         if not engine.is_file():
             return self.missing(o, "run_website_audit.mjs", f"engine not found (install pqr-website): {engine}")
-        target = f"--url={self.website_url}" if self.website_url else (f"--dir={self.website_dir}" if self.website_dir else "")
+        declared = str(self.cfg(o).get("target") or "")  # gates.json: a URL, or a built folder
+        url = self.website_url or (declared if declared.startswith(("http://", "https://")) else "")
+        folder = self.website_dir or ("" if url else declared)
+        target = f"--url={url}" if url else (f"--dir={folder}" if folder else "")
         if not target:
-            return self.missing(o, "run_website_audit.mjs", "no target: pass --website-url or --website-dir")
+            return self.missing(o, "run_website_audit.mjs",
+                                "no target: declare owners.audit-website.target in gates.json, or pass "
+                                "--website-url / --website-dir")
         for name, path, check in (("run_website_audit.mjs", engine, "web.readiness-clean"),
                                   ("run_seo_audit.mjs", seo, "web.seo-technical")):
             if not path.is_file():
@@ -285,6 +346,10 @@ class Runner:
             else:
                 self.write(o, check, name, "sarif-2.1.0", "FAIL", rule_version="sarif-2.1.0", severity="HIGH",
                            command=cmd, log=log_rel, reason="engine exited non-zero; see log and SARIF")
+        # Core Web Vitals need a browser on the real pages (or field data behind a key): the
+        # project's own measurement settles the check, or the gap is said.
+        self.declared(o, "web.core-web-vitals", "measurement-run", "cwv-within-thresholds",
+                      "core-web-vitals-command", fail_severity="HIGH")
 
     def security_audit(self):
         o = "security-audit"
@@ -316,8 +381,9 @@ class Runner:
         self.json_instrument(o, self.instrument(o, "scripts/secret_scan.py"), "secret-scanner",
                              rule=f"{ASVS} V13.3", rule_version=ASVS,
                              extra=["--gitleaks-report", str(gl)] if gl.is_file() else [])
+        doc = str(self.cfg(o).get("threat-model") or "")
         self.json_instrument(o, self.instrument(o, "scripts/threat_model.py"), "threat-model-check",
-                             rule=f"{ASVS} V15.1", rule_version=ASVS)
+                             rule=f"{ASVS} V15.1", rule_version=ASVS, extra=["--doc", doc] if doc else [])
 
     def release_audit(self):
         o = "release-audit"
@@ -334,9 +400,13 @@ class Runner:
             elif ok is False:
                 self.write(o, "release.lockfiles-immutable", "reproducibility-run", "lockfile-committed", "FAIL",
                            severity="HIGH", command=cmd, log=log_rel)
-        else:
+        elif any((self.repo / f).is_file() for f in ("package.json", "Cargo.toml")):
             self.write(o, "release.lockfiles-immutable", "reproducibility-run", "lockfile-committed", "FAIL",
-                       severity="HIGH", reason="no lockfile found")
+                       severity="HIGH", reason="no lockfile found beside package.json / Cargo.toml")
+        else:
+            self.write(o, "release.lockfiles-immutable", "reproducibility-run", "lockfile-committed", "NOT_VERIFIED",
+                       reason="missing-instrument: this runner knows npm, pnpm, yarn and Cargo lockfiles, and the "
+                              "repo root has neither package.json nor Cargo.toml")
         sbom = self.repo / "sbom.json"
         if not sbom.is_file():
             self.write(o, "release.sbom-present", "sbom-verifier", "cyclonedx-synced", "FAIL", severity="MEDIUM",
@@ -357,8 +427,13 @@ class Runner:
         else:
             self.write(o, "release.sbom-present", "sbom-verifier", "cyclonedx-synced", "NOT_VERIFIED",
                        reason="sbom.json exists but no node/package.json to verify version sync")
+        own_repro = bool(self.hints.get("reproducible-build-command"))
         self.json_instrument(o, self.instrument(o, "scripts/ci_inspection.py"), "ci-inspection",
-                             rule="clean-clone-one-command", extra=["--platform", self.platform])
+                             rule="clean-clone-one-command", extra=["--platform", self.platform],
+                             skip_checks=("release.reproducible-artifact",) if own_repro else ())
+        if own_repro:  # two clean builds and a hash compare are the project's to run
+            self.declared(o, "release.reproducible-artifact", "reproducibility-run", "same-commit-same-artifact",
+                          "reproducible-build-command", fail_severity="HIGH")
         if self.platform != "web":
             for c in ("release.signed-artifact", "release.updater-verified"):
                 self.write(o, c, "signature-verifier", "declared-by-owner", "NOT_VERIFIED",
@@ -367,18 +442,24 @@ class Runner:
     def reliability_audit(self):
         o = "reliability-audit"
         harness = self.instrument(o, "scripts/migration_harness.py")
-        before = self.results.get(o, {}).get("ran", 0)
-        self.json_instrument(o, harness, "migration-harness", rule="no-data-loss")
-        ran_harness = self.results.get(o, {}).get("ran", 0) > before and \
-            (self.audit / o / "migration-harness.json").is_file()
-        # The project's verifier settles migration-immutable only when the harness did not run:
-        # both write the same evidence file, and one check must not be counted twice.
-        if self.hints.get("migrations-verify-command") and not ran_harness:
+        mdir = str(self.cfg(o).get("migrations-dir") or "")
+        # One check, one settler: where the project declares its own verifier, that command
+        # decides migration-immutable and the harness's reading of the same check is dropped.
+        own_verifier = bool(self.hints.get("migrations-verify-command"))
+        self.json_instrument(o, harness, "migration-harness", rule="no-data-loss",
+                             extra=["--migrations", mdir] if mdir else [],
+                             skip_checks=("reliability.migration-immutable",) if own_verifier else ())
+        if own_verifier:
             self.declared(o, "reliability.migration-immutable", "migration-harness",
                           "published-migrations-unchanged", "migrations-verify-command")
         self.json_instrument(o, self.instrument(o, "scripts/log_inspection.py"), "log-inspection",
                              rule="diagnosable-in-production", extra=["--platform", self.platform])
-        gaps = ["reliability.atomic-write", "reliability.resume-after-reopen"]
+        gaps = ["reliability.resume-after-reopen"]
+        if self.hints.get("atomic-write-command"):  # the project's own kill-mid-write harness
+            self.declared(o, "reliability.atomic-write", "crash-harness", "write-is-all-or-nothing",
+                          "atomic-write-command")
+        else:
+            gaps.insert(0, "reliability.atomic-write")
         if self.platform != "web":
             gaps += ["reliability.crash-mid-write", "reliability.no-double-flush"]
         for c in gaps:
@@ -437,7 +518,12 @@ def main(argv=None) -> int:
     ap.add_argument("--website-url", default="")
     ap.add_argument("--website-dir", default="")
     ap.add_argument("--no-gates", action="store_true", help="write evidence only; do not apply the gates")
+    ap.add_argument("--list-hints", action="store_true", help="print the adapter-hints this runner reads, and exit")
     a = ap.parse_args(argv)
+    if a.list_hints:
+        for key, settles in HINTS.items():
+            print(f"{key:28} {settles}")
+        return 0
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:  # an old interpreter keeps its encoding; output is still ASCII-safe enough
@@ -462,6 +548,10 @@ def main(argv=None) -> int:
     print(f"run_all_owners\n  repo:     {repo}\n  plugin:   {plugin}\n  gates:    {gates_path}\n  platform: {platform}\n")
 
     r = Runner(repo, plugin, gates, a.dry_run, a.website_url, a.website_dir)
+    unread = sorted(k for k in r.hints if k not in HINTS)
+    if unread:
+        print(f"  [note] adapter-hints this runner does not read (--list-hints shows the ones it does): "
+              f"{', '.join(unread)}\n")
     for raw, cfg in gates["owners"].items():
         name = ve.canonical_owner(raw)
         if isinstance(cfg, dict) and cfg.get("not-applicable"):
@@ -476,9 +566,8 @@ def main(argv=None) -> int:
             print(f"  [skip] {name} — platforms {plats} do not include '{platform}'")
             continue
         print(f"  [->] {name}")
-        # A check this run no longer writes must not survive from an earlier run.
-        if not a.dry_run and (repo / ".audit" / name).is_dir():
-            shutil.rmtree(repo / ".audit" / name)
+        if not a.dry_run:
+            r.clear_own(name)
         try:
             Runner.DISPATCH[name](r)
         except Exception as e:  # one owner's crash is reported and the others still run

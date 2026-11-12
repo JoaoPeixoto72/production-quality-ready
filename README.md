@@ -170,6 +170,19 @@ or *runs a fixed tool* from one that misuses it — its README lists that limit.
 A hold is a request for a person to read the flagged line, which is what this
 table does.
 
+## Which stacks the instruments know
+
+The rules are stack-neutral. The instruments are not, and where one does not
+know a stack it says `NOT_VERIFIED` with the reason — never a `PASS` or a
+`FAIL` it did not measure.
+
+| Stack | Runs on its own | The project declares (`CONTRACTS §7.5.4`) |
+|---|---|---|
+| Node (npm, pnpm, yarn), web | build, typecheck and tests; the package manager's audit; lockfile tracked; `quality_scan` over TS/JS, Svelte, Vue and Astro; webhook idempotency; SQL migrations applied to a throwaway SQLite | smoke, accessibility capture, tenant isolation, billing paths |
+| Rust (Cargo), Tauri desktop on Windows | build, typecheck and tests; `cargo audit` when installed; `Cargo.lock` tracked; `quality_scan` over `.rs`; `drive-app-window` | signing and updater checks, the crash harness |
+| Sites (Astro and any static build) | `audit-website` over the built folder or the URL | the target |
+| Anything else | the commands `adapter-hints` declares | every other check stays `NOT_VERIFIED` until an instrument for that stack exists |
+
 ## What it does NOT
 
 - **Correct anything from the core.** The core audits; `diagnose`,

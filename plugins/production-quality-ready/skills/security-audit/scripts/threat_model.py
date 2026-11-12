@@ -18,7 +18,8 @@ import re
 import sys
 from pathlib import Path
 
-DOC_CANDIDATES = ("docs/threat-model.md", "THREAT_MODEL.md", "docs/seguranca/threat-model.md")
+DOC_CANDIDATES = ("docs/threat-model.md", "docs/THREAT_MODEL.md", "THREAT_MODEL.md",
+                  "docs/seguranca/threat-model.md")
 
 # `src/x.ts:123`, `routes/y.ts` (relative to `src/`), `migrations/0033_x.sql:7` — a
 # path, optionally with a line. Extensions are a list, not `\w{1,6}`, so `event.id` is not a citation.
@@ -71,7 +72,8 @@ def resolve(repo: Path, path: str) -> Path | None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--repo", default=".")
-    ap.add_argument("--doc", help="threat model path (otherwise the usual candidates)")
+    ap.add_argument("--doc", help="threat model path, as gates.json declares it in "
+                                  "owners.security-audit.threat-model (otherwise the usual candidates)")
     a = ap.parse_args(argv)
     # A Windows pipe is cp1252: a `—` in a reason crashed or garbled the report.
     if hasattr(sys.stdout, "reconfigure"):
@@ -83,8 +85,10 @@ def main(argv: list[str] | None = None) -> int:
     doc = find_doc(repo, a.doc)
     if doc is None:
         result, severity = "FAIL", "HIGH"
-        reason = (f"no threat model found at any of {', '.join(DOC_CANDIDATES)}: "
-                  "there is no declared boundary, no adversary list and nothing to hold the controls to")
+        where = (f"the threat model declared at {a.doc} does not exist" if a.doc else
+                 f"no threat model found at any of {', '.join(DOC_CANDIDATES)} (another path is declared "
+                 "as owners.security-audit.threat-model in gates.json)")
+        reason = f"{where}: there is no declared boundary, no adversary list and nothing to hold the controls to"
         evidence.append("a threat model is a versioned file; the check is not about its length")
     else:
         rel_doc = doc.relative_to(repo).as_posix()
