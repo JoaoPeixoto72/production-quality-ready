@@ -146,6 +146,10 @@ class Source:
     def new(self, k: int) -> bool:
         return self.only is None or k + 1 in self.only
 
+    def opens_file(self, k: int) -> bool:
+        """Only a shebang and blank lines come before line k."""
+        return not any(l.strip() and not l.startswith("#!") for l in self.lines[:k])
+
     def blocks(self):
         """(start, end) of each run of comment lines."""
         k = 0
@@ -173,7 +177,8 @@ def comment_findings(src: Source, rules: Rules, found: dict[str, list[str]]) -> 
     for k, end in src.blocks():
         if not any(src.new(j) for j in range(k, end)):
             continue
-        limit = 2 * rules.max_block if k == 0 else rules.max_block  # a file header may say what the file is
+        # A file header may say what the file is.
+        limit = 2 * rules.max_block if src.opens_file(k) else rules.max_block
         text_lines = sum(1 for j in range(k, end) if not BARE_DELIMITER.match(src.lines[j]))
         exempt = header_free and not any(not src.is_comment[j] and src.lines[j].strip() for j in range(k))
         if text_lines > limit and k < src.tests_from and not exempt:

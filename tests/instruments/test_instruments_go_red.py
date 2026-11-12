@@ -546,6 +546,20 @@ class TrimCheckGoesRed(unittest.TestCase):
             self.assertNotEqual(code, 0)
             self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "FAIL")
 
+    def test_a_header_after_a_shebang_is_still_the_file_header(self):
+        script = "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo(tmp)
+            for name, shebang, mark in (("tool.cjs", "#!/usr/bin/env node\n", "//"), ("tool.sh", "#!/bin/sh\n\n", "#")):
+                body = lambda n: shebang + "".join(f"{mark} line {i}\n" for i in range(n)) + "\nx=1\n"
+                (root / name).write_text(body(6), encoding="utf-8")
+                _, payload = instrument_json(script, ["--repo", "."], root)
+                self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "PASS", name)
+                (root / name).write_text(body(7), encoding="utf-8")
+                _, payload = instrument_json(script, ["--repo", "."], root)
+                self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "FAIL", name)
+                (root / name).unlink()
+
     def test_a_migration_header_has_no_budget_but_a_later_comment_does(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = self._repo(tmp)
