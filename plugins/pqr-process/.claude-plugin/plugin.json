@@ -1,0 +1,10 @@
+{
+  "name": "pqr-process",
+  "version": "4.0.0",
+  "description": "Optional process skills: spec, diagnose, grill, slice, map, triage, handoff, ship, improve.",
+  "author": {
+    "name": "Joao Peixoto",
+    "email": "joaopeixoto@hotmail.com",
+    "url": "https://github.com/JoaoPeixoto72"
+  }
+}

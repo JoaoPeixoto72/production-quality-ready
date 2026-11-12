@@ -1,0 +1,10 @@
+{
+  "name": "pqr-ui-system",
+  "version": "4.0.0",
+  "description": "ui-system: OKLCH tokens and the data-ui contract of a design system; writes UI code.",
+  "author": {
+    "name": "Joao Peixoto",
+    "email": "joaopeixoto@hotmail.com",
+    "url": "https://github.com/JoaoPeixoto72"
+  }
+}

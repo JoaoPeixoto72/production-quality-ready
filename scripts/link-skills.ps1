@@ -12,13 +12,16 @@
 #   pwsh scripts/link-skills.ps1 -Dest <dir>         # link somewhere else
 #   pwsh scripts/link-skills.ps1 -Remove             # unlink what this script made
 #   pwsh scripts/link-skills.ps1 -Copy               # copy instead of link
+#   pwsh scripts/link-skills.ps1 -Plugins production-quality-ready,pqr-process
+#                                                    # only these plugins (default: production-quality-ready,pqr-cycle)
 
 [CmdletBinding()]
 param(
     [string]$PluginDir = "",
     [string]$Dest = "",
     [switch]$Copy,
-    [switch]$Remove
+    [switch]$Remove,
+    [string[]]$Plugins = @("production-quality-ready", "pqr-cycle")
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,14 +30,16 @@ if (-not $PluginDir) {
     $PluginDir = Split-Path -Parent $PSScriptRoot
 }
 
-$skillsDir = Join-Path $PluginDir "skills"
+$Plugins = @($Plugins | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 
 if (-not (Test-Path -LiteralPath (Join-Path $PluginDir "plugin.json"))) {
     Write-Error "Not a production-quality-ready plugin folder: $PluginDir"
 }
 
-if (-not (Test-Path -LiteralPath $skillsDir)) {
-    Write-Error "No skills/ folder in $PluginDir"
+$skillDirs = foreach ($p in $Plugins) {
+    $d = Join-Path $PluginDir "plugins/$p/skills"
+    if (-not (Test-Path -LiteralPath $d)) { Write-Error "No plugin $p in $PluginDir" }
+    Get-ChildItem -Directory -LiteralPath $d
 }
 
 if (-not $Dest) {
@@ -51,7 +56,7 @@ Write-Host "Target: $Dest" -ForegroundColor Cyan
 $linked = 0
 $skipped = 0
 
-foreach ($skill in Get-ChildItem -Directory -LiteralPath $skillsDir) {
+foreach ($skill in $skillDirs) {
     if (-not (Test-Path -LiteralPath (Join-Path $skill.FullName "SKILL.md"))) {
         continue
     }

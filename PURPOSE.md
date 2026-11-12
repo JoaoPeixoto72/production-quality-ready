@@ -47,7 +47,7 @@ invokes another.
 | Generator (run first) | `bootstrap-project` |
 | Work cycle | `start-work`, `review-change`, `close-work` |
 | Proof | `verify` (+ `drive-app-window` on desktop) |
-| Audit owners | `code-review`, `security-audit`, `reliability-audit`, `design-pro`, `ui-system`, `release-audit`, `commercial-readiness`, `audit-website` |
+| Audit owners | `code-audit`, `security-audit`, `reliability-audit`, `design-pro`, `ui-system`, `release-audit`, `commercial-readiness`, `audit-website` |
 | Orchestrator | `audit-app` |
 
 15 skills; 14 owners of a subject plus one technical capability.
@@ -132,7 +132,7 @@ true ten. So the work cycle writes little, and in small pieces:
 - **history** is `git log`: a document describes the present, stores no
   counts, and never narrates how it got there;
 - **files stay small**, one subject each, under the budgets
-  `code-review` measures.
+  `code-audit` measures.
 
 `close-work` applies this at the end of every session; the plugin applies
 it to itself — it has no change log, only its commits.
@@ -147,10 +147,10 @@ the defect to look for.
 | Subject | Owner | Rule |
 |---|---|---|
 | What counts as proof · report format | `audit-app` | `CONTRACTS.md` |
-| Runtime: concurrency, state, types, panics, test strength | `code-review` | *a test that has never failed proves nothing* |
-| Contracts: IPC, API, layers, integrations | `code-review` | both sides crossed by test, not by reading |
-| Performance budgets | `code-review` | **no measurement, no finding**; no budget, no rule |
-| Maintainability: size, structure, duplication, named values, swallowed errors | `code-review` | *code another person can change without its author* — budgets with a ratchet, plus the M axes |
+| Runtime: concurrency, state, types, panics, test strength | `code-audit` | *a test that has never failed proves nothing* |
+| Contracts: IPC, API, layers, integrations | `code-audit` | both sides crossed by test, not by reading |
+| Performance budgets | `code-audit` | **no measurement, no finding**; no budget, no rule |
+| Maintainability: size, structure, duplication, named values, swallowed errors | `code-audit` | *code another person can change without its author* — budgets with a ratchet, plus the M axes |
 | Security: input, auth, tenants, paths, processes, dependencies | `security-audit` | OWASP ASVS 5.0 + the product's threat model |
 | Persistence and recovery | `reliability-audit` | migration from **every** version ever published; crash at the worst moment |
 | Diagnosability in production | `reliability-audit` §2 | *a customer says "doesn't work on version X" — what can you find out?* |

@@ -1,0 +1,10 @@
+{
+  "name": "production-quality-ready",
+  "version": "4.0.0",
+  "description": "Audit owners and gates: code, security, reliability, release, commercial readiness and accessibility write evidence files; apply_gates.py decides release-candidate, production-ready and sellable. A PASS needs a command and a log.",
+  "author": {
+    "name": "Joao Peixoto",
+    "email": "joaopeixoto@hotmail.com",
+    "url": "https://github.com/JoaoPeixoto72"
+  }
+}

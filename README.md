@@ -138,7 +138,7 @@ what is missing.
 | `start-work` · `review-change` · `close-work` | work cycle (adapters per project) | both | proof commands |
 | `verify` | prove in the running app | both | browser driver / `gui.ps1` |
 | `drive-app-window` | Win32/WebView2 driver for `verify` | desktop | `scripts/gui.ps1` |
-| `code-review` | runtime + contracts + maintainability (size, nesting, params, ratchet) + perf budgets | both | build/test runners, `quality_scan.py`, `webhook_idempotency.py` |
+| `code-audit` | runtime + contracts + maintainability (size, nesting, params, ratchet) + perf budgets | both | build/test runners, `quality_scan.py`, `webhook_idempotency.py` |
 | `security-audit` | ASVS 5.0 + threat model; tenants, input, CVEs, secrets | both | dep/secret scanners |
 | `reliability-audit` | persistence, migrations, crash; diagnosability (logs, PII) | both | harnesses (project) |
 | `design-pro` | UX, WCAG 2.2 AA verdict, i18n | both | — (consumes ui-system, verify) |
@@ -198,7 +198,7 @@ behaviour that harms anyone:
 
 | Skill | What the scanner flags | What it actually is |
 |---|---|---|
-| `code-review` | `subprocess` in `quality_scan.py` | one `git` call with a fixed argument list and no shell, to list the files git would commit and the files a change touched |
+| `code-audit` | `subprocess` in `quality_scan.py` | one `git` call with a fixed argument list and no shell, to list the files git would commit and the files a change touched |
 | `release-audit` | `subprocess` in `ci_inspection.py` | one read-only `git log -1` on the changelog, to date it |
 | `security-audit` | `subprocess` in `secret_scan.py` | looks for committed secrets in the history — `gitleaks` when installed, otherwise `git log -p` with its own rules; that is its job |
 | `audit-website` | network access; one file too long for its parser | it audits a public website, so it fetches that website; the URL is the one you give it |

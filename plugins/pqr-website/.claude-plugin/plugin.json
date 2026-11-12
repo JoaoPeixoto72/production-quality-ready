@@ -1,0 +1,10 @@
+{
+  "name": "pqr-website",
+  "version": "4.0.0",
+  "description": "audit-website: SEO, Core Web Vitals, cookies and links of a public website.",
+  "author": {
+    "name": "Joao Peixoto",
+    "email": "joaopeixoto@hotmail.com",
+    "url": "https://github.com/JoaoPeixoto72"
+  }
+}

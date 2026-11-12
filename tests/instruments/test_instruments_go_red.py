@@ -30,20 +30,20 @@ PLUGIN = Path(__file__).resolve().parents[2]
 
 # instrument -> (script implementing it, class proving it goes red)
 RED_CASE: dict[str, tuple[str, str]] = {
-    "quality-scan": ("skills/code-review/scripts/quality_scan.py", "QualityScanGoesRed"),
-    "webhook-idempotency": ("skills/code-review/scripts/webhook_idempotency.py", "WebhookIdempotencyGoesRed"),
-    "audit_ui.py": ("skills/ui-system/scripts/audit_ui.py", "AuditUiGoesRed"),
-    "secret-scanner": ("skills/security-audit/scripts/secret_scan.py", "SecretScanGoesRed"),
-    "migration-harness": ("skills/reliability-audit/scripts/migration_harness.py", "MigrationHarnessGoesRed"),
-    "log-inspection": ("skills/reliability-audit/scripts/log_inspection.py", "LogInspectionGoesRed"),
-    "ci-inspection": ("skills/release-audit/scripts/ci_inspection.py", "CiInspectionGoesRed"),
-    "threat-model-check": ("skills/security-audit/scripts/threat_model.py", "ThreatModelGoesRed"),
-    "tenant-isolation": ("skills/security-audit/scripts/tenant_isolation.py", "TenantIsolationGoesRed"),
-    "adapter-local": ("scripts/declared-command.py", "DeclaredCommandGoesRed"),
-    "trim-check": ("skills/close-work/scripts/trim_check.py", "TrimCheckGoesRed"),
-    "billing-harness": ("scripts/declared-command.py", "DeclaredCommandGoesRed"),
-    "run_seo_audit.mjs": ("skills/audit-website/seo/run_seo_audit.mjs", "SeoEngineGoesRed"),
-    "run_website_audit.mjs": ("skills/audit-website/scripts/run_website_audit.mjs", "WebsiteEngineGoesRed"),
+    "quality-scan": ("plugins/production-quality-ready/skills/code-audit/scripts/quality_scan.py", "QualityScanGoesRed"),
+    "webhook-idempotency": ("plugins/production-quality-ready/skills/code-audit/scripts/webhook_idempotency.py", "WebhookIdempotencyGoesRed"),
+    "audit_ui.py": ("plugins/pqr-ui-system/skills/ui-system/scripts/audit_ui.py", "AuditUiGoesRed"),
+    "secret-scanner": ("plugins/production-quality-ready/skills/security-audit/scripts/secret_scan.py", "SecretScanGoesRed"),
+    "migration-harness": ("plugins/production-quality-ready/skills/reliability-audit/scripts/migration_harness.py", "MigrationHarnessGoesRed"),
+    "log-inspection": ("plugins/production-quality-ready/skills/reliability-audit/scripts/log_inspection.py", "LogInspectionGoesRed"),
+    "ci-inspection": ("plugins/production-quality-ready/skills/release-audit/scripts/ci_inspection.py", "CiInspectionGoesRed"),
+    "threat-model-check": ("plugins/production-quality-ready/skills/security-audit/scripts/threat_model.py", "ThreatModelGoesRed"),
+    "tenant-isolation": ("plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", "TenantIsolationGoesRed"),
+    "adapter-local": ("plugins/production-quality-ready/scripts/declared-command.py", "DeclaredCommandGoesRed"),
+    "trim-check": ("plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", "TrimCheckGoesRed"),
+    "billing-harness": ("plugins/production-quality-ready/scripts/declared-command.py", "DeclaredCommandGoesRed"),
+    "run_seo_audit.mjs": ("plugins/pqr-website/skills/audit-website/seo/run_seo_audit.mjs", "SeoEngineGoesRed"),
+    "run_website_audit.mjs": ("plugins/pqr-website/skills/audit-website/scripts/run_website_audit.mjs", "WebsiteEngineGoesRed"),
 }
 
 # Instruments that are not ours to test, each with its reason (an exception without one is no rule).
@@ -137,7 +137,7 @@ class QualityScanGoesRed(unittest.TestCase):
             (root / "src" / "big.ts").write_text(
                 "\n".join(f"export const x{i} = {i}" for i in range(1100)), encoding="utf-8")
             code, payload = instrument_json(
-                "skills/code-review/scripts/quality_scan.py", ["--repo", ".", "--format", "json"], root)
+                "plugins/production-quality-ready/skills/code-audit/scripts/quality_scan.py", ["--repo", ".", "--format", "json"], root)
             self.assertNotEqual(code, 0, "an exceeded budget must exit != 0")
             self.assertEqual(by_check(payload)["quality.file-size"]["result"], "FAIL")
 
@@ -148,7 +148,7 @@ class AuditUiGoesRed(unittest.TestCase):
             root = Path(tmp)
             (root / "public").mkdir()
             (root / "public" / "style.css").write_text(".a { color: #ff0000; }\n", encoding="utf-8")
-            p = run([sys.executable, str(PLUGIN / "skills/ui-system/scripts/audit_ui.py"),
+            p = run([sys.executable, str(PLUGIN / "plugins/pqr-ui-system/skills/ui-system/scripts/audit_ui.py"),
                      "--repo", ".", "--json-output", "ui.json"], root)
             report = json.loads((root / "ui.json").read_text(encoding="utf-8"))
             self.assertGreaterEqual(report["error_count"], 1)
@@ -171,7 +171,7 @@ class SecretScanGoesRed(unittest.TestCase):
             run(["git", "add", "-A"], root)
             run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x"], root)
             _, payload = instrument_json(
-                "skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--no-history", "--engine", "builtin"], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--no-history", "--engine", "builtin"], root)
             r = by_check(payload)["sec.secrets-not-committed"]
             self.assertEqual(r["result"], "FAIL")
             self.assertEqual(r["severity"], "BLOCKER")
@@ -183,7 +183,7 @@ class SecretScanGoesRed(unittest.TestCase):
             root = Path(tmp)
             (root / "notes.txt").write_text("nada\n", encoding="utf-8")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--no-history", "--engine", "builtin"], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--no-history", "--engine", "builtin"], root)
             r = by_check(payload)["sec.secrets-not-committed"]
             self.assertEqual(r["result"], "NOT_VERIFIED")
             self.assertIn("nothing was scanned", r["reason"])
@@ -195,7 +195,7 @@ class SecretScanGoesRed(unittest.TestCase):
             root = Path(tmp)
             (root / "notes.txt").write_text("nada\n", encoding="utf-8")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--engine", "gitleaks"], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--engine", "gitleaks"], root)
             r = by_check(payload)["sec.secrets-not-committed"]
             self.assertEqual(r["result"], "NOT_VERIFIED")
 
@@ -208,7 +208,7 @@ class MigrationHarnessGoesRed(unittest.TestCase):
             (root / "migrations" / "0001_broken.sql").write_text("CREATE TABL oops (id INTEGER);\n",
                                                                  encoding="utf-8")
             _, payload = instrument_json(
-                "skills/reliability-audit/scripts/migration_harness.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/reliability-audit/scripts/migration_harness.py", ["--repo", "."], root)
             r = by_check(payload)["reliability.migration-forward"]
             self.assertEqual(r["result"], "FAIL")
             self.assertEqual(r["severity"], "BLOCKER")
@@ -222,7 +222,7 @@ class LogInspectionGoesRed(unittest.TestCase):
             (root / "src" / "app.ts").write_text(
                 "export function handler() { console.log('hello') }\n", encoding="utf-8")
             _, payload = instrument_json(
-                "skills/reliability-audit/scripts/log_inspection.py",
+                "plugins/production-quality-ready/skills/reliability-audit/scripts/log_inspection.py",
                 ["--repo", ".", "--platform", "web"], root)
             checks = by_check(payload)
             self.assertEqual(checks["observability.correlation-id-e2e"]["result"], "FAIL")
@@ -238,7 +238,7 @@ class CiInspectionGoesRed(unittest.TestCase):
                 "name: ci\non: [push]\njobs:\n  build:\n    steps:\n      - run: echo hi\n",
                 encoding="utf-8")
             _, payload = instrument_json(
-                "skills/release-audit/scripts/ci_inspection.py",
+                "plugins/production-quality-ready/skills/release-audit/scripts/ci_inspection.py",
                 ["--repo", ".", "--platform", "web"], root)
             checks = by_check(payload)
             self.assertEqual(checks["release.rollback-declared"]["result"], "FAIL")
@@ -250,7 +250,7 @@ class SeoEngineGoesRed(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "index.html").write_text("<html><body><h1>no head</h1></body></html>", encoding="utf-8")
-            code, out = node_run("skills/audit-website/seo/run_seo_audit.mjs", [f"--dir={root}"])
+            code, out = node_run("plugins/pqr-website/skills/audit-website/seo/run_seo_audit.mjs", [f"--dir={root}"])
             self.assertIn("BUILD-TITLE-01", out)
             self.assertIn("[FAIL]", out)
             self.assertIn("FIX_BEFORE_LAUNCH", out)
@@ -275,7 +275,7 @@ class EnginesSurviveANetworkTarget(unittest.TestCase):
                            "  <url><loc>{url}/</loc></url>\n"
                            "  <url><loc>{url}/missing.html</loc></url>\n</urlset>\n",
         }) as (url, _):
-            code, out = node_run("skills/audit-website/seo/run_seo_audit.mjs", [f"--url={url}"])
+            code, out = node_run("plugins/pqr-website/skills/audit-website/seo/run_seo_audit.mjs", [f"--url={url}"])
             self.assertIn("CRAWL-SITEMAP-STATUS-01", out)
             self.assertIn("[FAIL]", out)
             self.assertNotEqual(code & 0xFFFFFFFF, self.ABORT,
@@ -288,7 +288,7 @@ class EnginesSurviveANetworkTarget(unittest.TestCase):
                           "<body><h1>Ok</h1></body></html>",
             "robots.txt": "User-agent: *\nAllow: /\n",
         }) as (url, _):
-            code, out = node_run("skills/audit-website/scripts/run_website_audit.mjs",
+            code, out = node_run("plugins/pqr-website/skills/audit-website/scripts/run_website_audit.mjs",
                                  [f"--url={url}", "--spider-max=1"])
             self.assertIn("Verdict", out, "the report was not printed")
             self.assertNotEqual(code & 0xFFFFFFFF, self.ABORT,
@@ -301,7 +301,7 @@ class WebsiteEngineGoesRed(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "index.html").write_text("<html><body><h1>no head</h1></body></html>", encoding="utf-8")
-            _, out = node_run("skills/audit-website/scripts/run_website_audit.mjs", [f"--dir={root}"])
+            _, out = node_run("plugins/pqr-website/skills/audit-website/scripts/run_website_audit.mjs", [f"--dir={root}"])
             self.assertIn("BLOCKED", out)
             self.assertIn("CRITICAL", out)
 
@@ -317,7 +317,7 @@ class DeclaredCommandGoesRed(unittest.TestCase):
 
     def _run(self, root: Path, hint: str, checks: str) -> dict:
         _, payload = instrument_json(
-            "scripts/declared-command.py",
+            "plugins/production-quality-ready/scripts/declared-command.py",
             ["--repo", ".", "--owner", "verify", "--hint", hint, "--checks", checks], root)
         return by_check(payload)
 
@@ -378,7 +378,7 @@ class TenantIsolationGoesRed(unittest.TestCase):
             root = Path(tmp)
             self._repo(root, None)
             _, payload = instrument_json(
-                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
             r = by_check(payload)["sec.tenant-isolation"]
             self.assertEqual(r["result"], "NOT_VERIFIED")
             self.assertIn("tenant-isolation-command", r["reason"])
@@ -388,7 +388,7 @@ class TenantIsolationGoesRed(unittest.TestCase):
             root = Path(tmp)
             self._repo(root, "node -e \"console.log('Tenant A -> Tenant B 404'); process.exit(1)\"")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
             r = by_check(payload)["sec.tenant-isolation"]
             self.assertEqual(r["result"], "FAIL")
             self.assertEqual(r["severity"], "BLOCKER")
@@ -398,7 +398,7 @@ class TenantIsolationGoesRed(unittest.TestCase):
             root = Path(tmp)
             self._repo(root, "node -e \"process.exit(0)\"")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
             self.assertEqual(by_check(payload)["sec.tenant-isolation"]["result"], "NOT_VERIFIED")
 
     def test_a_proven_command_passes(self):
@@ -406,7 +406,7 @@ class TenantIsolationGoesRed(unittest.TestCase):
             root = Path(tmp)
             self._repo(root, "node -e \"console.log('OK  Tenant A tentar alterar vinho do Tenant B -> 404')\"")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "web"], root)
             r = by_check(payload)["sec.tenant-isolation"]
             self.assertEqual(r["result"], "PASS", r["reason"])
             self.assertTrue(any("cross-tenant assertions" in e for e in r["evidence"]))
@@ -416,7 +416,7 @@ class TenantIsolationGoesRed(unittest.TestCase):
             root = Path(tmp)
             self._repo(root, "node -e \"process.exit(1)\"")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "desktop"], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "desktop"], root)
             self.assertEqual(by_check(payload)["sec.tenant-isolation"]["result"], "NOT_APPLICABLE")
 
 
@@ -433,7 +433,7 @@ class ThreatModelGoesRed(unittest.TestCase):
             root = Path(tmp)
             self._repo(root, "## Controls\n- Session: `src/missing.ts:99`.\n")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/threat_model.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/threat_model.py", ["--repo", "."], root)
             r = by_check(payload)["sec.threat-model-declared"]
             self.assertEqual(r["result"], "FAIL")
             self.assertTrue(any("missing.ts" in e for e in r["evidence"]))
@@ -443,7 +443,7 @@ class ThreatModelGoesRed(unittest.TestCase):
             root = Path(tmp)
             self._repo(root, "## Controlos\nEstamos protegidos.\n")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/threat_model.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/threat_model.py", ["--repo", "."], root)
             self.assertEqual(by_check(payload)["sec.threat-model-declared"]["result"], "FAIL")
 
     def test_an_identifier_between_backticks_is_not_a_citation(self):
@@ -455,7 +455,7 @@ class ThreatModelGoesRed(unittest.TestCase):
             (root / "tests" / "db.test.mjs").write_text("// teste\n", encoding="utf-8")
             self._repo(root, "## Controlos\n- Unicidade por `event.id` em `src/db.ts:1`, `tests/db.test.mjs`.\n")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/threat_model.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/threat_model.py", ["--repo", "."], root)
             r = by_check(payload)["sec.threat-model-declared"]
             self.assertEqual(r["result"], "PASS")
             self.assertNotIn("event.id", " ".join(r["evidence"]))
@@ -469,7 +469,7 @@ class ThreatModelGoesRed(unittest.TestCase):
             (root / "tests" / "auth.test.mjs").write_text("// teste\n", encoding="utf-8")
             self._repo(root, "## Controlos\n- Sessao em `routes/auth.ts:1`, provado por `tests/auth.test.mjs`.\n")
             _, payload = instrument_json(
-                "skills/security-audit/scripts/threat_model.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/security-audit/scripts/threat_model.py", ["--repo", "."], root)
             r = by_check(payload)["sec.threat-model-declared"]
             self.assertEqual(r["result"], "PASS", r["reason"])
             self.assertIn("into tests: 1", " ".join(r["evidence"]))
@@ -479,13 +479,13 @@ class EvidenceValidatorGoesRed(unittest.TestCase):
     def test_a_pass_without_command_is_downgraded(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            audit = root / ".audit" / "code-review"
+            audit = root / ".audit" / "code-audit"
             audit.mkdir(parents=True)
-            (audit / "code-review--runtime.build-passes.evidence.yaml").write_text(
-                "check: runtime.build-passes\nowner: code-review\nproducer: code-review\n"
+            (audit / "code-audit--runtime.build-passes.evidence.yaml").write_text(
+                "check: runtime.build-passes\nowner: code-audit\nproducer: code-audit\n"
                 "instrument: build-runner\nrule: declared\nmethods:\n  - build-runner\n"
                 "evidence: []\nresult: PASS\nconfidence: OBSERVED\n", encoding="utf-8")
-            p = run([sys.executable, str(PLUGIN / "skills/audit-app/scripts/validate_evidence.py"),
+            p = run([sys.executable, str(PLUGIN / "plugins/production-quality-ready/skills/audit-app/scripts/validate_evidence.py"),
                      "--repo", str(root)], root)
             self.assertNotEqual(p.returncode, 0, "the validator must demote a PASS without a command")
             self.assertIn("no-log", (p.stdout + p.stderr))
@@ -509,7 +509,7 @@ class TrimCheckGoesRed(unittest.TestCase):
                 "// It previously ran twice.\nfunction h() {}\n"
                 "// Wait 250 ms.\nconst WAIT_MS = 250;\n", encoding="utf-8")
             code, payload = instrument_json(
-                "skills/close-work/scripts/trim_check.py", ["--repo", "."], root)
+                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
             r = by_check(payload)
             self.assertNotEqual(code, 0)
             self.assertEqual(r["trim.comment-budget"]["result"], "FAIL")
@@ -523,7 +523,7 @@ class TrimCheckGoesRed(unittest.TestCase):
                 "#[cfg(test)]\nmod testes;\n\nfn a() {}\n/// one\n/// two\n/// three\n/// four\nfn b() {}\n",
                 encoding="utf-8")
             code, payload = instrument_json(
-                "skills/close-work/scripts/trim_check.py", ["--repo", "."], root)
+                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
             self.assertNotEqual(code, 0)
             self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "FAIL")
 
@@ -531,7 +531,7 @@ class TrimCheckGoesRed(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = self._repo(tmp)
             code, payload = instrument_json(
-                "skills/close-work/scripts/trim_check.py", ["--repo", "."], root)
+                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
             self.assertEqual(code, 0)
             self.assertTrue(all(x["result"] == "PASS" for x in payload["results"]))
 
@@ -548,7 +548,7 @@ class WebhookIdempotencyGoesRed(unittest.TestCase):
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / name).write_text(text, encoding="utf-8")
             _, payload = instrument_json(
-                "skills/code-review/scripts/webhook_idempotency.py",
+                "plugins/production-quality-ready/skills/code-audit/scripts/webhook_idempotency.py",
                 ["--repo", ".", "--platform", "web"], root)
         return by_check(payload)["contract.webhook-idempotency-ordered"]
 
@@ -708,7 +708,7 @@ class EveryInstrumentHasARedCase(unittest.TestCase):
 
     def test_every_declared_instrument_is_covered_or_excused(self):
         declared: set[str] = set()
-        for manifest in (PLUGIN / "skills").glob("*/instruments.yaml"):
+        for manifest in PLUGIN.glob("plugins/*/skills/**/instruments.yaml"):
             text = manifest.read_text(encoding="utf-8")
             declared |= set(re.findall(r"^\s*instrument:\s*(\S+)\s*$", text, re.M))
 

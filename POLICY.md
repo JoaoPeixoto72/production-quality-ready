@@ -52,9 +52,9 @@ Pairs that touch:
 |---|---|
 | `design-pro` ↔ `ui-system` | design-pro: "don't build the DS — ui-system"; ui-system: "UX/a11y verdict — design-pro" |
 | `design-pro` ↔ `audit-app` | design-pro: "full app audit — audit-app"; audit-app: "single screen — design-pro" |
-| `code-review` ↔ `verify` | code-review: "proof in the running app — verify"; verify: "automated tests — code-review" |
-| `code-review` ↔ `security-audit` | code-review: "the adversary, CVEs — security"; security: "shape of the contract — code-review" |
-| `code-review` ↔ `review-change` | review-change is the pre-commit gate that cites code-review's checks; it does not re-declare them |
+| `code-audit` ↔ `verify` | code-audit: "proof in the running app — verify"; verify: "automated tests — code-audit" |
+| `code-audit` ↔ `security-audit` | code-audit: "the adversary, CVEs — security"; security: "shape of the contract — code-audit" |
+| `code-audit` ↔ `review-change` | review-change is the pre-commit gate that cites code-audit's checks; it does not re-declare them |
 | `release-audit` ↔ `security-audit` | release: "vulnerable deps — security"; security: "signing, SBOM, deploy — release" |
 | `commercial-readiness` ↔ `design-pro` | commercial: "onboarding UX — design-pro"; design-pro: "activation, checkout — commercial" |
 | `reliability-audit` ↔ `security-audit` | reliability: "malicious corruption — security"; security: "accidental corruption — reliability" |
@@ -79,7 +79,7 @@ Pairs that touch:
 | `ship` ↔ `release-audit` | ship: "owns the release rules — release-audit"; release-audit: "executes them — ship" |
 | `triage` ↔ `diagnose` | triage: "turns a report into a reproduction — diagnose"; diagnose: "decides what enters the queue — triage" |
 | `wizard` ↔ `ship` | wizard: "runs the release — ship"; ship: "clears the human steps — wizard" |
-| `improve` ↔ `code-review` | improve: "owns the budgets and their verdict — code-review"; code-review: "plans against them — improve" |
+| `improve` ↔ `code-audit` | improve: "owns the budgets and their verdict — code-audit"; code-audit: "plans against them — improve" |
 
 The work-cycle pairs form a **triangle**, not a chain — a user can type
 the wrong verb directly, not only the adjacent one. Every skill in the
@@ -279,7 +279,7 @@ Source: `<repo-root>/.agents/gates.json` or `<repo-root>/.claude/gates.json`
   "sales-model": "subscription",           // licensed | subscription | both
   "stack": ["typescript", "hono", "d1"],
   "owners": {
-    "code-review": { "adapter": "code-review.local.md" },
+    "code-audit": { "adapter": "code-audit.local.md" },
     "security-audit": {},
     "audit-website": { "target": "https://example.com" },
     "drive-app-window": { "not-applicable": "web app; verify uses browser automation" },
@@ -308,7 +308,7 @@ Reason: "silent omission" is silent PASS. Rule inherited from
 **Rule 5.1.2 (`adapter-hints:`).** The `adapter-hints:` section is
 **metadata for producers that emit their own evidence** — the local
 adapters and `scripts/run-all-owners.ps1`, which runs the declared
-commands and writes `.audit/code-review/*` with `command:` + `log:`.
+commands and writes `.audit/code-audit/*` with `command:` + `log:`.
 `audit-app` **never reads it**. Not runnable commands from
 `audit-app`'s point of view.
 
