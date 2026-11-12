@@ -22,7 +22,7 @@ PER_DESCRIPTION = 250
 
 def descriptions() -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
-    for skill in sorted((PLUGIN / "skills").glob("*/SKILL.md")):
+    for skill in sorted(PLUGIN.glob("plugins/*/skills/*/SKILL.md")):
         text = skill.read_text(encoding="utf-8")
         m = re.search(r'(?m)^description:\s*"?(.*?)"?\s*$', text)
         if m:
@@ -32,7 +32,7 @@ def descriptions() -> list[tuple[str, str]]:
 
 class DescriptionBudget(unittest.TestCase):
     def test_the_catalogue_was_found(self):
-        self.assertGreaterEqual(len(descriptions()), 25, "the test lost its target")
+        self.assertGreaterEqual(len(descriptions()), 15, "the test lost its target")
 
     def test_no_description_passes_the_ceiling(self):
         for name, desc in descriptions():

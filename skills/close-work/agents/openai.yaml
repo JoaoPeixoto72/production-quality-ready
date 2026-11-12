@@ -1,3 +1,0 @@
-interface:
-  display_name: "Close Work"
-  short_description: "Rewrite the state document at session end"

@@ -1,0 +1,29 @@
+---
+name: {{ADAPTER_NAME}}
+description: "Open work on {{PROJECT_NAME}} before changing code: read the state, find the owner of the code to change, reproduce a bug first. Not for reviewing a diff or closing work."
+allowed-tools: Read, Glob, Grep, Bash
+---
+
+# Open work on {{PROJECT_NAME}}
+
+One owner per subject: before writing, find the file or function that already
+owns it and extend it. A new copy is a defect, not a shortcut.
+
+## Steps
+
+1. Read the state: `{{STATE_DOC}}` — {{STATE_DOC_SECTIONS}}.
+2. A question needs nothing else. A change to code: run `{{BASELINE_COMMAND}}`
+   and report pass or fail beside it; a red tree is said before new work.
+   The full proof runs once, at review.
+3. Find the owner of what is about to change (table below; then `grep`).
+4. A bug is reproduced first — a command, a test, or the steps in the
+   running app. Unreproduced is unproven.
+5. Then write.
+
+## Where code tends to repeat
+
+{{PROJECT_SPECIFIC_OWNERSHIP_TABLE}}
+
+## What is not reopened
+
+{{DOCS_NOT_TO_REOPEN}}

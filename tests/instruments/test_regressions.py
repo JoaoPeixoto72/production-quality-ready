@@ -27,7 +27,7 @@ def write(root: Path, rel: str, text: str) -> None:
 
 class Migrations(unittest.TestCase):
     def setUp(self):
-        sys.path.insert(0, str(PLUGIN / "skills" / "reliability-audit" / "scripts"))
+        sys.path.insert(0, str(PLUGIN / "plugins/production-quality-ready/skills/reliability-audit" / "scripts"))
         import migration_harness
         self.split = migration_harness.split_statements
 
@@ -41,7 +41,7 @@ class Migrations(unittest.TestCase):
 class TenantIsolation(unittest.TestCase):
     def test_both_platforms_include_the_web_surface(self):
         with tempfile.TemporaryDirectory() as tmp:
-            r = run_json("skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "both"],
+            r = run_json("plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", ["--repo", ".", "--platform", "both"],
                          Path(tmp))
             self.assertNotEqual(next(iter(r.values()))["result"], "NOT_APPLICABLE")
 
@@ -53,16 +53,16 @@ class Ci(unittest.TestCase):
             write(root, ".github/workflows/d.yml",
                   "jobs:\n  d:\n    runs-on: ubuntu-latest\n    steps:\n      - run: |\n"
                   "          npm ci\n          npx wrangler deploy\n")
-            web = run_json("skills/release-audit/scripts/ci_inspection.py", ["--repo", "."], root)
+            web = run_json("plugins/production-quality-ready/skills/release-audit/scripts/ci_inspection.py", ["--repo", "."], root)
             self.assertIn("wrangler deploy", " ".join(web["release.deploy-single-command"]["evidence"]))
-            desk = run_json("skills/release-audit/scripts/ci_inspection.py", ["--repo", ".", "--platform", "desktop"], root)
+            desk = run_json("plugins/production-quality-ready/skills/release-audit/scripts/ci_inspection.py", ["--repo", ".", "--platform", "desktop"], root)
             self.assertEqual(desk["release.env-parity"]["result"], "NOT_APPLICABLE")
 
     def test_a_deploy_script_in_a_subfolder_counts(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             write(root, "servidor/package.json", json.dumps({"scripts": {"deploy": "wrangler deploy"}}))
-            r = run_json("skills/release-audit/scripts/ci_inspection.py", ["--repo", "."], root)
+            r = run_json("plugins/production-quality-ready/skills/release-audit/scripts/ci_inspection.py", ["--repo", "."], root)
             self.assertEqual(r["release.deploy-single-command"]["result"], "PASS")
 
 
@@ -72,7 +72,7 @@ class Logs(unittest.TestCase):
             root = Path(tmp)
             write(root, "src/a.ts", "// TODO: add a requestId\nexport const x = 1\n")
             write(root, "src-tauri/src/lib.rs", 'fn f() { tracing::info!(job, "started"); }\n')
-            r = run_json("skills/reliability-audit/scripts/log_inspection.py", ["--repo", "."], root)
+            r = run_json("plugins/production-quality-ready/skills/reliability-audit/scripts/log_inspection.py", ["--repo", "."], root)
             self.assertEqual(r["observability.logs-structured"]["result"], "PASS")
             self.assertEqual(r["observability.correlation-id-e2e"]["result"], "FAIL")
 
@@ -84,7 +84,7 @@ class Trim(unittest.TestCase):
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
             write(root, "a.rs", "#[cfg(test)]\npub fn x() {}\n" + "// line\n" * 5 + "fn y() {}\n")
             subprocess.run(["git", "add", "-A"], cwd=root, check=True)
-            p = subprocess.run([sys.executable, str(PLUGIN / "skills/close-work/scripts/trim_check.py"),
+            p = subprocess.run([sys.executable, str(PLUGIN / "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"),
                                 "--repo", ".", "--all", "--format", "md"], cwd=root, capture_output=True,
                                text=True, encoding="utf-8")
             self.assertIn("trim.comment-budget", p.stdout)
@@ -93,7 +93,7 @@ class Trim(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-            p = subprocess.run([sys.executable, str(PLUGIN / "skills/close-work/scripts/trim_check.py"),
+            p = subprocess.run([sys.executable, str(PLUGIN / "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"),
                                 "--repo", ".", "--since", "mian"], cwd=root, capture_output=True, text=True)
             self.assertNotEqual(p.returncode, 0)
             self.assertNotIn("nothing to trim", p.stdout)
@@ -101,7 +101,7 @@ class Trim(unittest.TestCase):
 
 class UiAudit(unittest.TestCase):
     def setUp(self):
-        sys.path.insert(0, str(PLUGIN / "skills" / "ui-system" / "scripts"))
+        sys.path.insert(0, str(PLUGIN / "plugins/pqr-ui-system/skills/ui-system" / "scripts"))
         import audit_ui
         self.ui = audit_ui
 

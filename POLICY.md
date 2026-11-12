@@ -1,12 +1,16 @@
-# POLICY — plugin `production-quality-ready`
+# POLICY — the `production-quality-ready` marketplace
 
-Plugin governance. **Authoritative** on: who owns which subject, when a
+Governance of the six plugins: `production-quality-ready` (the core: audit
+owners, `CONTRACTS.md`, the runner and the gates), `pqr-cycle`
+(`bootstrap-project`, the cycle rules and adapter contracts), `pqr-process`,
+`pqr-website`, `pqr-desktop` and `pqr-ui-system` (optional). **Authoritative** on: who owns which subject, when a
 skill activates, how it composes with a local adapter, how conflicts
 between owners are resolved.
 
 Cross-references:
 
-- What counts as evidence, gate machinery, schemas → `CONTRACTS.md`.
+- What counts as evidence, gate machinery, schemas →
+  `plugins/production-quality-ready/CONTRACTS.md`.
 - Purpose of the plugin, closed decisions, acceptance criteria →
   `PURPOSE.md`.
 
@@ -46,44 +50,27 @@ Whenever two owners touch the same subject (one as rule, another as
 instrument, or two adjacent sub-topics), each `SKILL.md` **names the
 other** in the `description` or in its Boundaries section.
 
-Pairs that touch:
+Pairs that touch (skills only; the cycle steps are each project's own
+skills, written by `bootstrap-project`, and a plugin skill names them by role
+— "the project's review skill"). `tests/docs/test_docs_coherent.py` fails
+when either side of a pair stops naming the other:
 
 | Pair | How they delimit |
 |---|---|
 | `design-pro` ↔ `ui-system` | design-pro: "don't build the DS — ui-system"; ui-system: "UX/a11y verdict — design-pro" |
 | `design-pro` ↔ `audit-app` | design-pro: "full app audit — audit-app"; audit-app: "single screen — design-pro" |
-| `code-review` ↔ `verify` | code-review: "proof in the running app — verify"; verify: "automated tests — code-review" |
-| `code-review` ↔ `security-audit` | code-review: "the adversary, CVEs — security"; security: "shape of the contract — code-review" |
-| `code-review` ↔ `review-change` | review-change is the pre-commit gate that cites code-review's checks; it does not re-declare them |
+| `code-audit` ↔ `security-audit` | code-audit: "the adversary, CVEs — security"; security: "shape of the contract — code-audit" |
 | `release-audit` ↔ `security-audit` | release: "vulnerable deps — security"; security: "signing, SBOM, deploy — release" |
 | `commercial-readiness` ↔ `design-pro` | commercial: "onboarding UX — design-pro"; design-pro: "activation, checkout — commercial" |
 | `reliability-audit` ↔ `security-audit` | reliability: "malicious corruption — security"; security: "accidental corruption — reliability" |
-| `verify` ↔ `drive-app-window` | verify: "drive the window — drive-app-window"; drive-app-window: "what to prove — verify" |
-| `audit-app` ↔ `review-change` | audit-app: "one PR — review-change"; review-change: "whole app — audit-app" |
 | `audit-app` ↔ `audit-website` | audit-app: "public web surface — audit-website"; audit-website: "software behind login — audit-app" |
-| `start-work` ↔ `review-change` | start-work: "review code — review-change"; review-change: "open a session — start-work" |
-| `review-change` ↔ `close-work` | review-change: "update documents — close-work"; close-work: "review first — review-change" |
-| `start-work` ↔ `close-work` | start-work: "close — close-work"; close-work: "open — start-work" |
-| `spec` ↔ `review-change` | spec: "reviews the diff against these criteria — review-change"; review-change: "writes the criteria — spec" |
-| `diagnose` ↔ `review-change` | diagnose: "reviews the diff — review-change"; review-change: "finds the cause — diagnose" |
 | `spec` ↔ `diagnose` | spec: "broken behaviour — diagnose"; diagnose: "new behaviour — spec" |
 | `reliability-audit` ↔ `diagnose` | reliability: "finding one cause — diagnose"; diagnose: "failure handling in production — reliability-audit" |
 | `grill` ↔ `spec` | grill: "writes what the interview settles — spec"; spec: "runs the interview — grill" |
-| `prd` ↔ `spec` | prd: "one feature in an existing app — spec"; spec: "a whole new app — prd" |
-| `prd` ↔ `bootstrap-project` | prd: "adapting the plugin to code that exists — bootstrap-project"; bootstrap-project: "the new app's requirements — prd" |
 | `slice` ↔ `map` | slice: "the route is not visible yet — map"; map: "the route is already clear — slice" |
-| `research` ↔ `grill` | research: "makes the decisions — grill"; grill: "supplies the facts — research" |
-| `prototype` ↔ `spec` | prototype: "turns the answer into criteria — spec"; spec: "answers a design question — prototype" |
-| `handoff` ↔ `close-work` | handoff: "the project state document — close-work"; close-work: "the work package — handoff" |
-| `ship` ↔ `verify` | ship: "proving a change locally — verify"; verify: "running the release — ship" |
 | `ship` ↔ `release-audit` | ship: "owns the release rules — release-audit"; release-audit: "executes them — ship" |
 | `triage` ↔ `diagnose` | triage: "turns a report into a reproduction — diagnose"; diagnose: "decides what enters the queue — triage" |
-| `wizard` ↔ `ship` | wizard: "runs the release — ship"; ship: "clears the human steps — wizard" |
-| `improve` ↔ `code-review` | improve: "owns the budgets and their verdict — code-review"; code-review: "plans against them — improve" |
-
-The work-cycle pairs form a **triangle**, not a chain — a user can type
-the wrong verb directly, not only the adjacent one. Every skill in the
-cycle delimits against the other two.
+| `improve` ↔ `code-audit` | improve: "owns the budgets and their verdict — code-audit"; code-audit: "plans against them — improve" |
 
 ### 1.3 Who declares `PASS`/`FAIL`
 
@@ -122,29 +109,21 @@ This is why every `description` says *when* (after writing code, at the
 start of a conversation), not only *what*: the trigger is the only
 router.
 
-### 2.2 `audit-app` — orchestrator that doesn't invoke
+### 2.2 `audit-app` — finds by judgement, decides in code
 
-`audit-app` doesn't invoke other skills. It:
+`audit-app` doesn't invoke other skills. Finding is judgement: the owners'
+instruments run (`run_all_owners.py`), the H/V/T/C reading adds evidence
+files. Deciding is code: `apply_gates.py` reads `.audit/`, validates each
+file against `CONTRACTS.md`, computes coverage `BLOCKED/PARTIAL/COMPLETE (n/m)`
+and applies the gates. The model does not overrule its output; it adds
+evidence and runs it again.
 
-1. Discovers applicable owners from the project's `gates.json` (`.agents/` or `.claude/`), filtered by `platform`.
-2. Reads evidence from `.audit/**/*.evidence.yaml`.
-3. Validates each file against `CONTRACTS.md`.
-4. Aggregates by owner, applies declarative gates.
-5. Emits report.
+If an owner's evidence is missing, the verdict says `BLOCKED (n/m)` for it.
+**`audit-app` does not activate the owner.** It names what is missing.
 
-If an owner's evidence is missing, the report reports
-`Coverage: BLOCKED (n/m)` for that owner. **`audit-app` does not
-activate the owner.** It announces what is missing; the human /
-pipeline is who calls the owner to produce the evidence.
-
-The alternative — an orchestrator that invokes every owner on its
-own — collapses the composability the plugin was built to preserve.
-
-Under strict read-only (`CONTRACTS §7.5`): `audit-app` doesn't run any
-command against the audited repo. Not build, not tests, not scripts
-declared in `gates.json`. The `adapter-hints:` section of the target's
-`gates.json` is metadata for local adapters that emit their own
-evidence; **the orchestrator never reads it**.
+`apply_gates.py` runs no command against the audited repo (`CONTRACTS §7.5`).
+`run_all_owners.py` does — the commands the project itself declared in its
+`gates.json`, on the project's machine.
 
 ### 2.3 Optional order, same result
 
@@ -160,92 +139,57 @@ Consequence: an owner can run alone. Nightly CI running only
 
 | Skill | Purpose |
 |---|---|
-| `drive-app-window` | Technical capability (Win32/WebView2). *Used* by `verify` on desktop; emits artefacts, not verdicts. |
-| `bootstrap-project` | Generator. Writes `gates.json` and the four project adapters. Not an auditor. |
-| `start-work` / `close-work` | Work cadence. Read and rewrite the state document. |
+| `drive-app-window` | Technical capability (Win32/WebView2). *Used* to prove a change on desktop; emits artefacts, not verdicts. |
+| `bootstrap-project` | Generator. Writes `gates.json` and the project's cycle skills. Not an auditor. |
 | `spec` | Writer of requirements. Writes the spec file; closes no check. |
-| `diagnose` | Finder of causes. Writes the reproduction and the regression test; closes no check. |
-| `prd` | Writer of a new app's PRD, CLAUDE.md and regression log; closes no check. |
+| `diagnose` | Finder of causes. Writes the reproduction and the regression test, and fixes at the cause; closes no check. |
 | `grill` | Interview. Settles decisions in conversation; closes no check. |
 | `slice` | Breakdown. Writes slices and their blocking edges; closes no check. |
 | `map` | Chart. Writes the map and its decision tickets; closes no check. |
 | `triage` | Intake. Moves issues through states and writes briefs; closes no check. |
-| `research` | Investigation. Writes findings with their sources; closes no check. |
-| `prototype` | Design question. Writes a throwaway artefact; closes no check. |
 | `handoff` | Packaging. Writes the pull-request body or the session handoff; closes no check. |
-| `ship` | Release execution. Emits artefacts (deploy log, smoke output) *used* by `verify` and `release-audit`; closes no verdict. |
-| `wizard` | Human-only steps. Writes the wizard script; closes no check. |
+| `ship` | Release execution. Acts on production by the project's ship skill; emits artefacts (deploy log, smoke output); closes no verdict. |
 | `improve` | Refactor plan. Writes the ranked plan; closes no check. |
+
+The audit owners (core) correct nothing and publish nothing. Three skills
+act, each by name or on a change the person asked for: `diagnose` fixes at
+the cause, `ui-system` writes design-system code, `ship` deploys.
 
 ---
 
-## 3. Local adapter
+## 3. The project's cycle skills
 
-Some skills of the plugin are **contract, not implementation** — the
-universal `verify`, and the three of the work cycle
-(`start-work`, `review-change`, `close-work`). The plugin carries the
-rule; each project supplies the local adapter with its paths, commands,
-and specific invariants.
+The work cycle — open, review, close, verify, ship — is **the project's own
+skills**, not plugin skills. `pqr-cycle` carries the rules
+(`skills/bootstrap-project/references/universal/*/RULE.md`) and the shape each
+project skill must have (`adapter-contracts/*.md`); `bootstrap-project` writes
+the skills into the project.
 
-### 3.1 Frontmatter
+### 3.1 Self-contained
 
-The universal skill's body names its adapter contract
-(`adapter-contracts/<name>.md`). The local adapter carries
-`extends: production-quality-ready:<name>`. Without an adapter,
-the universal skill returns `NOT_VERIFIED/missing-adapter`
-(`CONTRACTS §4.5`).
+A project skill carries its steps and works with no plugin loaded — in a
+cloud session, in CI, on another machine. Its frontmatter is the host's:
+`name`, `description`, `allowed-tools`; no `extends:` or `contract:`, which no
+host implements. It points at the agent map (`CLAUDE.md`/`AGENTS.md`) for
+what that already says — the agent map is always in context, a copy drifts.
 
-Contract for each adapter lives in `adapter-contracts/<name>.md` at
-the plugin root — required frontmatter, required body sections, what
-the adapter does not do. The body is prose an agent reads, so
-`rules/writing-for-agents.md` governs how it is written.
+An instrument this plugin ships carries its own proof of teeth: a red case
+under `tests/` where it must fail (`CONTRACTS §4.6.4`). No red case, no gate.
 
-An instrument this plugin ships carries its own proof of teeth: a red
-case under `tests/instruments/` where it must fail (`CONTRACTS §4.6.4`).
-No red case, no gate.
+### 3.2 Location and name
 
-### 3.2 Location of the adapter
-
-Local adapter lives in `<host>/skills/<local-name>/` inside the target
-repo, where `<host>` is `.agents` (OpenCode, Antigravity, Codex…) or
-`.claude` (Claude Code). `bootstrap-project` detects the host. It travels
-with the project's commits. Its version is independent of the plugin's;
-it declares which `extends` it inherits from.
-
-**The local name differs from the plugin skill's name** (`<project>-start-work`)
-and is recorded in
-`gates.json` under `owners.<skill>.adapter`. Two skills with the same
-short name leave the host to pick one by chance — usually the generic
-one, which has no commands.
-
-**The plugin and every adapter are written in English** — names,
-frontmatter and body — whatever the project's language. The project's own
-documents (`ESTADO.md`, its guide for agents, code comments) keep the
-project's language.
-
-The adapter names its contract file in its body, never a copy or a version:
-`production-quality-ready/CONTRACTS.md`. A copy in the project would be
-a second owner of the contract, and it drifts the day the plugin
-updates.
+`<host>/skills/<local-name>/` inside the project, where `<host>` is `.agents`
+or `.claude`. It travels with the project's commits. **The name is its own**,
+never the rule's (`start-work`, `review-change`…), recorded in `gates.json`
+under `owners.<rule>.adapter`: two skills with one short name leave the host
+to pick by chance. It is written in the language of the project's agent map.
 
 ### 3.3 Division of responsibility
 
-Universal skill owns:
-
-- The rule (the ordered steps, the rules that never change).
-- Cross-references to plugin owners.
-- The list of what the adapter must supply.
-
-Local adapter owns:
-
-- Paths of concrete files (`ESTADO.md`, project artifacts).
-- Commands to build / test / launch the app.
-- The list of invariants **this project has already paid for once**,
-  each with the example that motivated it.
-- Traps specific to this project not covered by the plugin.
-
-The local adapter cannot rewrite the rule of the universal, cannot
-duplicate the rules of other owners, and cannot assert facts about
+The rule owns the ordered steps and what never changes. The project skill
+owns the paths, the commands, the *Where to look* table that makes review
+proportional, the pointer to the invariants the project already paid for, and
+the traps no rule covers. It cannot rewrite the rule or assert facts about
 other projects.
 
 ---
@@ -279,7 +223,7 @@ Source: `<repo-root>/.agents/gates.json` or `<repo-root>/.claude/gates.json`
   "sales-model": "subscription",           // licensed | subscription | both
   "stack": ["typescript", "hono", "d1"],
   "owners": {
-    "code-review": { "adapter": "code-review.local.md" },
+    "code-audit": { "adapter": "code-audit.local.md" },
     "security-audit": {},
     "audit-website": { "target": "https://example.com" },
     "drive-app-window": { "not-applicable": "web app; verify uses browser automation" },
@@ -307,8 +251,8 @@ Reason: "silent omission" is silent PASS. Rule inherited from
 
 **Rule 5.1.2 (`adapter-hints:`).** The `adapter-hints:` section is
 **metadata for producers that emit their own evidence** — the local
-adapters and `scripts/run-all-owners.ps1`, which runs the declared
-commands and writes `.audit/code-review/*` with `command:` + `log:`.
+cycle skills and `scripts/run_all_owners.py`, which runs the declared
+commands and writes `.audit/code-audit/*` with `command:` + `log:`.
 `audit-app` **never reads it**. Not runnable commands from
 `audit-app`'s point of view.
 
@@ -337,10 +281,10 @@ scope in the report.
 
 ## 6. Versioning
 
-One version **value**, carried by both host manifests: the root
-`plugin.json` (hosts that do not read `.claude-plugin/`) and
-`.claude-plugin/plugin.json` (Claude Code). `scripts/` in CI asserts the
-two are equal, so the value cannot drift (`CONTRACTS §6.4`). Skills,
+One version **value**, carried by the root `plugin.json` (hosts that do
+not read `.claude-plugin/`), every `plugins/*/.claude-plugin/plugin.json`
+and `.claude-plugin/marketplace.json`. CI asserts they are equal, so the
+value cannot drift (`CONTRACTS §6.4`). Skills,
 adapters, `gates.json` and evidence carry none: they name files, and the
 file is the rule.
 

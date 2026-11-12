@@ -1,0 +1,10 @@
+{
+  "name": "pqr-cycle",
+  "version": "4.0.0",
+  "description": "bootstrap-project: writes a project's own work-cycle skills (start, review, close, verify, ship) and gates.json, self-contained, from the plugin's universal rules.",
+  "author": {
+    "name": "Joao Peixoto",
+    "email": "joaopeixoto@hotmail.com",
+    "url": "https://github.com/JoaoPeixoto72"
+  }
+}

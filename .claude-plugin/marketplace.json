@@ -4,13 +4,45 @@
     "name": "JoaoPeixoto72"
   },
   "metadata": {
-    "description": "Production quality audit and readiness plugin marketplace"
+    "description": "Production-quality plugins: install the core (audits) and pqr-cycle; the rest are optional.",
+    "version": "4.0.0"
   },
   "plugins": [
     {
       "name": "production-quality-ready",
-      "description": "Quality plugin for web and desktop apps: independent audit owners, a read-only orchestrator, a work cycle (start-work, review-change, close-work, verify) adapted per project by bootstrap-project, and gates where a PASS needs a command and a log.",
-      "source": "./"
+      "description": "Audit owners and gates: code, security, reliability, release, commercial readiness and accessibility write evidence files; apply_gates.py decides release-candidate, production-ready and sellable. A PASS needs a command and a log.",
+      "version": "4.0.0",
+      "source": "./plugins/production-quality-ready"
+    },
+    {
+      "name": "pqr-cycle",
+      "description": "bootstrap-project: writes a project's own work-cycle skills (start, review, close, verify, ship) and gates.json, self-contained, from the plugin's universal rules.",
+      "version": "4.0.0",
+      "source": "./plugins/pqr-cycle"
+    },
+    {
+      "name": "pqr-process",
+      "description": "Optional process skills: spec, diagnose, grill, slice, map, triage, handoff, ship, improve.",
+      "version": "4.0.0",
+      "source": "./plugins/pqr-process"
+    },
+    {
+      "name": "pqr-website",
+      "description": "audit-website: SEO, Core Web Vitals, cookies and links of a public website.",
+      "version": "4.0.0",
+      "source": "./plugins/pqr-website"
+    },
+    {
+      "name": "pqr-desktop",
+      "description": "drive-app-window: drive a native desktop window (Windows) to prove a change.",
+      "version": "4.0.0",
+      "source": "./plugins/pqr-desktop"
+    },
+    {
+      "name": "pqr-ui-system",
+      "description": "ui-system: OKLCH tokens and the data-ui contract of a design system; writes UI code.",
+      "version": "4.0.0",
+      "source": "./plugins/pqr-ui-system"
     }
   ]
 }

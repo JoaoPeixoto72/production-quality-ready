@@ -11,6 +11,8 @@
 #   bash scripts/link-skills.sh --dest <dir>         # link somewhere else
 #   bash scripts/link-skills.sh --remove             # unlink what this script made
 #   bash scripts/link-skills.sh --copy               # copy instead of link
+#   bash scripts/link-skills.sh --plugins production-quality-ready,pqr-cycle
+#                                                    # only these plugins (default: production-quality-ready,pqr-cycle)
 
 set -euo pipefail
 
@@ -18,6 +20,7 @@ PLUGIN_DIR=""
 DEST=""
 COPY=false
 REMOVE=false
+PLUGINS="production-quality-ready,pqr-cycle"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -25,6 +28,7 @@ while [[ $# -gt 0 ]]; do
     --dest|-d)       DEST="$2"; shift 2 ;;
     --copy)          COPY=true; shift ;;
     --remove)        REMOVE=true; shift ;;
+    --plugins)       PLUGINS="$2"; shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -39,8 +43,8 @@ if [ ! -f "${PLUGIN_DIR}/plugin.json" ]; then
   exit 1
 fi
 
-if [ ! -d "${PLUGIN_DIR}/skills" ]; then
-  echo "error: no skills/ folder in ${PLUGIN_DIR}" >&2
+if [ ! -d "${PLUGIN_DIR}/plugins" ]; then
+  echo "error: no plugins/ folder in ${PLUGIN_DIR}" >&2
   exit 1
 fi
 
@@ -56,7 +60,14 @@ echo "Target: ${DEST}"
 linked=0
 skipped=0
 
-for skill_dir in "${PLUGIN_DIR}"/skills/*/; do
+SKILL_DIRS=()
+IFS=',' read -ra CHOSEN <<< "$PLUGINS"
+for p in "${CHOSEN[@]}"; do
+  [ -d "${PLUGIN_DIR}/plugins/${p}/skills" ] || { echo "error: no plugin ${p}" >&2; exit 1; }
+  SKILL_DIRS+=("${PLUGIN_DIR}/plugins/${p}"/skills/*/)
+done
+
+for skill_dir in "${SKILL_DIRS[@]}"; do
   skill_dir="${skill_dir%/}"
   name="$(basename "$skill_dir")"
   [ -f "${skill_dir}/SKILL.md" ] || continue

@@ -1,0 +1,51 @@
+# Minimal evidence file per CONTRACTS.md v2.0.0 — an example, not audited.
+# Location: <repo-root>/.audit/<owner>/<producer>--<check-id>.evidence.yaml
+
+# ---- case 1: an owner runs its own instrument (common) ----
+check:            runtime.build-passes
+owner:            code-audit
+producer:         code-audit
+instrument:       build-runner
+rule:             release-clean
+methods:
+  - build-runner
+evidence:
+  - path: .audit/code-audit/runtime.build-passes.log
+    excerpt: "Finished `release` profile [optimized] target(s) in 47.2s"
+    kind: command-output
+result:           PASS
+confidence:       OBSERVED
+# §4.6 — without these two fields a PASS is NOT_VERIFIED/no-log
+command:          "cargo build --release"
+log:              .audit/code-audit/runtime.build-passes.log
+
+---
+# ---- case 2: an external instrument (ui-system produces for design-pro) ----
+check:            a11y-critical-flows
+owner:            design-pro
+producer:         ui-system
+instrument:       audit_ui.py
+rule:             WCAG 2.2 SC 1.4.3
+rule-version:     wcag-2.2-AA
+methods:
+  - static-analysis
+  - ok-lch-delta
+evidence:
+  - path: src/ui/components/Button.tsx:15
+    excerpt: "background: var(--content2); color: var(--muted-foreground);"
+    kind: source
+  - path: /tmp/audit-ui.report.json
+    excerpt: "delta=0.28 < 0.30 (foreground/primary)"
+    kind: command-output
+    hash: sha256:def456...
+result:           FAIL
+severity:         HIGH
+confidence:       INFERRED
+root-cause:       design-pro::button-contrast-below-aa
+title:            Button primary contrast below AA
+impact:           Users with low vision cannot read primary buttons.
+fix:              Increase --primary L to 0.65 or reduce --primary-foreground L to 0.15.
+context:
+  scope: src/ui/components/**
+  captured-at: 2026-09-14T10:50:00Z
+  captured-by-version: ui-system@1.0.0

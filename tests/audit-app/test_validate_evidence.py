@@ -11,7 +11,7 @@ import unittest
 from datetime import date, timedelta
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "skills" / "audit-app" / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "plugins" / "production-quality-ready" / "skills" / "audit-app" / "scripts"))
 import validate_evidence as ve  # noqa: E402
 
 PLUGIN = Path(__file__).resolve().parents[2]  # <plugin>/tests/audit-app -> <plugin>
@@ -58,7 +58,7 @@ class Repo:
                           result=result, confidence=confidence, extra=extra))
         return self.root / f".audit/{owner}/{producer}--{check}.evidence.yaml"
 
-    def log(self, rel="\n.audit/code-review/x.log"):
+    def log(self, rel="\n.audit/code-audit/x.log"):
         p = self.root / rel.strip()
         write(p, "ok\n")
         return rel.strip()
@@ -73,7 +73,7 @@ class Repo:
 class TestPassNeedsTrace(unittest.TestCase):
     def test_pass_without_command_is_downgraded(self):
         r = Repo()
-        r.evidence("code-review", "runtime.tests-pass")
+        r.evidence("code-audit", "runtime.tests-pass")
         v = r.run()[0]
         self.assertEqual(v.result_effective, "NOT_VERIFIED")
         self.assertTrue(any("no-log" in x for x in v.reasons))
@@ -82,7 +82,7 @@ class TestPassNeedsTrace(unittest.TestCase):
     def test_pass_with_command_and_existing_log_is_kept(self):
         r = Repo()
         log = r.log()
-        r.evidence("code-review", "runtime.tests-pass",
+        r.evidence("code-audit", "runtime.tests-pass",
                    extra=f'command: "npm test"\nlog: {log}')
         v = r.run()[0]
         self.assertEqual(v.result_effective, "PASS")
@@ -91,14 +91,14 @@ class TestPassNeedsTrace(unittest.TestCase):
 
     def test_pass_with_log_not_on_disk_is_downgraded(self):
         r = Repo()
-        r.evidence("code-review", "runtime.tests-pass",
-                   extra='command: "npm test"\nlog: .audit/code-review/nope.log')
+        r.evidence("code-audit", "runtime.tests-pass",
+                   extra='command: "npm test"\nlog: .audit/code-audit/nope.log')
         v = r.run()[0]
         self.assertEqual(v.result_effective, "NOT_VERIFIED")
 
     def test_fail_does_not_need_trace(self):
         r = Repo()
-        r.evidence("code-review", "runtime.tests-pass", result="FAIL",
+        r.evidence("code-audit", "runtime.tests-pass", result="FAIL",
                    extra="severity: HIGH")
         v = r.run()[0]
         self.assertEqual(v.result_effective, "FAIL")
@@ -125,26 +125,26 @@ class TestAuthority(unittest.TestCase):
     def test_unknown_producer_is_downgraded(self):
         r = Repo()
         log = r.log()
-        r.evidence("code-review", "runtime.tests-pass", producer="unknown",
+        r.evidence("code-audit", "runtime.tests-pass", producer="unknown",
                    extra=f'command: "npm test"\nlog: {log}')
         v = r.run()[0]
         self.assertEqual(v.result_effective, "NOT_VERIFIED")
         self.assertIn("missing-producer", v.reasons)
 
     def test_declared_pair_is_accepted(self):
-        # security-audit accepts code-review::test-runner for sec.input-validated
+        # security-audit accepts code-audit::test-runner for sec.input-validated
         r = Repo()
         log = r.log()
-        r.evidence("security-audit", "sec.input-validated", producer="code-review",
+        r.evidence("security-audit", "sec.input-validated", producer="code-audit",
                    instrument="test-runner", extra=f'command: "npm test"\nlog: {log}')
         v = r.run()[0]
         self.assertEqual(v.result_effective, "PASS", v.reasons)
 
     def test_commercial_readiness_accepts_the_webhook_idempotency_half(self):
-        # commercial-readiness accepts code-review::webhook-idempotency for sell-01-activation
+        # commercial-readiness accepts code-audit::webhook-idempotency for sell-01-activation
         r = Repo()
         log = r.log()
-        r.evidence("commercial-readiness", "sell-01-activation", producer="code-review",
+        r.evidence("commercial-readiness", "sell-01-activation", producer="code-audit",
                    instrument="webhook-idempotency", result="FAIL", confidence="INFERRED",
                    extra=f'severity: BLOCKER\ncommand: "python webhook_idempotency.py"\nlog: {log}')
         v = r.run()[0]
@@ -155,7 +155,7 @@ class TestAuthority(unittest.TestCase):
     def test_commercial_readiness_rejects_the_pair_for_a_check_it_did_not_accept(self):
         r = Repo()
         log = r.log()
-        r.evidence("commercial-readiness", "sell-02-offline-or-failure", producer="code-review",
+        r.evidence("commercial-readiness", "sell-02-offline-or-failure", producer="code-audit",
                    instrument="webhook-idempotency", extra=f'command: "x"\nlog: {log}')
         v = r.run()[0]
         self.assertTrue(any("unauthorized-instrument" in x for x in v.reasons), v.reasons)
@@ -163,7 +163,7 @@ class TestAuthority(unittest.TestCase):
     def test_undeclared_pair_is_rejected(self):
         r = Repo()
         log = r.log()
-        r.evidence("security-audit", "sec.deps-no-cve", producer="code-review",
+        r.evidence("security-audit", "sec.deps-no-cve", producer="code-audit",
                    instrument="test-runner", extra=f'command: "npm test"\nlog: {log}')
         v = r.run()[0]
         self.assertEqual(v.result_effective, "NOT_VERIFIED")
@@ -202,7 +202,7 @@ class TestPlatform(unittest.TestCase):
     def test_both_platform_owner_applies_everywhere(self):
         r = Repo(platform="desktop")
         log = r.log()
-        p = r.evidence("code-review", "runtime.tests-pass",
+        p = r.evidence("code-audit", "runtime.tests-pass",
                        extra=f'command: "cargo test"\nlog: {log}')
         v = ve.validate_file(p, r.root, PLUGIN, "desktop")
         self.assertEqual(v.result_effective, "PASS")
@@ -210,7 +210,7 @@ class TestPlatform(unittest.TestCase):
 
 class TestManifests(unittest.TestCase):
     def test_every_owner_declares_platforms(self):
-        for skill in sorted((PLUGIN / "skills").iterdir()):
+        for skill in sorted(p.parent for p in PLUGIN.glob("plugins/*/skills/**/instruments.yaml")):
             inst = skill / "instruments.yaml"
             if not inst.is_file():
                 continue
@@ -220,14 +220,14 @@ class TestManifests(unittest.TestCase):
             self.assertTrue(set(plats) <= ve.PLATFORMS, f"{skill.name}: {plats}")
 
     def test_every_accepted_producer_exists(self):
-        for skill in sorted((PLUGIN / "skills").iterdir()):
+        for skill in sorted(p.parent for p in PLUGIN.glob("plugins/*/skills/**/instruments.yaml")):
             inst = skill / "instruments.yaml"
             if not inst.is_file():
                 continue
             m = ve.parse_yaml_min(inst.read_text(encoding="utf-8"))
             for e in m.get("accepts", []) or []:
                 prod = e.get("producer")
-                self.assertTrue((PLUGIN / "skills" / prod).is_dir(),
+                self.assertIsNotNone(ve.skill_dir(PLUGIN, prod),
                                 f"{skill.name} accepts unknown producer {prod}")
 
 
@@ -245,7 +245,7 @@ class TestWaiver(unittest.TestCase):
         return {k: v for k, v in w.items() if v is not None}
 
     def _fail(self, r, confidence="OBSERVED", extra='command: "python webhook_idempotency.py"'):
-        r.evidence("commercial-readiness", "sell-01-activation", producer="code-review",
+        r.evidence("commercial-readiness", "sell-01-activation", producer="code-audit",
                    instrument="webhook-idempotency", result="FAIL", confidence=confidence,
                    extra="severity: BLOCKER\n" + extra)
         return r.run()[0]
@@ -304,7 +304,7 @@ class TestWaiver(unittest.TestCase):
 
     def test_a_producer_cannot_write_waived_itself(self):
         r = Repo(waivers=[self._waiver()])
-        r.evidence("commercial-readiness", "sell-01-activation", producer="code-review",
+        r.evidence("commercial-readiness", "sell-01-activation", producer="code-audit",
                    instrument="webhook-idempotency", result="WAIVED", confidence="OBSERVED")
         v = r.run()[0]
         self.assertFalse(v.waived)
@@ -313,8 +313,8 @@ class TestWaiver(unittest.TestCase):
 
 class TinyYaml(unittest.TestCase):
     def test_a_trailing_comment_is_not_part_of_the_value(self):
-        m = ve.parse_yaml_min('result: PASS   # the verdict\nowner: "code-review"  # slug\n')
-        self.assertEqual((m["result"], m["owner"]), ("PASS", "code-review"))
+        m = ve.parse_yaml_min('result: PASS   # the verdict\nowner: "code-audit"  # slug\n')
+        self.assertEqual((m["result"], m["owner"]), ("PASS", "code-audit"))
 
     def test_a_list_at_column_zero_is_read_and_an_indented_one_is_untouched(self):
         flush = ve.parse_yaml_min("methods:\n- test-execution\n- static-analysis\n"

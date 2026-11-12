@@ -15,8 +15,10 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install --upgrade pip pytest
       - name: Version manifests agree
-        run: python -c "import json; a=json.load(open('.claude-plugin/plugin.json',encoding='utf-8'))['version']; b=json.load(open('plugin.json',encoding='utf-8'))['version']; assert a==b, ('version drift', a, b); print('version', a)"
+        run: python -c "import json,glob; vs={f: json.load(open(f,encoding='utf-8'))['version'] for f in ['plugin.json', *glob.glob('plugins/*/.claude-plugin/plugin.json')]}; m=json.load(open('.claude-plugin/marketplace.json',encoding='utf-8')); vs.update({'marketplace:'+p['name']: p['version'] for p in m['plugins']}); assert len(set(vs.values()))==1, ('version drift', vs); print('version', set(vs.values()))"
       - name: Description ceiling (fails above 250 characters)
-        run: python scripts/measure-descriptions.py skills
-      - name: Unit tests (evidence, report, quality_scan)
-        run: python -m pytest tests -q
+        run: python scripts/measure-descriptions.py plugins
+      - name: Documents agree with each other and the tree
+        run: python -m pytest tests/docs -q
+      - name: Unit tests (gates, runner, evidence, report, instruments)
+        run: python -m pytest tests -q --ignore=tests/docs

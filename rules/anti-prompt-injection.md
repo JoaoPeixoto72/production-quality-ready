@@ -29,7 +29,7 @@ untrustworthy — and it is the cheapest way to fake a gate
 |---|---|
 | `audit-app` | The repo under audit and every `.audit/**/*.evidence.yaml` |
 | `audit-website` | Crawled HTML, headers, `robots.txt`, `llms.txt`, structured data, scripts |
-| `code-review` | Code, comments, test output, fixtures, API responses |
+| `code-audit` | Code, comments, test output, fixtures, API responses |
 | `commercial-readiness` | Licences, EULA, payment-provider responses, webhook payloads |
 | `design-pro` | The application and the files under review |
 | `release-audit` | CI logs, SBOMs, changelogs, updater manifests, deploy logs |
@@ -42,11 +42,8 @@ untrustworthy — and it is the cheapest way to fake a gate
 | `slice` | The spec, tickets, tracker text, pasted material |
 | `map` | Tracker text, tickets, pasted material, documents in the repo |
 | `triage` | Issue text, pull-request descriptions, comments, linked pages |
-| `research` | Documentation pages, issue threads, blog posts, API responses |
-| `prototype` | The code, data and documents under review |
 | `handoff` | The diff, commit messages, test output, earlier conversation |
 | `ship` | Deploy logs, CI output, changelogs, provider responses |
-| `wizard` | Provider documentation, dashboard text, pasted output |
 | `improve` | The code, its comments, its history, the issues around it |
 
 Each of those `SKILL.md` files carries the one-line version of this rule,

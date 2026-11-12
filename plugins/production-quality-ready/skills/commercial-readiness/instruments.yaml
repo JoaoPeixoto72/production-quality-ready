@@ -1,0 +1,50 @@
+# instruments.yaml — commercial-readiness
+# A PASS without command + log is invalid (CONTRACTS §4.6).
+platforms: [web, desktop]
+accepts:
+  - producer: commercial-readiness
+    instrument: licensing-harness
+    platforms: [desktop]
+    for-checks:
+      - sell-01-activation
+      - sell-02-offline-or-failure
+      - sell-03-machine-or-account-change
+      - sell-04-trial-to-paid
+      - sell-05-refund-cancel
+      - sell-06-end-of-payment
+  - producer: commercial-readiness
+    instrument: billing-harness
+    platforms: [web]
+    for-checks:
+      - sell-01-activation
+      - sell-02-offline-or-failure
+      - sell-03-machine-or-account-change
+      - sell-04-trial-to-paid
+      - sell-05-refund-cancel
+      - sell-06-end-of-payment
+      - commercial.tax-invoice-valid
+  - producer: code-audit
+    instrument: test-runner
+    for-checks:
+      - sell-01-activation
+      - sell-04-trial-to-paid
+      - commercial.tax-invoice-valid
+  # The static half of sell-01: code-audit's reading of the webhook handler
+  # (claim keyed by the event id before, and gating, the side effects). The runner
+  # files only its FAIL here: it can fail sell-01, never pass it — the PASS stays
+  # the billing-harness's above.
+  - producer: code-audit
+    instrument: webhook-idempotency
+    platforms: [web]
+    for-checks:
+      - sell-01-activation
+  - producer: commercial-readiness
+    instrument: clean-run
+    for-checks:
+      - commercial.first-run-timed
+  - producer: commercial-readiness
+    instrument: legal-inspection
+    for-checks:
+      - commercial.licenses-clean
+      - commercial.legal-clean
+      - commercial.support-channel-declared

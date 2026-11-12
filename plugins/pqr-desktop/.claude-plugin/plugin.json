@@ -1,0 +1,10 @@
+{
+  "name": "pqr-desktop",
+  "version": "4.0.0",
+  "description": "drive-app-window: drive a native desktop window (Windows) to prove a change.",
+  "author": {
+    "name": "Joao Peixoto",
+    "email": "joaopeixoto@hotmail.com",
+    "url": "https://github.com/JoaoPeixoto72"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "_comment": "CONTRACTS §7.4 in machine form: the canonical checks each owner must emit, with their platform. apply_gates.py reads it; tests/audit-app/test_registry.py fails when the CONTRACTS table and this file disagree.",
+  "aliases": {
+    "code-review": "code-audit"
+  },
+  "canonical": {
+    "code-audit": {
+      "runtime.build-passes": "both",
+      "runtime.tests-pass": "both",
+      "runtime.types-check": "both",
+      "runtime.tests-have-oracles": "both",
+      "runtime.concurrency-safe": "both",
+      "contract.input-not-trusted": "both",
+      "contract.retry-idempotent": "both",
+      "perf.budgets-declared": "both",
+      "quality.budgets-met": "both"
+    },
+    "verify": {
+      "smoke-test-passes": "both"
+    },
+    "security-audit": {
+      "sec.threat-model-declared": "both",
+      "sec.deps-no-cve": "both",
+      "sec.secrets-not-committed": "both",
+      "sec.tenant-isolation": "web"
+    },
+    "release-audit": {
+      "release.reproducible-artifact": "both",
+      "release.lockfiles-immutable": "both",
+      "release.signed-artifact": "desktop",
+      "release.rollback-declared": "web"
+    },
+    "commercial-readiness": {
+      "sell-01-activation": "both",
+      "sell-02-offline-or-failure": "both",
+      "sell-03-machine-or-account-change": "both",
+      "sell-04-trial-to-paid": "both",
+      "sell-05-refund-cancel": "both",
+      "sell-06-end-of-payment": "both"
+    },
+    "design-pro": {
+      "a11y-critical-flows": "both"
+    },
+    "reliability-audit": {
+      "reliability.atomic-write": "both",
+      "reliability.migration-forward": "both",
+      "observability.error-diagnosable": "both"
+    },
+    "ui-system": {
+      "ui.architectural-boundary": "both"
+    },
+    "audit-website": {
+      "web.seo-technical": "web",
+      "web.core-web-vitals": "web"
+    }
+  }
+}

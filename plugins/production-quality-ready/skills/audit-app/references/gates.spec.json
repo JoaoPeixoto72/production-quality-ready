@@ -1,0 +1,30 @@
+{
+  "_comment": "The three standard gates (CONTRACTS §7.3) in the form apply_gates.py evaluates. A project's gates.json may ADD gates (objects with name + requires); it may not remove or change these. Predicates: CONTRACTS §7.1.",
+  "gates": [
+    {
+      "name": "release-candidate",
+      "description": "Builds, tests ran, no BLOCKER. A LOW FAIL on a non-critical check does not stop a candidate.",
+      "requires": [
+        {"no-open": ["BLOCKER"]},
+        {"coverage-complete": ["code-audit", "verify"]}
+      ]
+    },
+    {
+      "name": "production-ready",
+      "description": "Every applicable owner with complete coverage, no BLOCKER/CRITICAL, and the non-negotiable areas (security, release) 100% PASS.",
+      "requires": [
+        {"no-open": ["BLOCKER", "CRITICAL"]},
+        {"coverage-complete": "<all-applicable-owners>"},
+        {"all-pass-in-owner": ["security-audit", "release-audit"]}
+      ]
+    },
+    {
+      "name": "sellable",
+      "description": "Production-ready and fit to sell: activation, licence, support, error paths all verified.",
+      "requires": [
+        {"gate": "production-ready"},
+        {"all-pass-in-owner": ["commercial-readiness"]}
+      ]
+    }
+  ]
+}
