@@ -325,5 +325,42 @@ class TinyYaml(unittest.TestCase):
         self.assertEqual(indented["methods"], flush["methods"])
 
 
+class TestNotApplicableNeedsBacking(unittest.TestCase):
+    """§4.3.4 — a sentence saying "does not apply" opened a gate as well as a PASS did."""
+
+    CHECK = ("code-audit", "contract.retry-idempotent")
+
+    def one(self, extra="reason: nothing retries here", declared=None):
+        r = Repo()
+        log = r.log()
+        p = r.evidence(*self.CHECK, result="NOT_APPLICABLE", confidence="INFERRED",
+                       extra=extra.format(log=log))
+        return ve.validate_file(p, r.root, PLUGIN, "web", not_applicable=declared)
+
+    def test_a_sentence_is_not_enough(self):
+        v = self.one()
+        self.assertEqual(v.result_effective, "NOT_VERIFIED")
+        self.assertTrue(any("not-applicable-undeclared" in x for x in v.reasons), v.reasons)
+
+    def test_an_instrument_that_ran_is_enough(self):
+        v = self.one(extra='command: "python webhook_idempotency.py --repo ."\nlog: {log}')
+        self.assertEqual(v.result_effective, "NOT_APPLICABLE", v.reasons)
+
+    def test_a_log_that_is_not_on_disk_is_not_a_run(self):
+        v = self.one(extra='command: "python x.py"\nlog: .audit/code-audit/none.log')
+        self.assertEqual(v.result_effective, "NOT_VERIFIED")
+
+    def test_the_projects_declaration_is_enough(self):
+        v = self.one(declared={self.CHECK})
+        self.assertEqual(v.result_effective, "NOT_APPLICABLE", v.reasons)
+
+    def test_the_declaration_is_read_from_gates_json_and_needs_a_reason(self):
+        gates = {"owners": {"code-review": {"not-applicable-checks": {"contract.retry-idempotent": "no retries",
+                                                                      "perf.budgets-declared": " "}},
+                            "verify": {"not-applicable": "library"}, "design-pro": {}}}
+        self.assertEqual(ve.load_not_applicable(gates), {self.CHECK})
+        self.assertEqual(ve.load_not_applicable(None), set())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

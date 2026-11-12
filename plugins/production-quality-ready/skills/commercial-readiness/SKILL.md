@@ -30,7 +30,9 @@ variants, not only the happy one.
 | `sell-06-end-of-payment` | Files stay open read-only or guaranteed export. Data never hostage. | Declared grace period, then read-only or export; deletion only after declared retention. |
 
 The project declares its model in `gates.json` (`sales-model: licensed | subscription | both`).
-Rows that do not apply are `NOT_APPLICABLE` with the reason.
+A row that does not apply is declared in `gates.json`
+(`owners.commercial-readiness.not-applicable-checks`, with the reason): a
+sentence in an evidence file does not count (CONTRACTS §4.3.4).
 
 ## Sub-topics with own references
 

@@ -127,9 +127,9 @@ requires a `(producer, instrument)` pair, not a bare producer.
 
 **Rule 3.1.5 (PASS needs a trace).** `result: PASS` requires `command:`
 and `log:` (§4.6). Without both, the parser downgrades the file to
-`NOT_VERIFIED` with reason `no-log`. `FAIL`, `NOT_VERIFIED` and
-`NOT_APPLICABLE` do not require them — an owner may fail a check from
-inspection, but may never pass one from inspection.
+`NOT_VERIFIED` with reason `no-log`. `FAIL` and `NOT_VERIFIED` do not
+require them — an owner may fail a check from inspection, but may never
+pass one from inspection. `NOT_APPLICABLE` has its own rule (§4.3.4).
 
 ### 3.2 Optional fields
 
@@ -138,9 +138,10 @@ title:      "Focus outline removed on Dialog"      # readable; if omitted, deriv
 impact:     "Keyboard users cannot see focus."     # readable; required if severity ≥ HIGH
 fix:        "Restore outline; use outline-offset." # readable; suggested fix
 root-cause: RC-focus-outline-suppressed            # see §4.4; optional, required if you want dedup
-context:                                           # free metadata for the orchestrator
+context:                                           # metadata; only `head` changes a verdict
   scope: src/ui/**
   captured-at: 2026-09-14T00:00:00Z
+  head: 3f2a91c                                    # the commit the observation was made at (§4.1.4)
 ```
 
 **Rule 3.2.1.** No field beyond those declared in 3.1/3.2 is read by
@@ -227,6 +228,28 @@ The plugin doesn't commit evidence.
 `<owner>/<check>` don't replace each other — they coexist. Dedup
 between them is a §4.4 matter, not a path matter.
 
+**Rule 4.1.4 (evidence is of a commit).** A file may carry
+`context.head:` — the commit its observation was made at; the runner
+always writes it. When the audited repo is a git checkout and the stamp
+names another commit, the file is **stale**: a stale `PASS`,
+`NOT_APPLICABLE` or `WAIVED` reads as `NOT_VERIFIED` with reason `stale`,
+and a stale `FAIL` stays open until its instrument runs again. Old
+evidence can still close a gate; it can never open one. A file without
+the stamp cannot be dated: it is judged as written, and the verdict's
+header counts it (`unstamped=N`). `apply_gates.py --allow-stale` judges
+what is on disk regardless — for reading an old run, not for releasing.
+The stamp is the commit, not the working tree: uncommitted changes are
+not seen.
+
+**Rule 4.1.5 (the runner replaces only what it wrote).** A run of
+`run_all_owners.py` deletes and rewrites, per owner, the files an earlier
+run of it stamped (`context.producer-script`). Files written by an owner
+skill, by `audit-app`'s reading (§4.5.3) or by a project harness stay,
+and so do the files they cite. A check settled by hand also stays when
+all the runner could write for it is a `NOT_VERIFIED` gap; a result the
+runner *measures* (a command's `PASS` or `FAIL`) does replace a
+hand-written file of the same name.
+
 ### 4.2 Orchestrator idempotence
 
 Running `scripts/apply_gates.py` twice without executing any other
@@ -267,6 +290,23 @@ entry in the canonical registry §7.4 has no `m`; reports
 "use what was emitted" fallback — it would let an owner emit 3 of 20
 possible checks and get `COMPLETE (3/3)`. Registering canonicals is a
 precondition for the owner to close any `coverage-complete` gate.
+
+**Rule 4.3.4 (not applicable is a claim, not a sentence).** A file with
+`result: NOT_APPLICABLE` counts only when one of these stands behind it:
+
+- the platform (§3.5) — computed by the orchestrator, not written by hand;
+- an instrument that ran and found nothing to judge — the file carries
+  `command:` and `log:`, as a `PASS` does (the runner writes them);
+- the project's own declaration in `gates.json`:
+  `owners.<owner>.not-applicable-checks: {"<check>": "<reason>"}`, or
+  `owners.<owner>.not-applicable` for the whole owner (§5.4).
+
+Anything else reads as `NOT_VERIFIED` with reason
+`not-applicable-undeclared`. Before this rule a `PASS` needed a command
+and a log while "does not apply" needed one sentence, and counted the
+same towards `coverage-complete`: the cheapest way to open a gate was to
+declare its check away. The declaration lives in a committed file a
+person reviews, like a waiver.
 
 ### 4.4 Dedup by root cause
 
@@ -336,6 +376,16 @@ v1.0.0 had no way to validate.
 **Rule 4.5.2.** A skill that declares instruments without a manifest,
 or a manifest pointing at non-existent producers, is a defect of the
 plugin; `audit-app` reports it as `unauthorized-instrument`.
+
+**Rule 4.5.3 (a reading can fail any rule and settle none).** `audit-app`
+reads the code and writes what it finds under the owner of the rule it
+breaks, with `producer: audit-app` and `instrument: code-reading`. Every
+owner accepts that pair without a manifest entry, for `result: FAIL` and
+`NOT_VERIFIED` only: §3.1.5 lets a check be failed from inspection, and
+the orchestrator's reading is inspection. The same pair with `PASS` or
+`NOT_APPLICABLE` is `unauthorized-instrument` — a reading closes gates,
+it never opens them. Before this rule no owner accepted the pair, and a
+`BLOCKER` found by reading the code left every gate open.
 
 ### 4.6 A PASS is a trace, not an opinion
 
@@ -456,8 +506,13 @@ whether to promote it.
   "platform": "web",                  // web | desktop | both — required
   "sales-model": "subscription",      // licensed | subscription | both — required if commercial-readiness applies
   "stack": ["typescript", "hono", "d1"],
-  "owners": { ... },
-  "adapter-hints": { ... },
+  "owners": {
+    "drive-app-window": { "not-applicable": "web app" },              // the whole owner
+    "commercial-readiness": {                                         // one check (§4.3.4)
+      "not-applicable-checks": { "sell-03-machine-or-account-change": "no per-machine licence" }
+    }
+  },
+  "adapter-hints": { ... },                                           // §7.5.4
   "gates": [ ... ]
 }
 ```
@@ -608,11 +663,12 @@ another skill cannot use the same `<owner>::<check-id>`.
 ### 7.5 The verdict does not execute commands
 
 **Rule 7.5.1 (strict read-only).** The verdict step (`apply_gates.py`)
-does not run any command against the audited repository; the runner that
-does (`run_all_owners.py`) only writes evidence. The verdict step doesn't
+runs nothing the audited repository declares; the runner that does
+(`run_all_owners.py`) only writes evidence. The verdict step doesn't
 read `adapter-hints:`, doesn't invoke build systems, doesn't execute
-scripts declared by the target. Its only disk operation is reading
-`.audit/**/*.evidence.yaml` and the plugin's references.
+scripts declared by the target. It reads `.audit/**/*.evidence.yaml` and
+the plugin's references, and asks git one fixed question — which commit
+is checked out (`git rev-parse HEAD`), for §4.1.4.
 
 **Rule 7.5.2 (build/tests/types are evidence like any other).** That
 the tree compiles, that tests pass, that typecheck closes — these are
@@ -635,3 +691,31 @@ the command in its own harness and emits the YAML. The runner
 commands the *project's own* `gates.json` declares, on the project's
 machine, by the project's choice — and has its own red cases in
 `tests/runner/`.
+
+**Rule 7.5.4 (the runner reads these declarations and no others).** A
+command declared under another name is not read, and its check stays
+`NOT_VERIFIED`. `run_all_owners.py --list-hints` prints the first table,
+and every run names the `adapter-hints` keys it does not read (they may
+still serve the project's own skills; they settle no check).
+
+| `adapter-hints` key | Settles |
+|---|---|
+| `build-command` | `code-audit` :: `runtime.build-passes` |
+| `typecheck-command` | `code-audit` :: `runtime.types-check` |
+| `tests-command` | `code-audit` :: `runtime.tests-pass` |
+| `smoke-command` | `verify` :: `smoke-test-passes` |
+| `design-pro-capture-command` | `design-pro` :: `a11y-critical-flows` |
+| `tenant-isolation-command` | `security-audit` :: `sec.tenant-isolation` |
+| `migrations-verify-command` | `reliability-audit` :: `reliability.migration-immutable` |
+| `atomic-write-command` | `reliability-audit` :: `reliability.atomic-write` |
+| `reproducible-build-command` | `release-audit` :: `release.reproducible-artifact` |
+| `core-web-vitals-command` | `audit-website` :: `web.core-web-vitals` |
+| `billing-harness-commands` | `commercial-readiness` :: `sell-01` … `sell-06` (a map check → command) |
+
+| `owners.<owner>` key | Read by |
+|---|---|
+| `code-audit.budgets`, `.ignore-dirs`, `.ignore-globs` | `quality_scan.py` — the budgets, and what it does not measure |
+| `security-audit.threat-model` | `threat_model.py` — the document to verify, when it is not at a usual path |
+| `reliability-audit.migrations-dir` | `migration_harness.py` — the folder to apply (default `migrations`) |
+| `audit-website.target` | the website engines — a URL, or a built folder |
+| `ui-system.ignore-dirs` | `audit_ui.py` — folders it skips |
