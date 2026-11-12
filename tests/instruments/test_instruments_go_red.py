@@ -527,6 +527,22 @@ class TrimCheckGoesRed(unittest.TestCase):
             self.assertNotEqual(code, 0)
             self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "FAIL")
 
+    def test_a_migration_header_has_no_budget_but_a_later_comment_does(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo(tmp)
+            (root / "migrations").mkdir()
+            header = "".join(f"-- line {i}\n" for i in range(12))
+            (root / "migrations" / "0001_x.sql").write_text(header + "CREATE TABLE t (id TEXT);\n",
+                                                           encoding="utf-8")
+            code, payload = instrument_json(
+                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
+            self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "PASS")
+            (root / "migrations" / "0001_x.sql").write_text(header + "CREATE TABLE t (id TEXT);\n" + header,
+                                                           encoding="utf-8")
+            code, payload = instrument_json(
+                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
+            self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "FAIL")
+
     def test_lines_this_work_did_not_touch_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = self._repo(tmp)

@@ -138,8 +138,49 @@ class Shapes(unittest.TestCase):
         self.assertEqual((fns["A"].end, fns["B"].params, fns["B"].end), (3, 5, 6))
 
     def test_a_callback_is_named_by_its_call_not_by_its_place(self):
-        src = 'it("saves twice", () => {\n  a();\n});\n'
-        self.assertEqual([f.name for f in qs.brace_functions(src, "js")], ['it("saves twice")'])
+        src = 'app.post("/save", () => {\n  a();\n});\n'
+        self.assertEqual([f.name for f in qs.brace_functions(src, "js")], ['app.post("/save")'])
+
+    def test_a_test_runner_wrapper_is_not_a_function_but_its_contents_are(self):
+        src = ('describe("x", () => {\n  it("y", async () => {\n    function helper(a, b, c, d, e) {}\n'
+               '  });\n  test.each([1])("z", () => {});\n});\n')
+        self.assertEqual([f.name for f in qs.brace_functions(src, "js")], ["helper"])
+
+
+class SingleFileComponents(unittest.TestCase):
+    def test_svelte_script_is_measured_and_markup_is_not(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "A.svelte"
+            f.write_text('<script lang="ts">\n  function save(a, b, c, d, e) {\n    if (a) { if (b) { if (c) { if (d) {} } } }\n  }\n'
+                         '</script>\n\n<div on:click={() => { x(); }}>{#if a}{b}{/if}</div>\n', encoding="utf-8")
+            ms = qs.measure_file(f, "A.svelte")
+            got = {(m.check, m.name): m for m in ms}
+            self.assertEqual(got[("quality.params", "save")].value, 5)
+            self.assertEqual(got[("quality.params", "save")].line, 2)
+            self.assertEqual(got[("quality.nesting", "save")].value, 4)
+            self.assertEqual({m.name for m in ms if m.name}, {"save"})
+
+    def test_svelte_files_are_selected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "A.svelte").write_text("<script>\n</script>\n", encoding="utf-8")
+            (repo / "B.vue").write_text("<script setup>\n</script>\n", encoding="utf-8")
+            self.assertEqual(sorted(r for _, r in qs.source_files(repo, [], [], None)), ["A.svelte", "B.vue"])
+
+
+class BaselineVersion(unittest.TestCase):
+    def test_a_baseline_from_another_version_is_not_compared(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / ".claude").mkdir()
+            (repo / ".claude" / "gates.json").write_text("{}", encoding="utf-8")
+            (repo / ".claude" / "quality-baseline.json").write_text('{"quality.file-size": {}}', encoding="utf-8")
+            (repo / "a.ts").write_text("const a = 1;\n", encoding="utf-8")
+            self.assertEqual(qs.main(["--repo", str(repo)]), 2)
+            qs.main(["--repo", str(repo), "--write-baseline"])
+            data = json.loads((repo / ".claude" / "quality-baseline.json").read_text())
+            self.assertEqual(data["_instrument"]["version"], qs.INSTRUMENT_VERSION)
+            self.assertEqual(qs.main(["--repo", str(repo)]), 0)
 
     def test_lines_are_counted_as_wc_does_and_a_bom_still_parses(self):
         with tempfile.TemporaryDirectory() as tmp:

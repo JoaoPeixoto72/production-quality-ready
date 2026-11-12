@@ -6,7 +6,9 @@ the code already says, that narrates history, or that repeats a constant's value
 costs tokens each time and drifts. Scans only the lines this work added (diff
 against --since, default HEAD, plus untracked files); --all scans everything.
 
-Config: `owners.close-work.trim` in `<host>/gates.json` (see DEFAULTS).
+Config: `owners.close-work.trim` in `<host>/gates.json` (see DEFAULTS): the
+project sets its own `comment-lines`, and `header-exempt` names the files whose
+opening comment has no budget (default: migrations).
 Prints `{results: [...]}`, or lines with `--format md`. Exit 1 on a finding.
 """
 
@@ -34,6 +36,9 @@ DEFAULTS = {
     "skip": ["node_modules/*", "target/*", "dist/*", "build/*", "vendor/*", "*.lock",
              "package-lock.json", ".claude/*", ".agents/*", "*/tests/*", "*/testes/*", "*.min.*"],
     "visible-text": None,  # {"paths": [globs], "forbidden": regex, "ignore": regex}
+    # Files whose opening comment is their only documentation and are never edited
+    # again (a forward-only migration): that header has no line budget.
+    "header-exempt": ["migrations/*", "*/migrations/*"],
 }
 CODE = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".rs", ".css", ".scss", ".go",
         ".java", ".kt", ".swift", ".c", ".cc", ".cpp", ".h", ".cs"}
@@ -130,6 +135,7 @@ def scan(repo: Path, since: str | None) -> dict[str, list[str]]:
             continue
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         is_comment = comment_lines(ext, lines)
+        header_free = any(fnmatch.fnmatch(f, g) for g in cfg.get("header-exempt") or [])
         new = (lambda k: True) if only is None else (lambda k: k + 1 in only)
         # An inline `#[cfg(test)] mod x {` starts the tests; `#[cfg(test)] mod x;` lives elsewhere,
         # and `#[cfg(test)]` on a lone fn or struct is not where the tests begin.
@@ -147,7 +153,8 @@ def scan(repo: Path, since: str | None) -> dict[str, list[str]]:
             touched = any(new(j) for j in range(k, end))
             limit = 2 * max_block if k == 0 else max_block  # a file header may say what the file is
             text_lines = sum(1 for j in range(k, end) if not BARE_DELIMITER.match(lines[j]))
-            if touched and text_lines > limit and k < tests_from:
+            exempt = header_free and not any(not is_comment[j] and lines[j].strip() for j in range(k))
+            if touched and text_lines > limit and k < tests_from and not exempt:
                 found["trim.comment-budget"].append(f"{f}:{k + 1} {text_lines} lines")
             m = CONSTANT.match(lines[end]) if end < len(lines) else None
             if m and touched:

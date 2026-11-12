@@ -11,9 +11,16 @@ A committed baseline (`<host>/quality-baseline.json`) turns the budgets into
 a ratchet: a debt already recorded passes while it does not grow; a new one
 fails. `--write-baseline` records today's debts.
 
-Blind spots, declared: functions are found by pattern in TS/JS/Rust (Python
-uses `ast`); a function whose return type is an object literal is measured
-as part of its parent; nesting counts control-flow blocks only.
+Blind spots, declared: functions are found by pattern in TS/JS/Rust and in the
+`<script>` blocks of Svelte and Vue files (Python uses `ast`); a function whose
+return type is an object literal is measured as part of its parent; nesting
+counts control-flow blocks only. Callbacks handed to a test runner (`describe`,
+`it`, `test`, hooks) are scaffolding, not functions: what they contain is
+measured, the wrapper is not.
+
+The baseline records the instrument version that wrote it. A baseline from
+another version is not compared (names and counting may differ): the scan says
+`baseline-stale` and exits 2 until it is regenerated.
 
 Prints `{results: [...]}` on stdout (the run-all-owners protocol), or a
 table with `--format md`. Exit 1 when a budget check fails.
@@ -31,11 +38,16 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+INSTRUMENT_VERSION = 2  # bump when names or counting change: old baselines stop being comparable
 DEFAULT_BUDGETS = {"file-lines": 1000, "function-lines": 50, "nesting": 3, "params": 4}
 EVIDENCE_CAP = 50
 BRACE_LANGS = {".ts": "js", ".tsx": "js", ".js": "js", ".jsx": "js", ".mjs": "js",
                ".cjs": "js", ".rs": "rust"}
 PY_EXTS = {".py"}
+SFC_EXTS = {".svelte", ".vue"}  # single-file components: only <script> holds functions
+SCRIPT_BLOCK = re.compile(r"(<script\b[^>]*>)(.*?)(</script>)", re.S | re.I)
+TEST_RUNNER_CALL = re.compile(r"^\s*(?:describe|it|test|suite|bench|beforeEach|afterEach|beforeAll|afterAll)"
+                              r"(?:\.(?:each|only|skip|todo|concurrent))*\b")
 SKIP_DIRS = {".git", "node_modules", "target", "dist", "build", "coverage", ".venv",
              "venv", "__pycache__", ".audit", ".verify", "vendor", ".next", ".svelte-kit"}
 HOSTS = (".agents", ".claude")
@@ -128,7 +140,7 @@ def source_files(repo: Path, ignore_dirs: list[str], ignore_globs: list[str],
     prefixos = tuple(d.strip("/") + "/" for d in ignore_dirs if "/" in d.strip("/"))
     for rel in candidate_paths(repo):
         path = repo / rel
-        if path.suffix not in BRACE_LANGS.keys() | PY_EXTS or rel.endswith(".d.ts"):
+        if path.suffix not in BRACE_LANGS.keys() | PY_EXTS | SFC_EXTS or rel.endswith(".d.ts"):
             continue
         if nomes & set(Path(rel).parts[:-1]) or rel.startswith(prefixos) or not path.is_file():
             continue
@@ -293,6 +305,8 @@ def block_kind(code: str, pos: int, lang: str, parens: int, text: str) -> tuple[
         return kind, None
     first = start + len(header) - len(header.lstrip())
     if name == "<anonymous>":
+        if lang == "js" and TEST_RUNNER_CALL.match(text[start:pos]):
+            return "other", None  # describe/it/test wrapper: scaffolding, not a function
         name = call_label(text[start:pos]) or name
     return kind, Function(name, code.count("\n", 0, first) + 1, params=params)
 
@@ -354,12 +368,27 @@ def py_depth(node: ast.AST, depth: int = 0) -> int:
 
 # ------------------------------------------------------------ measuring
 
+def script_only(text: str) -> str:
+    """A Svelte/Vue file with everything outside <script> blanked, newlines kept, so
+    the brace scanner sees only code and line numbers stay true."""
+    out, last = [], 0
+    for m in SCRIPT_BLOCK.finditer(text):
+        out.append(re.sub(r"[^\n]", " ", text[last:m.start(2)]))
+        out.append(m.group(2))
+        last = m.end(2)
+    out.append(re.sub(r"[^\n]", " ", text[last:]))
+    return "".join(out)
+
+
 def measure_file(path: Path, rel: str) -> list[Measure]:
     # `utf-8-sig`: a BOM made `ast.parse` fail and the file's functions went unmeasured.
     text = path.read_text(encoding="utf-8-sig", errors="replace")
     found = [Measure("quality.file-size", rel, 1, "", len(text.splitlines()))]
-    lang = BRACE_LANGS.get(path.suffix)
-    functions = brace_functions(text, lang) if lang else python_functions(text)
+    if path.suffix in SFC_EXTS:
+        functions = brace_functions(script_only(text), "js")
+    else:
+        lang = BRACE_LANGS.get(path.suffix)
+        functions = brace_functions(text, lang) if lang else python_functions(text)
     seen: dict[str, int] = {}
     for fn in functions:
         seen[fn.name] = seen.get(fn.name, 0) + 1
@@ -384,7 +413,7 @@ def split_by_baseline(debts: list[Measure], baseline: dict) -> tuple[list[Measur
 
 
 def baseline_of(debts: list[Measure]) -> dict:
-    out: dict[str, dict[str, int]] = {}
+    out: dict = {"_instrument": {"name": "quality_scan", "version": INSTRUMENT_VERSION}}
     for m in debts:
         out.setdefault(m.check, {})[m.key] = m.value
     return out
@@ -462,6 +491,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     baseline = json.loads(baseline_path.read_text(encoding="utf-8")) if baseline_path.is_file() else {}
+    recorded = (baseline.get("_instrument") or {}).get("version", 1) if baseline else INSTRUMENT_VERSION
+    if recorded != INSTRUMENT_VERSION:
+        why = (f"baseline-stale: {baseline_path} was written by quality_scan v{recorded}, this is "
+               f"v{INSTRUMENT_VERSION}; review and regenerate with --write-baseline")
+        print(json.dumps({"results": [{"check": "quality.budgets-met", "result": "NOT_VERIFIED",
+                                        "reason": why, "evidence": []}]}, indent=2))
+        print(why, file=sys.stderr)
+        return 2
     rows = results(debts, baseline, budgets, declared)
     print(as_markdown(rows) if a.format == "md" else json.dumps({"results": rows}, indent=2))
     return 1 if any(r["result"] == "FAIL" and r["check"] != "quality.budgets-declared" for r in rows) else 0

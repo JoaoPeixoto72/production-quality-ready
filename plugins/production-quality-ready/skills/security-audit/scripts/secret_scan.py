@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""secret_scan.py — security-audit instrument (ASVS 5.0 V14).
+"""secret_scan.py — security-audit instrument (ASVS 5.0 V13.3 Secret Management).
 
 Answers: *is there a credential in this repository, or anywhere in its
 history?* Deleting a secret from HEAD does not remove it from git; this
