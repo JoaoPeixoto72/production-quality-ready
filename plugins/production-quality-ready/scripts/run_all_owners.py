@@ -441,8 +441,10 @@ class Runner:
             self.write(o, "release.sbom-present", "sbom-verifier", "cyclonedx-synced", "NOT_VERIFIED",
                        reason="sbom.json exists but no node/package.json to verify version sync")
         own_repro = bool(self.hints.get("reproducible-build-command"))
+        mdir = str(self.cfg("reliability-audit").get("migrations-dir") or "")
         self.json_instrument(o, self.instrument(o, "scripts/ci_inspection.py"), "ci-inspection",
-                             rule="clean-clone-one-command", extra=["--platform", self.platform],
+                             rule="clean-clone-one-command",
+                             extra=["--platform", self.platform, *(["--migrations", mdir] if mdir else [])],
                              skip_checks=("release.reproducible-artifact",) if own_repro else ())
         if own_repro:  # two clean builds and a hash compare are the project's to run
             self.declared(o, "release.reproducible-artifact", "reproducibility-run", "same-commit-same-artifact",

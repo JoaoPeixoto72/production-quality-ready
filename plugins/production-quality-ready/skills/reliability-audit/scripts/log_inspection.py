@@ -46,6 +46,13 @@ IGNORED = {".git", "node_modules", "dist", "build", "target", ".venv", "venv",
 BARE_LOG = re.compile(r"(?<![\w.])(?:console\.(?:log|error|warn|info|debug)|print|println!|fmt\.Print\w*)\s*\(")
 # Rust's leveled macros are structured by construction (`tracing::info!(job_id, "...")`).
 LEVELED_MACRO = re.compile(r"(?<![\w])(?:(?:tracing|log)::)?(?:trace|debug|info|warn|error|event)!\s*\(")
+# So is a call on a logger object: the level is a field (`log.info({...}, "msg")`,
+# `logger.error(...)`, Python's `logging.warning(...)`, Go's `slog.Info(...)`).
+LEVELED_CALL = re.compile(
+    r"\b(?:log|logger|logging|slog|\w+(?:Log|Logger))\s*\.\s*"
+    r"(?:trace|debug|info|warn|warning|error|fatal|critical|Debug|Info|Warn|Error)\s*\(")
+# What a test prints is not what production logs.
+TEST_PATH = re.compile(r"(?:^|/)(?:tests?|__tests__|e2e)/|\.(?:test|spec)\.", re.IGNORECASE)
 JSON_IN_LOG = re.compile(r"JSON\.stringify|serde_json|json\.dumps|structured|logfmt", re.IGNORECASE)
 LEVEL_WORD = re.compile(r"\b(?:ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL)\b")
 TIMESTAMP = re.compile(r"toISOString|Date\.now|time\.Now|datetime\.now|Utc::now|chrono::", re.IGNORECASE)
@@ -95,6 +102,8 @@ def iter_files(root: Path, sub: str | None = None):
         if not p.is_file() or p.suffix.lower() not in CODE_EXT:
             continue
         if any(part in IGNORED for part in p.relative_to(root).parts):
+            continue
+        if TEST_PATH.search(p.relative_to(root).as_posix()):
             continue
         yield p
 
@@ -155,7 +164,8 @@ def main() -> int:
         except OSError:
             continue
         r = rel(f, repo)
-        structured_hits += [f"{r}:{text[:m.start()].count(chr(10)) + 1}" for m in LEVELED_MACRO.finditer(text)]
+        for leveled in (LEVELED_MACRO, LEVELED_CALL):
+            structured_hits += [f"{r}:{text[:m.start()].count(chr(10)) + 1}" for m in leveled.finditer(text)]
         for m in LOG_HELPER_DEF.finditer(text):
             line = text[:m.start()].count("\n") + 1
             helpers.append((f"{r}:{line}", m.group(1)))

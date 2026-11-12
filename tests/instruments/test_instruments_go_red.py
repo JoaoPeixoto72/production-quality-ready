@@ -228,6 +228,25 @@ class LogInspectionGoesRed(unittest.TestCase):
             self.assertEqual(checks["observability.correlation-id-e2e"]["result"], "FAIL")
             self.assertEqual(checks["observability.logs-structured"]["result"], "FAIL")
 
+    def test_calls_on_a_logger_are_structured_and_what_a_test_prints_is_not_a_log(self):
+        script = "plugins/production-quality-ready/skills/reliability-audit/scripts/log_inspection.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "src" / "tests").mkdir(parents=True)
+            (root / "src" / "app.ts").write_text(
+                "const log = createLogger('http', traceId)\n"
+                "log.info({ path }, 'request_start')\nlog.error({ status }, 'request_end')\n"
+                "console.log('one stray line')\n", encoding="utf-8")
+            (root / "src" / "tests" / "app.test.ts").write_text(
+                "".join(f"console.log('debug {i}')\n" for i in range(9)), encoding="utf-8")
+            _, payload = instrument_json(script, ["--repo", "."], root)
+            r = by_check(payload)["observability.logs-structured"]
+            self.assertEqual(r["result"], "PASS", r["reason"])
+            self.assertIn("structured log calls: 2; bare calls: 1", r["evidence"])
+            (root / "src" / "app.ts").write_text("console.log('a')\nconsole.log('b')\nlog.info('c')\n", encoding="utf-8")
+            _, payload = instrument_json(script, ["--repo", "."], root)
+            self.assertEqual(by_check(payload)["observability.logs-structured"]["result"], "FAIL")
+
     def test_the_declared_source_folders_are_the_ones_read(self):
         script = "plugins/production-quality-ready/skills/reliability-audit/scripts/log_inspection.py"
         with tempfile.TemporaryDirectory() as tmp:
@@ -263,6 +282,65 @@ class CiInspectionGoesRed(unittest.TestCase):
             checks = by_check(payload)
             self.assertEqual(checks["release.rollback-declared"]["result"], "FAIL")
             self.assertEqual(checks["release.deploy-single-command"]["result"], "FAIL")
+
+    SCRIPT = "plugins/production-quality-ready/skills/release-audit/scripts/ci_inspection.py"
+
+    def _project(self, root: Path, scripts: dict, ci_run: str) -> None:
+        (root / ".github" / "workflows").mkdir(parents=True)
+        (root / ".github" / "workflows" / "ci.yml").write_text(
+            f"name: ci\non: [push]\njobs:\n  deploy:\n    steps:\n      - run: {ci_run}\n", encoding="utf-8")
+        (root / "package.json").write_text(json.dumps({"scripts": scripts}), encoding="utf-8")
+
+    def _checks(self, root: Path, *args: str) -> dict:
+        _, payload = instrument_json(self.SCRIPT, ["--repo", ".", "--platform", "web", *args], root)
+        return by_check(payload)
+
+    def test_with_a_script_per_environment_the_production_one_is_the_entry_point(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._project(root, {"deploy:staging": "x deploy --env staging"}, "echo hi")
+            self.assertEqual(self._checks(root)["release.deploy-single-command"]["result"], "FAIL")
+            (root / "package.json").write_text(json.dumps({"scripts": {
+                "deploy:staging": "x deploy --env staging", "deploy:production": "x deploy --env production"}}),
+                encoding="utf-8")
+            r = self._checks(root)["release.deploy-single-command"]
+            self.assertEqual(r["result"], "PASS", r["reason"])
+            self.assertIn("deploy:production", r["reason"])
+
+    def test_the_way_back_may_be_written_in_the_projects_ship_skill(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._project(root, {"deploy": "x deploy"}, "echo hi")
+            skill = root / ".claude" / "skills" / "publicar"
+            skill.mkdir(parents=True)
+            (root / ".claude" / "gates.json").write_text(
+                json.dumps({"owners": {"ship": {"adapter": "publicar"}}}), encoding="utf-8")
+            (skill / "SKILL.md").write_text("# publicar\n\n## Passos\n- merge\n", encoding="utf-8")
+            self.assertEqual(self._checks(root)["release.rollback-declared"]["result"], "FAIL")
+            (skill / "SKILL.md").write_text("# publicar\n\n## Reverter\n- um PR de `git revert` do merge\n",
+                                            encoding="utf-8")
+            r = self._checks(root)["release.rollback-declared"]
+            self.assertEqual(r["result"], "PASS", r["reason"])
+            self.assertTrue(any("publicar/SKILL.md" in e for e in r["evidence"]))
+
+    def test_migrations_in_a_declared_folder_must_be_applied_by_what_ci_runs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            scripts = {"deploy:production": "x run migrate:production && x deploy"}
+            self._project(root, scripts, "echo hi")
+            (root / "apps" / "api" / "migrations").mkdir(parents=True)
+            (root / "apps" / "api" / "migrations" / "0001_a.sql").write_text("CREATE TABLE t (id);\n", encoding="utf-8")
+            check = "release.migrations-in-pipeline"
+            self.assertEqual(self._checks(root)[check]["result"], "NOT_APPLICABLE")
+            declared = ("--migrations", "apps/api/migrations")
+            self.assertEqual(self._checks(root, *declared)[check]["result"], "FAIL")
+            (root / ".github" / "workflows" / "ci.yml").unlink()
+            (root / ".github" / "workflows").rmdir()
+            (root / "package.json").unlink()
+            self._project(root, scripts, "pnpm deploy:production")
+            r = self._checks(root, *declared)[check]
+            self.assertEqual(r["result"], "PASS", r["reason"])
+            self.assertTrue(any("scripts.deploy:production" in e for e in r["evidence"]))
 
 
 class SeoEngineGoesRed(unittest.TestCase):

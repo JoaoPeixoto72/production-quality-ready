@@ -726,7 +726,7 @@ keeps its `PASS`.
 |---|---|
 | `code-audit.budgets`, `.ignore-dirs`, `.ignore-globs` | `quality_scan.py` — the budgets, and what it does not measure |
 | `security-audit.threat-model` | `threat_model.py` — the document to verify, when it is not at a usual path |
-| `reliability-audit.migrations-dir` | `migration_harness.py` — the folder to apply (default `migrations`) |
+| `reliability-audit.migrations-dir` | `migration_harness.py` — the folder to apply (default `migrations`); `ci_inspection.py` — the folder whose migrations the pipeline must apply |
 | `reliability-audit.source-dirs` | `log_inspection.py` — the folders of the code that runs in production (default: the whole repo, tooling scripts included) |
 | `audit-website.target` | the website engines — a URL, or a built folder |
 | `ui-system.ignore-dirs` | `audit_ui.py` — folders it skips |
