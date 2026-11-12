@@ -229,8 +229,9 @@ between them is a §4.4 matter, not a path matter.
 
 ### 4.2 Orchestrator idempotence
 
-Running `audit-app` twice without executing any other skill produces
-the same verdict. `audit-app`:
+Running `scripts/apply_gates.py` twice without executing any other
+skill produces the same verdict — it is the verdict step of `audit-app`,
+and it is code. It:
 
 1. reads recursively `.audit/**/*.evidence.yaml`;
 2. validates each file against this contract;
@@ -355,7 +356,7 @@ reading the source. This rule does.
 valid §4.6.1 pair. `OBSERVED` without a trace is rewritten to
 `INFERRED`.
 
-**Rule 4.6.3.** The orchestrator (`run-all-owners.ps1` or a project
+**Rule 4.6.3.** The runner (`scripts/run_all_owners.py` or a project
 harness) writes `command:` and `log:` itself from what it actually
 executed. It never templates a `PASS`. An owner it cannot run writes
 `NOT_VERIFIED/missing-instrument` — the gap is declared, not filled.
@@ -604,13 +605,14 @@ project (§3.5), which resolve `NOT_APPLICABLE/platform`.
 **Rule 7.4.2.** A canonical check-id in this registry is reserved —
 another skill cannot use the same `<owner>::<check-id>`.
 
-### 7.5 `audit-app` does not execute commands
+### 7.5 The verdict does not execute commands
 
-**Rule 7.5.1 (strict read-only).** `audit-app` does not run any
-command against the audited repository. It doesn't read
-`adapter-hints:`, doesn't invoke build systems, doesn't
-execute scripts declared by the target. Its only disk operation is
-reading `.audit/**/*.evidence.yaml` and writing the report.
+**Rule 7.5.1 (strict read-only).** The verdict step (`apply_gates.py`)
+does not run any command against the audited repository; the runner that
+does (`run_all_owners.py`) only writes evidence. The verdict step doesn't
+read `adapter-hints:`, doesn't invoke build systems, doesn't execute
+scripts declared by the target. Its only disk operation is reading
+`.audit/**/*.evidence.yaml` and the plugin's references.
 
 **Rule 7.5.2 (build/tests/types are evidence like any other).** That
 the tree compiles, that tests pass, that typecheck closes — these are
@@ -628,4 +630,8 @@ the evidence (e.g. a `code-audit` harness that knows how to run
 **Why.** Running commands declared by a file in the target repo is
 arbitrary execution driven by the target. What the orchestrator sees is
 a file; an owner that wants `build-passes` to reflect the exit code runs
-the command in its own harness and emits the YAML.
+the command in its own harness and emits the YAML. The runner
+(`run_all_owners.py`) is that harness for the plugin's owners: it runs the
+commands the *project's own* `gates.json` declares, on the project's
+machine, by the project's choice — and has its own red cases in
+`tests/runner/`.

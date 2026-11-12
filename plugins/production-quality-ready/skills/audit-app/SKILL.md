@@ -1,6 +1,6 @@
 ---
 name: audit-app
-description: "Audit the app by the H/V/T/C method (flows, layers, transitions, cross-audit) and/or aggregate owner evidence from .audit/**, apply gates.json gates and write a verdict. Not for websites (audit-website) or one PR (review-change)."
+description: "Audit the app: run the owners, read code by the H/V/T/C method into evidence files, then apply_gates.py decides release-candidate, production-ready, sellable. Not for one diff (the project's review adapter)."
 allowed-tools: Read Glob Grep Bash Write
 ---
 
@@ -9,15 +9,19 @@ allowed-tools: Read Glob Grep Bash Write
 Audit the app and answer one question: **is it correct, and ready to ship?**
 Read-only: it reads code and evidence and writes a report; it changes nothing.
 
-Two sources feed one verdict:
+Two steps, two promises — never mixed:
 
-1. **Your own reading** of the code and requirements, by the H/V/T/C method
-   (`references/method.md`).
-2. **Owner evidence** already produced in `.audit/**` — the plugin's owners run
-   their instruments and write `.evidence.yaml`.
-
-Use what exists; do not wait for what does not. With no owner evidence the
-method carries the audit; with it, validate and aggregate.
+1. **Find** (judgement). The owners' instruments run
+   (`python <plugin>/scripts/run_all_owners.py --repo . --no-gates`), and you
+   read the code by the H/V/T/C method (`references/method.md`). Each finding of
+   your reading becomes an evidence file like any other, with `producer:
+   audit-app` (§3), under the owner of the rule it breaks. A finding you cannot
+   back with `file:line`, a request/response or a failing test stays in
+   `audit/notes.md` as a hypothesis.
+2. **Decide** (code). `python scripts/apply_gates.py --repo .` reads only
+   `.audit/`, validates every file against the contract and applies the gates.
+   Its output is the verdict; two runs over the same files give the same one.
+   You do not overrule it — you add evidence and run it again.
 
 ## The rule that is not negotiable
 
@@ -68,17 +72,15 @@ Ontology, phases, status scale, bug classes, severity and scope are in
 
 ```
 0. bootstrap   — interpreter, inventory, git snapshot (t0)
-1. discovery   — gates.json → applicable owners × platform
-2. evidence    — your H/V/T/C reading + owner evidence in .audit/**
-3. validate    — each evidence file against CONTRACTS.md
-4. aggregate   — by owner, plus the Evidence Matrix from the method
-5. gates       — apply gates.json predicates
-6. report      — docs/audits/<date>-<scope>.md, after the verifier pass
+1. run         — run_all_owners.py --no-gates: instruments → .audit/**
+2. read        — H/V/T/C; each backed finding → .audit/<owner>/audit-app--<check>.evidence.yaml
+3. decide      — apply_gates.py: coverage BLOCKED/PARTIAL/COMPLETE (n/m), gates OPEN/CLOSED
+4. report      — docs/audits/<date>-<scope>.md, after the verifier pass; the
+                 gate section is apply_gates.py's output pasted, not rewritten
 ```
 
-Phases 0–1, 3 and 5 keep their exact rules in `references/report.md`,
-`references/contract-and-evidence.md` and `references/gates.spec.yaml`. Nothing
-is executed against the audited repo; owners run their own commands.
+`run_all_owners.py` without `--no-gates` does 1 and 3 in one command (CI).
+Report format: `references/report.md`.
 
 ## Notes and deviations
 
@@ -108,15 +110,17 @@ project's defects list (`close-work`).
   classes, severity, scope.
 - `references/evidence-matrix.md` — the Evidence Matrix template.
 - `references/verifier.md` — the sceptical review before delivering.
-- `references/contract-and-evidence.md` — `CONTRACTS.md` in practice (the root
-  `CONTRACTS.md` is authoritative).
+- `references/contract-and-evidence.md` — `CONTRACTS.md` in practice (the
+  plugin's `CONTRACTS.md` is authoritative).
 - `references/report.md` — the report format.
-- `references/gates.spec.yaml` — the standard gates.
+- `references/gates.spec.json` — the standard gates; `references/registry.json`
+  — the canonical checks of §7.4 (a test keeps the two equal).
 
 ## Scripts
 
+- `scripts/apply_gates.py` — the verdict, in code.
 - `scripts/validate_evidence.py`, `scripts/validate_report.py` — validate form,
-  not truth. Regression tests in `tests/audit-app/`.
+  not truth. Tests in `tests/audit-app/` and `tests/runner/`.
 
 ## Scope
 
