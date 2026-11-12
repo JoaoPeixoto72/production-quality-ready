@@ -149,6 +149,7 @@ production-quality-ready/
 
 ```bash
 python plugins/production-quality-ready/scripts/measure-descriptions.py plugins      # exit 1 if any description > 250
+python plugins/production-quality-ready/skills/code-audit/scripts/quality_scan.py --repo . --baseline quality-baseline.json --format md   # exit 1 on new debt
 python -m pip install pytest && python -m pytest tests -q
 python plugins/production-quality-ready/scripts/run_all_owners.py --repo <repo> --dry-run
 ```
