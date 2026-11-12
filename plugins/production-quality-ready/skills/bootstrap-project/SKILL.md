@@ -61,8 +61,8 @@ user before writing anything.
 6. Which owners are `not-applicable` and why (e.g. `drive-app-window`
    on web, `audit-website` on desktop). Propose from platform; confirm.
 7. **Maintainability budgets** — propose the defaults from
-   the core plugin's `skills/code-audit/references/maintainability.md` §1, show what
-   its `skills/code-audit/scripts/quality_scan.py --format md` finds with them, and let the user set the numbers
+   `<plugin>/skills/code-audit/references/maintainability.md` §1, show what
+   `<plugin>/skills/code-audit/scripts/quality_scan.py --format md` finds with them, and let the user set the numbers
    (`owners.code-audit.budgets`). Existing debt goes into the baseline
    (`--write-baseline`), never into looser numbers.
 8. **Names** — each skill gets a name of its own, never the rule's
@@ -126,7 +126,7 @@ goes stale.
    from.
 3. `python <plugin>/scripts/measure-descriptions.py <host>/skills` —
    every adapter description ≤ 250 chars.
-4. `python <core>/scripts/run_all_owners.py --repo . --dry-run` lists the
+4. `python <plugin>/scripts/run_all_owners.py --repo . --dry-run` lists the
    expected owners for the platform, and `apply_gates.py` does not abort
    (every owner with canonical checks is declared).
 5. Every document the adapters reference exists (`ESTADO.md`,

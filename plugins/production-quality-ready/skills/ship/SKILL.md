@@ -13,8 +13,8 @@ thing is verified in production **and** someone knows how to take it back.
 Reached by name, never automatically: it acts on production, and the person
 owns that decision (`POLICY.md §2.1`).
 
-**The project's facts come from its ship adapter** (`pqr-cycle`
-`adapter-contracts/ship.md`): how it deploys, the order, the smoke after, the
+**The project's facts come from its ship adapter**
+(`adapter-contracts/ship.md`): how it deploys, the order, the smoke after, the
 rollback step, what needs a person. This skill holds the rule; the adapter
 holds the commands. Without an adapter, ask for those five before the first
 action.

@@ -702,7 +702,11 @@ A declared command answers with its exit code: `0` is a `PASS`, `77` is
 `NOT_VERIFIED/cannot-run-here` — the command's own way of saying that what
 it needs (a running server, the network, a credential) is missing — and
 anything else is a `FAIL`. Without `77` a smoke test run with the server
-down could only lie: pass, or fail a build that is fine.
+down could only lie: pass, or fail a build that is fine. A failure in a
+checkout that was never prepared (dependencies declared and not installed,
+`scripts/workspace.py`) is `NOT_VERIFIED/cannot-run-here` as well: it says
+the install step is missing, not that the code is wrong. What passes there
+keeps its `PASS`.
 
 | `adapter-hints` key | Settles |
 |---|---|
@@ -723,5 +727,6 @@ down could only lie: pass, or fail a build that is fine.
 | `code-audit.budgets`, `.ignore-dirs`, `.ignore-globs` | `quality_scan.py` — the budgets, and what it does not measure |
 | `security-audit.threat-model` | `threat_model.py` — the document to verify, when it is not at a usual path |
 | `reliability-audit.migrations-dir` | `migration_harness.py` — the folder to apply (default `migrations`) |
+| `reliability-audit.source-dirs` | `log_inspection.py` — the folders of the code that runs in production (default: the whole repo, tooling scripts included) |
 | `audit-website.target` | the website engines — a URL, or a built folder |
 | `ui-system.ignore-dirs` | `audit_ui.py` — folders it skips |

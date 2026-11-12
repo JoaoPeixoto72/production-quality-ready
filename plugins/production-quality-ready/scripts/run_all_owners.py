@@ -37,8 +37,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 CORE = HERE.parent
 AUDIT_APP = CORE / "skills" / "audit-app" / "scripts"
-sys.path.insert(0, str(AUDIT_APP))
+sys.path[:0] = [str(AUDIT_APP), str(HERE)]
 import validate_evidence as ve  # noqa: E402
+from workspace import unprepared  # noqa: E402
 
 PRODUCER_SCRIPT = "plugins/production-quality-ready/scripts/run_all_owners.py"
 OWN_STAMP = re.compile(r"^\s*producer-script:\s*\S*run_all_owners\.py\s*$", re.M)
@@ -257,6 +258,10 @@ class Runner:
             self.write(owner, check, instrument, rule, "NOT_VERIFIED", rule_version=rule_version,
                        reason=f"cannot-run-here: `{cmd}` exited {CANNOT_RUN}, its way of saying what it needs "
                               f"is missing; see {log_rel}")
+        elif unprepared(self.repo):
+            self.write(owner, check, instrument, rule, "NOT_VERIFIED", rule_version=rule_version,
+                       reason=f"cannot-run-here: {unprepared(self.repo)} (`{cmd}` exited {self.last_exit}; "
+                              f"see {log_rel})")
         else:
             self.write(owner, check, instrument, rule, "FAIL", rule_version=rule_version,
                        severity=fail_severity, command=cmd, log=log_rel)
@@ -460,8 +465,10 @@ class Runner:
         if own_verifier:
             self.declared(o, "reliability.migration-immutable", "migration-harness",
                           "published-migrations-unchanged", "migrations-verify-command")
+        # Where the code that runs in production lives: a CLI script's output is not a log.
+        src = [x for d in self.cfg(o).get("source-dirs") or [] for x in ("--src", str(d))]
         self.json_instrument(o, self.instrument(o, "scripts/log_inspection.py"), "log-inspection",
-                             rule="diagnosable-in-production", extra=["--platform", self.platform])
+                             rule="diagnosable-in-production", extra=["--platform", self.platform, *src])
         gaps = ["reliability.resume-after-reopen"]
         if self.hints.get("atomic-write-command"):  # the project's own kill-mid-write harness
             self.declared(o, "reliability.atomic-write", "crash-harness", "write-is-all-or-nothing",

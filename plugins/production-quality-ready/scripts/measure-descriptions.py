@@ -3,7 +3,7 @@
 measure-descriptions.py — the single source of truth on description lengths.
 
 Usage:
-    <interpreter> scripts/measure-descriptions.py <path>...
+    <interpreter> <plugin>/scripts/measure-descriptions.py <path>...
 
 <interpreter> is the command fixed by --print-interpreter (below). On Windows
 `python3` is often a Microsoft Store shortcut that is NOT an interpreter; the

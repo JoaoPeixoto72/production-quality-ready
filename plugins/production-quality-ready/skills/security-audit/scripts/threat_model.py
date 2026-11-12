@@ -13,7 +13,9 @@ JSON on stdout, summary on stderr, exit 0 (the verdict is in the JSON).
 from __future__ import annotations
 
 import argparse
+import functools
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -35,6 +37,7 @@ CODE_EXT = {
 
 # A citation like `routes/x.ts` implies a code root; these are tried before calling it dangling.
 ROOTS = ('', 'src/', 'src/routes/', 'src/lib/', 'tests/', 'scripts/', 'migrations/', 'public/')
+PRUNED = {'node_modules', 'target', 'dist', 'build', 'vendor'}
 
 
 def find_doc(repo: Path, explicit: str | None) -> Path | None:
@@ -60,13 +63,27 @@ def citations_of(text: str) -> list[tuple[str, int | None]]:
     return out
 
 
-def resolve(repo: Path, path: str) -> Path | None:
-    """The file a citation points at, trying the project's roots."""
+@functools.lru_cache(maxsize=None)
+def files_of(repo: Path) -> tuple[str, ...]:
+    """Every file a citation may name by the end of its path; dependencies, build output and dot-folders apart."""
+    out: list[str] = []
+    for base, dirs, names in os.walk(repo):
+        dirs[:] = [d for d in dirs if d not in PRUNED and not d.startswith(".")]
+        out += [(Path(base) / n).relative_to(repo).as_posix() for n in names]
+    return tuple(out)
+
+
+def resolve(repo: Path, path: str) -> tuple[Path | None, str]:
+    """The file a citation points at: under one of the usual roots, or the one file whose
+    path ends with it (a package of a monorepo, a short name). Otherwise, why it does not resolve."""
     for root in ROOTS:
         candidate = repo / (root + path)
         if candidate.is_file():
-            return candidate
-    return None
+            return candidate, ""
+    ends = [f for f in files_of(repo) if f.endswith("/" + path)]
+    if len(ends) == 1:
+        return repo / ends[0], ""
+    return None, "file missing" if not ends else f"{len(ends)} files end with this path: cite more of it"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -97,9 +114,9 @@ def main(argv: list[str] | None = None) -> int:
         dangling: list[str] = []
         tests = 0
         for path, line in cites:
-            target = resolve(repo, path)
+            target, why_not = resolve(repo, path)
             if target is None:
-                dangling.append(f"{path} (file missing)")
+                dangling.append(f"{path} ({why_not})")
                 continue
             body = target.read_text(encoding="utf-8", errors="replace").splitlines()
             # Rust keeps unit tests in the same file, below `#[cfg(test)]`.

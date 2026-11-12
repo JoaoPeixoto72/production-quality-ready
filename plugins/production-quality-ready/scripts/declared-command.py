@@ -23,7 +23,8 @@ The value is either:
 Verdict per obligation:
   - no command declared        → NOT_VERIFIED (the gap is said, not filled)
   - command exits 77           → NOT_VERIFIED (the command says it could not run here)
-  - command exits != 0         → FAIL/BLOCKER
+  - command exits != 0         → FAIL/BLOCKER (NOT_VERIFIED in a checkout whose dependencies
+                                 were never installed: `workspace.py`)
   - command exits 0, no output → NOT_VERIFIED (nothing proves it ran)
   - command exits 0 with output → PASS (the log is the evidence)
 
@@ -40,6 +41,8 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+
+from workspace import unprepared
 
 TIMEOUT = 1800
 # The command's own way of saying "I could not measure here" — servers down, no network,
@@ -128,6 +131,12 @@ def main(argv: list[str] | None = None) -> int:
                 "reason": (f"cannot-run-here: `{command}` exited {CANNOT_RUN}, its way of saying what it "
                            f"needs is missing; the log says what"),
                 "evidence": evidence + [f"output tail: {l}" for l in output.strip().splitlines()[-3:]],
+            })
+        elif code != 0 and unprepared(repo):
+            results.append({
+                "check": check, "result": "NOT_VERIFIED", "severity": "",
+                "reason": f"cannot-run-here: {unprepared(repo)} (`{command}` exited {code})",
+                "evidence": evidence,
             })
         elif code != 0:
             results.append({

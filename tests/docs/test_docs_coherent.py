@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PLUGINS = ROOT / "plugins"
-CYCLE = PLUGINS / "pqr-cycle"
+CYCLE = PLUGINS / "production-quality-ready"
 BOOTSTRAP = CYCLE / "skills" / "bootstrap-project"
 REMOVED = ("prd", "research", "prototype", "wizard")
 

@@ -297,15 +297,38 @@ def canonical_owner(name: str) -> str:
     return ALIASES.get(name, name)
 
 
+def _plugin_name(p: Path) -> str:
+    try:
+        return json.loads((p / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["name"]
+    except (OSError, ValueError, KeyError):
+        return p.name
+
+
+def plugin_roots(plugin: Path) -> list[Path]:
+    """Every folder whose `skills/` may hold an owner: the marketplace clone's `plugins/*`,
+    or, installed, this plugin and the others beside it. Copied by hand they sit side by
+    side (`<dir>/<plugin>/`); Claude Code keeps `<marketplace>/<plugin>/<version>/`, where
+    a plugin it has dropped is marked `.orphaned_at` and this plugin's own version wins."""
+    if not (plugin / "skills").is_dir():
+        return [plugin, *sorted(plugin.glob("plugins/*"))]
+    mine = _plugin_name(plugin)
+    versioned = plugin.parent.name == mine
+    beside = plugin.parent.parent.glob("*/*") if versioned else plugin.parent.glob("*")
+    others: dict[str, Path] = {}
+    for cand in sorted(beside):
+        name = _plugin_name(cand)
+        if name == mine or not (cand / "skills").is_dir() or (cand / ".orphaned_at").exists():
+            continue
+        if name not in others or cand.name == plugin.name:
+            others[name] = cand
+    return [plugin, *others.values()]
+
+
 def skill_dir(plugin: Path, name: str) -> Path | None:
-    """Where an owner or producer lives. The plugins share one marketplace; an
-    owner may sit in any of them, or be a cycle rule kept as a bootstrap reference
-    (start-work, review-change, close-work, verify). Installed plugins are siblings."""
+    """Where an owner or producer lives: a skill of any plugin of the marketplace, or a
+    cycle rule kept as a bootstrap reference (start-work, review-change, close-work, verify)."""
     name = canonical_owner(name)
-    roots = [plugin, *plugin.glob("plugins/*")]
-    if (plugin / "skills").is_dir():
-        roots += [s for s in plugin.parent.glob("*") if s != plugin]
-    for r in roots:
+    for r in plugin_roots(plugin):
         for cand in (r / "skills" / name,
                      r / "skills" / "bootstrap-project" / "references" / "universal" / name):
             if cand.is_dir():

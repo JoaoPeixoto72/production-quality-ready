@@ -28,7 +28,7 @@ section.
 ## Required sections
 
 1. **Steps** — reuse the review's proof run for the same tree; the trim check
-   (the project's command, or `trim_check.py` from pqr-cycle); rewrite the
+   (the project's command, or the plugin's `trim_check.py`); rewrite the
    state document with pass or fail beside each command and HEAD.
 2. **Document → subject** — which document owns what. One subject, one owner.
 3. **When to bump the version.**

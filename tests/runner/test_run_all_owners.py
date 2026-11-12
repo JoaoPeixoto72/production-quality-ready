@@ -105,6 +105,18 @@ class RunnerWritesTraces(unittest.TestCase):
         self.assertEqual(d["result"], "NOT_VERIFIED")
         self.assertIn("cannot-run-here", d["reason"])
 
+    def test_a_failure_before_the_dependencies_are_installed_is_not_a_fail(self):
+        pr = Project({"tests-command": RED, "build-command": OK})
+        pr.put("package.json", '{"devDependencies": {"vitest": "1"}}')
+        pr.run()
+        _, d = pr.evidence("runtime.tests-pass")
+        self.assertEqual(d["result"], "NOT_VERIFIED")
+        self.assertIn("dependencies-not-installed", d["reason"])
+        self.assertEqual(pr.evidence("runtime.build-passes")[1]["result"], "PASS", "what ran and passed stays passed")
+        (pr.root / "node_modules").mkdir()
+        pr.run()
+        self.assertEqual(pr.evidence("runtime.tests-pass")[1]["result"], "FAIL")
+
     def test_refuses_to_write_a_pass_without_a_log(self):
         pr = Project({})
         r = rao.Runner(pr.root, ROOT, {"platform": "web"})
@@ -233,6 +245,16 @@ class RunnerReadsWhatTheProjectDeclares(unittest.TestCase):
         pr = self.reliability({}, {"migrations-dir": "db/migrations"})
         _, d = pr.evidence("reliability.migration-forward", "reliability-audit")
         self.assertEqual(d["result"], "PASS", d.get("reason"))
+
+    def test_the_declared_source_folders_are_the_ones_inspected(self):
+        pr = Project({}, owners={"reliability-audit": {"source-dirs": ["app/src"]}})
+        pr.put("app/src/log.ts", "export function log(level, msg, traceId) {\n"
+                                 "  console.log(JSON.stringify({ level, msg, traceId }))\n}\n")
+        pr.put("scripts/tool.cjs", "".join(f"console.log('line {i}')\n" for i in range(9)))
+        pr.run(only="reliability-audit")
+        _, d = pr.evidence("observability.logs-structured", "reliability-audit")
+        self.assertEqual(d["result"], "PASS", d.get("reason"))
+        self.assertIn("under app/src", d["reason"])
 
     def test_without_the_declaration_the_default_folder_is_absent(self):
         pr = self.reliability({}, {})

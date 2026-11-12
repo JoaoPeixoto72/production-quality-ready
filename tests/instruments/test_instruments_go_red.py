@@ -40,7 +40,7 @@ RED_CASE: dict[str, tuple[str, str]] = {
     "threat-model-check": ("plugins/production-quality-ready/skills/security-audit/scripts/threat_model.py", "ThreatModelGoesRed"),
     "tenant-isolation": ("plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py", "TenantIsolationGoesRed"),
     "adapter-local": ("plugins/production-quality-ready/scripts/declared-command.py", "DeclaredCommandGoesRed"),
-    "trim-check": ("plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", "TrimCheckGoesRed"),
+    "trim-check": ("plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", "TrimCheckGoesRed"),
     "billing-harness": ("plugins/production-quality-ready/scripts/declared-command.py", "DeclaredCommandGoesRed"),
     "run_seo_audit.mjs": ("plugins/pqr-website/skills/audit-website/seo/run_seo_audit.mjs", "SeoEngineGoesRed"),
     "run_website_audit.mjs": ("plugins/pqr-website/skills/audit-website/scripts/run_website_audit.mjs", "WebsiteEngineGoesRed"),
@@ -228,6 +228,26 @@ class LogInspectionGoesRed(unittest.TestCase):
             self.assertEqual(checks["observability.correlation-id-e2e"]["result"], "FAIL")
             self.assertEqual(checks["observability.logs-structured"]["result"], "FAIL")
 
+    def test_the_declared_source_folders_are_the_ones_read(self):
+        script = "plugins/production-quality-ready/skills/reliability-audit/scripts/log_inspection.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "apps" / "api" / "src").mkdir(parents=True)
+            (root / "apps" / "api" / "src" / "log.ts").write_text(
+                "export function log(level, msg, traceId) {\n"
+                "  console.log(JSON.stringify({ level, msg, traceId, at: Date.now() }))\n}\n", encoding="utf-8")
+            (root / "scripts").mkdir()
+            (root / "scripts" / "status.cjs").write_text(
+                "".join(f"console.log('line {i}')\n" for i in range(9)), encoding="utf-8")
+            _, whole = instrument_json(script, ["--repo", "."], root)
+            self.assertEqual(by_check(whole)["observability.logs-structured"]["result"], "FAIL")
+            _, declared = instrument_json(script, ["--repo", ".", "--src", "apps/api/src"], root)
+            r = by_check(declared)["observability.logs-structured"]
+            self.assertEqual(r["result"], "PASS", r["reason"])
+            self.assertIn("under apps/api/src", r["reason"])
+            p = run([sys.executable, str(PLUGIN / script), "--repo", ".", "--src", "nowhere"], root)
+            self.assertEqual((p.returncode, p.stdout.strip()), (2, ""))
+
 
 class CiInspectionGoesRed(unittest.TestCase):
     def test_no_rollback_declared_fails(self):
@@ -364,6 +384,18 @@ class DeclaredCommandGoesRed(unittest.TestCase):
             self.assertIn("cannot-run-here", r["reason"])
             self.assertTrue(any("server is down" in e for e in r["evidence"]))
 
+    def test_a_failure_in_a_checkout_without_its_dependencies_is_not_verified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, {"smoke-command": "node -e \"console.log('boom'); process.exit(1)\""})
+            (root / "package.json").write_text('{"dependencies": {"x": "1"}}', encoding="utf-8")
+            r = self._run(root, "smoke-command", "smoke-test-passes")["smoke-test-passes"]
+            self.assertEqual(r["result"], "NOT_VERIFIED")
+            self.assertIn("dependencies-not-installed", r["reason"])
+            (root / "node_modules").mkdir()
+            r = self._run(root, "smoke-command", "smoke-test-passes")["smoke-test-passes"]
+            self.assertEqual(r["result"], "FAIL")
+
     def test_a_silent_command_is_not_verified(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -411,6 +443,20 @@ class TenantIsolationGoesRed(unittest.TestCase):
             r = by_check(payload)["sec.tenant-isolation"]
             self.assertEqual(r["result"], "NOT_VERIFIED")
             self.assertIn("cannot-run-here", r["reason"])
+
+    def test_a_failure_in_a_checkout_without_its_dependencies_is_not_verified(self):
+        script = "plugins/production-quality-ready/skills/security-audit/scripts/tenant_isolation.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._repo(root, "node -e \"console.log('vitest: not found'); process.exit(1)\"")
+            (root / "package.json").write_text('{"devDependencies": {"vitest": "1"}}', encoding="utf-8")
+            _, payload = instrument_json(script, ["--repo", ".", "--platform", "web"], root)
+            r = by_check(payload)["sec.tenant-isolation"]
+            self.assertEqual(r["result"], "NOT_VERIFIED")
+            self.assertIn("dependencies-not-installed", r["reason"])
+            (root / "node_modules").mkdir()
+            _, payload = instrument_json(script, ["--repo", ".", "--platform", "web"], root)
+            self.assertEqual(by_check(payload)["sec.tenant-isolation"]["result"], "FAIL")
 
     def test_a_silent_success_is_not_verified(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -493,6 +539,24 @@ class ThreatModelGoesRed(unittest.TestCase):
             self.assertEqual(r["result"], "PASS", r["reason"])
             self.assertIn("into tests: 1", " ".join(r["evidence"]))
 
+    def test_a_short_citation_resolves_when_one_file_ends_with_it(self):
+        script = "plugins/production-quality-ready/skills/security-audit/scripts/threat_model.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in ("apps/api/src/routes/auth.ts", "apps/web/e2e/csp.spec.ts", "node_modules/x/csp.spec.ts"):
+                (root / rel).parent.mkdir(parents=True, exist_ok=True)
+                (root / rel).write_text("export const a = 1\n", encoding="utf-8")
+            self._repo(root, "## Controls\n- Session in `routes/auth.ts:1`, proven by `csp.spec.ts`.\n")
+            _, payload = instrument_json(script, ["--repo", "."], root)
+            r = by_check(payload)["sec.threat-model-declared"]
+            self.assertEqual(r["result"], "PASS", r["reason"])
+            (root / "apps/admin/e2e").mkdir(parents=True)
+            (root / "apps/admin/e2e/csp.spec.ts").write_text("// another\n", encoding="utf-8")
+            _, payload = instrument_json(script, ["--repo", "."], root)
+            r = by_check(payload)["sec.threat-model-declared"]
+            self.assertEqual(r["result"], "FAIL")
+            self.assertIn("2 files end with this path", " ".join(r["evidence"]))
+
 
 class EvidenceValidatorGoesRed(unittest.TestCase):
     def test_a_pass_without_command_is_downgraded(self):
@@ -528,7 +592,7 @@ class TrimCheckGoesRed(unittest.TestCase):
                 "// It previously ran twice.\nfunction h() {}\n"
                 "// Wait 250 ms.\nconst WAIT_MS = 250;\n", encoding="utf-8")
             code, payload = instrument_json(
-                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
             r = by_check(payload)
             self.assertNotEqual(code, 0)
             self.assertEqual(r["trim.comment-budget"]["result"], "FAIL")
@@ -542,12 +606,12 @@ class TrimCheckGoesRed(unittest.TestCase):
                 "#[cfg(test)]\nmod testes;\n\nfn a() {}\n/// one\n/// two\n/// three\n/// four\nfn b() {}\n",
                 encoding="utf-8")
             code, payload = instrument_json(
-                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
             self.assertNotEqual(code, 0)
             self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "FAIL")
 
     def test_a_header_after_a_shebang_is_still_the_file_header(self):
-        script = "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"
+        script = "plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"
         with tempfile.TemporaryDirectory() as tmp:
             root = self._repo(tmp)
             for name, shebang, mark in (("tool.cjs", "#!/usr/bin/env node\n", "//"), ("tool.sh", "#!/bin/sh\n\n", "#")):
@@ -568,19 +632,19 @@ class TrimCheckGoesRed(unittest.TestCase):
             (root / "migrations" / "0001_x.sql").write_text(header + "CREATE TABLE t (id TEXT);\n",
                                                            encoding="utf-8")
             code, payload = instrument_json(
-                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
             self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "PASS")
             (root / "migrations" / "0001_x.sql").write_text(header + "CREATE TABLE t (id TEXT);\n" + header,
                                                            encoding="utf-8")
             code, payload = instrument_json(
-                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
             self.assertEqual(by_check(payload)["trim.comment-budget"]["result"], "FAIL")
 
     def test_lines_this_work_did_not_touch_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = self._repo(tmp)
             code, payload = instrument_json(
-                "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
+                "plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py", ["--repo", "."], root)
             self.assertEqual(code, 0)
             self.assertTrue(all(x["result"] == "PASS" for x in payload["results"]))
 

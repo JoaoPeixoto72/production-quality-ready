@@ -1,9 +1,10 @@
 # POLICY — the `production-quality-ready` marketplace
 
-Governance of the six plugins: `production-quality-ready` (the core: audit
-owners, `CONTRACTS.md`, the runner and the gates), `pqr-cycle`
-(`bootstrap-project`, the cycle rules and adapter contracts), `pqr-process`,
-`pqr-website`, `pqr-desktop` and `pqr-ui-system` (optional). **Authoritative** on: who owns which subject, when a
+Governance of the five plugins: `production-quality-ready` (the base:
+`bootstrap-project` with the cycle rules and adapter contracts, the audit
+owners, `ship`, `CONTRACTS.md`, the runner and the gates) and the four that
+depend on it, one per kind of project: `pqr-website`, `pqr-desktop`,
+`pqr-ui-system` and `pqr-process`. **Authoritative** on: who owns which subject, when a
 skill activates, how it composes with a local adapter, how conflicts
 between owners are resolved.
 
@@ -160,7 +161,7 @@ the cause, `ui-system` writes design-system code, `ship` deploys.
 ## 3. The project's cycle skills
 
 The work cycle — open, review, close, verify, ship — is **the project's own
-skills**, not plugin skills. `pqr-cycle` carries the rules
+skills**, not plugin skills. The base plugin carries the rules
 (`skills/bootstrap-project/references/universal/*/RULE.md`) and the shape each
 project skill must have (`adapter-contracts/*.md`); `bootstrap-project` writes
 the skills into the project.

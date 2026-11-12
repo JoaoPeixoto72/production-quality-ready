@@ -28,7 +28,7 @@ Output: JSON on stdout, human summary on stderr, exit 0.
 
 Usage:
   python log_inspection.py --repo . [--platform web|desktop|both]
-                           [--src src] [--docs docs]
+                           [--src apps/api/src --src apps/web/src] [--docs docs]
 """
 
 from __future__ import annotations
@@ -121,7 +121,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--repo", default=".")
     ap.add_argument("--platform", default="web")
-    ap.add_argument("--src", default=None, help="source subdirectory (default: autodetect src/ then repo root)")
+    ap.add_argument("--src", action="append", help="a folder of the code that runs in production, as gates.json "
+                    "declares it in owners.reliability-audit.source-dirs; repeatable (default: the whole repo)")
     ap.add_argument("--docs", default="docs")
     a = ap.parse_args()
     try:
@@ -133,8 +134,12 @@ def main() -> int:
     repo = Path(a.repo).resolve()
     # The whole repo by default: `src/` alone left a Tauri app's `src-tauri/` and a worker's
     # folder unread.
-    sub = a.src or None
-    files = list(iter_files(repo, sub))
+    absent = [s for s in (a.src or []) if not (repo / s).is_dir()]
+    if absent:
+        print(f"declared source folder(s) not found: {', '.join(absent)}", file=sys.stderr)
+        return 2
+    files = [f for sub in (a.src or [None]) for f in iter_files(repo, sub)]
+    scope = f"{len(files)} files" + (f" under {', '.join(a.src)}" if a.src else "")
 
     helpers: list[tuple[str, str]] = []        # (file:line, name)
     bare: list[str] = []
@@ -193,11 +198,11 @@ def main() -> int:
         if ratio < 0.5:
             results.append(finding("observability.logs-structured", "FAIL",
                                    f"only {ratio:.0%} of log calls are structured; the rest are bare text "
-                                   f"(static analysis of {len(files)} files)", ev, severity="MEDIUM"))
+                                   f"(static analysis of {scope})", ev, severity="MEDIUM"))
         else:
             results.append(finding("observability.logs-structured", "PASS",
                                    f"{ratio:.0%} of log calls are structured (JSON/level) via {len(set(n for _, n in helpers))} "
-                                   f"helper(s); static analysis of {len(files)} files", ev))
+                                   f"helper(s); static analysis of {scope}", ev))
 
     # --- correlation-id
     if corr_hits:
@@ -216,7 +221,7 @@ def main() -> int:
                                pii_hits[:6], severity="HIGH"))
     else:
         ev = [f"redaction helpers in: {', '.join(sorted(set(redaction_hits))[:4])}"] if redaction_hits else []
-        ev.append(f"scanned {len(files)} files for password/token/secret inside log calls: 0 hits")
+        ev.append(f"scanned {scope} for password/token/secret inside log calls: 0 hits")
         results.append(finding("observability.pii-redacted", "PASS",
                                "no secret or credential is interpolated into a log call (static analysis; "
                                "a captured production sample would be stronger)", ev))

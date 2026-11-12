@@ -11,8 +11,8 @@
 #   bash scripts/link-skills.sh --dest <dir>         # link somewhere else
 #   bash scripts/link-skills.sh --remove             # unlink what this script made
 #   bash scripts/link-skills.sh --copy               # copy instead of link
-#   bash scripts/link-skills.sh --plugins production-quality-ready,pqr-cycle
-#                                                    # only these plugins (default: production-quality-ready,pqr-cycle)
+#   bash scripts/link-skills.sh --plugins production-quality-ready,pqr-website
+#                                                    # only these plugins (default: production-quality-ready)
 
 set -euo pipefail
 
@@ -20,7 +20,7 @@ PLUGIN_DIR=""
 DEST=""
 COPY=false
 REMOVE=false
-PLUGINS="production-quality-ready,pqr-cycle"
+PLUGINS="production-quality-ready"
 
 while [[ $# -gt 0 ]]; do
   case $1 in

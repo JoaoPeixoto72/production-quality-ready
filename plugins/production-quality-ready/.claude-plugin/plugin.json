@@ -1,7 +1,7 @@
 {
   "name": "production-quality-ready",
-  "version": "4.0.0",
-  "description": "Audit owners and gates: code, security, reliability, release, commercial readiness and accessibility write evidence files; apply_gates.py decides release-candidate, production-ready and sellable. A PASS needs a command and a log.",
+  "version": "5.0.0",
+  "description": "The base: bootstrap-project writes a project's own work-cycle skills and gates.json; the audit owners write evidence files; apply_gates.py decides release-candidate, production-ready and sellable; ship releases.",
   "author": {
     "name": "Joao Peixoto",
     "email": "joaopeixoto@hotmail.com",

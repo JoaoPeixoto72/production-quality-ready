@@ -1,7 +1,10 @@
 {
   "name": "pqr-process",
-  "version": "4.0.0",
-  "description": "Optional process skills: spec, diagnose, grill, slice, map, triage, handoff, ship, improve.",
+  "version": "5.0.0",
+  "description": "Planning before code: spec, grill, map, slice, triage, diagnose, improve, handoff. Brings the base.",
+  "dependencies": [
+    "production-quality-ready"
+  ],
   "author": {
     "name": "Joao Peixoto",
     "email": "joaopeixoto@hotmail.com",

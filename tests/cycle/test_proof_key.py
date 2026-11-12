@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-TEMPLATES = ROOT / "plugins" / "pqr-cycle" / "skills" / "bootstrap-project" / "templates" / "skills"
+TEMPLATES = ROOT / "plugins" / "production-quality-ready" / "skills" / "bootstrap-project" / "templates" / "skills"
 KEY_LINE = re.compile(r"^echo \"\$\(git rev-parse --short HEAD\)-.*$", re.M)
 
 
