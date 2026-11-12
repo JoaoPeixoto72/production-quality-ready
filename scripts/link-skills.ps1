@@ -13,7 +13,7 @@
 #   pwsh scripts/link-skills.ps1 -Remove             # unlink what this script made
 #   pwsh scripts/link-skills.ps1 -Copy               # copy instead of link
 #   pwsh scripts/link-skills.ps1 -Plugins production-quality-ready,pqr-process
-#                                                    # only these plugins (default: production-quality-ready,pqr-cycle)
+#                                                    # only these plugins (default: production-quality-ready)
 
 [CmdletBinding()]
 param(
@@ -21,7 +21,7 @@ param(
     [string]$Dest = "",
     [switch]$Copy,
     [switch]$Remove,
-    [string[]]$Plugins = @("production-quality-ready", "pqr-cycle")
+    [string[]]$Plugins = @("production-quality-ready")
 )
 
 $ErrorActionPreference = "Stop"

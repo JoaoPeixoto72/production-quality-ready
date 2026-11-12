@@ -21,7 +21,7 @@ must have is `../../adapter-contracts/*.md`.
 Run it first. Run it again after a plugin major upgrade (it re-reads the
 existing adapters and only proposes diffs).
 
-It is the plugin's one **user-invoked** skill (`POLICY.md §2.1`): it writes
+It is **user-invoked** (`POLICY.md §2.1`; `ship` is the other): it writes
 into a repo, and a re-run rewrites what a previous run wrote, so the user
 names it rather than a model trigger firing it.
 
@@ -61,8 +61,8 @@ user before writing anything.
 6. Which owners are `not-applicable` and why (e.g. `drive-app-window`
    on web, `audit-website` on desktop). Propose from platform; confirm.
 7. **Maintainability budgets** — propose the defaults from
-   the core plugin's `skills/code-audit/references/maintainability.md` §1, show what
-   its `skills/code-audit/scripts/quality_scan.py --format md` finds with them, and let the user set the numbers
+   `<plugin>/skills/code-audit/references/maintainability.md` §1, show what
+   `<plugin>/skills/code-audit/scripts/quality_scan.py --format md` finds with them, and let the user set the numbers
    (`owners.code-audit.budgets`). Existing debt goes into the baseline
    (`--write-baseline`), never into looser numbers.
 8. **Names** — each skill gets a name of its own, never the rule's
@@ -83,7 +83,11 @@ goes stale.
 1. **`<host>/gates.json`** — from `templates/gates.json.template`:
    `platform`, `sales-model`, `stack`, `owners` (applicable +
    `not-applicable` with reason), `adapter-hints` (every detected
-   command, including `migrations-verify-command`), `waivers` (empty
+   command, under the keys `run_all_owners.py --list-hints` prints — a
+   command under another name settles no check, CONTRACTS §7.5.4), the
+   paths the owners read when they are not the usual ones
+   (`security-audit.threat-model`, `reliability-audit.migrations-dir`,
+   `audit-website.target`), `waivers` (empty
    until the project accepts a `FAIL` with a dated reason, CONTRACTS §4.7),
    `gates`.
 2. **`<host>/skills/<local-name>/SKILL.md`** for each of start-work,
@@ -122,7 +126,7 @@ goes stale.
    from.
 3. `python <plugin>/scripts/measure-descriptions.py <host>/skills` —
    every adapter description ≤ 250 chars.
-4. `python <core>/scripts/run_all_owners.py --repo . --dry-run` lists the
+4. `python <plugin>/scripts/run_all_owners.py --repo . --dry-run` lists the
    expected owners for the platform, and `apply_gates.py` does not abort
    (every owner with canonical checks is declared).
 5. Every document the adapters reference exists (`ESTADO.md`,

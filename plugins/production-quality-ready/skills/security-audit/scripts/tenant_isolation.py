@@ -29,6 +29,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from workspace import unprepared  # noqa: E402
+
 HINT = "tenant-isolation-command"
 PLATFORMS = ("web", "both")  # `both` (gates.json) has the web surface too
 
@@ -89,7 +92,13 @@ def main(argv: list[str] | None = None) -> int:
             log.write_text(f"$ {command}\n\n{output}", encoding="utf-8")
 
             crossed = [l.strip() for l in output.splitlines() if "Tenant" in l and "404" in l]
-            if code != 0:
+            if code == 77:  # the skip code: the command says what it needs is missing here
+                result, severity = "NOT_VERIFIED", ""
+                reason = f"cannot-run-here: `{command}` exited 77; the log says what it needs"
+            elif code != 0 and unprepared(repo):
+                result, severity = "NOT_VERIFIED", ""
+                reason = f"cannot-run-here: {unprepared(repo)} (`{command}` exited {code})"
+            elif code != 0:
                 result, severity = "FAIL", "BLOCKER"
                 reason = (f"`{command}` exited {code}: the command that proves cross-tenant isolation "
                           "fails, so the isolation it exercises is broken or the test no longer covers it")

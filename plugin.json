@@ -1,5 +1,5 @@
 {
   "name": "production-quality-ready",
-  "version": "4.0.0",
-  "description": "Marketplace of six production-quality plugins (core audits + work cycle + optional process, website, desktop, ui-system); see plugins/."
+  "version": "5.0.0",
+  "description": "Marketplace of five production-quality plugins (the base, plus website, desktop, ui-system and process by kind of project); see plugins/."
 }

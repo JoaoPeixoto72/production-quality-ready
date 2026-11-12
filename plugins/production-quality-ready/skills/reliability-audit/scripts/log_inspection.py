@@ -28,7 +28,7 @@ Output: JSON on stdout, human summary on stderr, exit 0.
 
 Usage:
   python log_inspection.py --repo . [--platform web|desktop|both]
-                           [--src src] [--docs docs]
+                           [--src apps/api/src --src apps/web/src] [--docs docs]
 """
 
 from __future__ import annotations
@@ -46,6 +46,13 @@ IGNORED = {".git", "node_modules", "dist", "build", "target", ".venv", "venv",
 BARE_LOG = re.compile(r"(?<![\w.])(?:console\.(?:log|error|warn|info|debug)|print|println!|fmt\.Print\w*)\s*\(")
 # Rust's leveled macros are structured by construction (`tracing::info!(job_id, "...")`).
 LEVELED_MACRO = re.compile(r"(?<![\w])(?:(?:tracing|log)::)?(?:trace|debug|info|warn|error|event)!\s*\(")
+# So is a call on a logger object: the level is a field (`log.info({...}, "msg")`,
+# `logger.error(...)`, Python's `logging.warning(...)`, Go's `slog.Info(...)`).
+LEVELED_CALL = re.compile(
+    r"\b(?:log|logger|logging|slog|\w+(?:Log|Logger))\s*\.\s*"
+    r"(?:trace|debug|info|warn|warning|error|fatal|critical|Debug|Info|Warn|Error)\s*\(")
+# What a test prints is not what production logs.
+TEST_PATH = re.compile(r"(?:^|/)(?:tests?|__tests__|e2e)/|\.(?:test|spec)\.", re.IGNORECASE)
 JSON_IN_LOG = re.compile(r"JSON\.stringify|serde_json|json\.dumps|structured|logfmt", re.IGNORECASE)
 LEVEL_WORD = re.compile(r"\b(?:ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL)\b")
 TIMESTAMP = re.compile(r"toISOString|Date\.now|time\.Now|datetime\.now|Utc::now|chrono::", re.IGNORECASE)
@@ -96,6 +103,8 @@ def iter_files(root: Path, sub: str | None = None):
             continue
         if any(part in IGNORED for part in p.relative_to(root).parts):
             continue
+        if TEST_PATH.search(p.relative_to(root).as_posix()):
+            continue
         yield p
 
 
@@ -121,7 +130,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--repo", default=".")
     ap.add_argument("--platform", default="web")
-    ap.add_argument("--src", default=None, help="source subdirectory (default: autodetect src/ then repo root)")
+    ap.add_argument("--src", action="append", help="a folder of the code that runs in production, as gates.json "
+                    "declares it in owners.reliability-audit.source-dirs; repeatable (default: the whole repo)")
     ap.add_argument("--docs", default="docs")
     a = ap.parse_args()
     try:
@@ -133,8 +143,12 @@ def main() -> int:
     repo = Path(a.repo).resolve()
     # The whole repo by default: `src/` alone left a Tauri app's `src-tauri/` and a worker's
     # folder unread.
-    sub = a.src or None
-    files = list(iter_files(repo, sub))
+    absent = [s for s in (a.src or []) if not (repo / s).is_dir()]
+    if absent:
+        print(f"declared source folder(s) not found: {', '.join(absent)}", file=sys.stderr)
+        return 2
+    files = [f for sub in (a.src or [None]) for f in iter_files(repo, sub)]
+    scope = f"{len(files)} files" + (f" under {', '.join(a.src)}" if a.src else "")
 
     helpers: list[tuple[str, str]] = []        # (file:line, name)
     bare: list[str] = []
@@ -150,7 +164,8 @@ def main() -> int:
         except OSError:
             continue
         r = rel(f, repo)
-        structured_hits += [f"{r}:{text[:m.start()].count(chr(10)) + 1}" for m in LEVELED_MACRO.finditer(text)]
+        for leveled in (LEVELED_MACRO, LEVELED_CALL):
+            structured_hits += [f"{r}:{text[:m.start()].count(chr(10)) + 1}" for m in leveled.finditer(text)]
         for m in LOG_HELPER_DEF.finditer(text):
             line = text[:m.start()].count("\n") + 1
             helpers.append((f"{r}:{line}", m.group(1)))
@@ -193,11 +208,11 @@ def main() -> int:
         if ratio < 0.5:
             results.append(finding("observability.logs-structured", "FAIL",
                                    f"only {ratio:.0%} of log calls are structured; the rest are bare text "
-                                   f"(static analysis of {len(files)} files)", ev, severity="MEDIUM"))
+                                   f"(static analysis of {scope})", ev, severity="MEDIUM"))
         else:
             results.append(finding("observability.logs-structured", "PASS",
                                    f"{ratio:.0%} of log calls are structured (JSON/level) via {len(set(n for _, n in helpers))} "
-                                   f"helper(s); static analysis of {len(files)} files", ev))
+                                   f"helper(s); static analysis of {scope}", ev))
 
     # --- correlation-id
     if corr_hits:
@@ -216,7 +231,7 @@ def main() -> int:
                                pii_hits[:6], severity="HIGH"))
     else:
         ev = [f"redaction helpers in: {', '.join(sorted(set(redaction_hits))[:4])}"] if redaction_hits else []
-        ev.append(f"scanned {len(files)} files for password/token/secret inside log calls: 0 hits")
+        ev.append(f"scanned {scope} for password/token/secret inside log calls: 0 hits")
         results.append(finding("observability.pii-redacted", "PASS",
                                "no secret or credential is interpolated into a log call (static analysis; "
                                "a captured production sample would be stronger)", ev))

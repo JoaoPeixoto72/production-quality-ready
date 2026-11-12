@@ -84,7 +84,7 @@ class Trim(unittest.TestCase):
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
             write(root, "a.rs", "#[cfg(test)]\npub fn x() {}\n" + "// line\n" * 5 + "fn y() {}\n")
             subprocess.run(["git", "add", "-A"], cwd=root, check=True)
-            p = subprocess.run([sys.executable, str(PLUGIN / "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"),
+            p = subprocess.run([sys.executable, str(PLUGIN / "plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"),
                                 "--repo", ".", "--all", "--format", "md"], cwd=root, capture_output=True,
                                text=True, encoding="utf-8")
             self.assertIn("trim.comment-budget", p.stdout)
@@ -93,7 +93,7 @@ class Trim(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-            p = subprocess.run([sys.executable, str(PLUGIN / "plugins/pqr-cycle/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"),
+            p = subprocess.run([sys.executable, str(PLUGIN / "plugins/production-quality-ready/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py"),
                                 "--repo", ".", "--since", "mian"], cwd=root, capture_output=True, text=True)
             self.assertNotEqual(p.returncode, 0)
             self.assertNotIn("nothing to trim", p.stdout)

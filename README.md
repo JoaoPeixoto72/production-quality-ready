@@ -14,19 +14,21 @@ Read first:
 - [`rules/writing-for-agents.md`](rules/writing-for-agents.md) — how to write anything an agent reads.
 - [`tests/instruments/`](tests/instruments/) — the red case of every instrument: the fixture where it must fail.
 
-## Six plugins, one marketplace
+## Five plugins, one marketplace
 
-Install the core and `pqr-cycle`; add the rest when the project needs them.
-Each plugin pays context only for its own descriptions.
+The base is the machine every project runs: the skills in it hand work to
+each other and cannot be installed apart. Each of the other four is an island
+for one kind of project; it declares the base in `dependencies`, so installing
+it brings the base along. A project pays context only for the descriptions of
+what it installs.
 
-| Plugin | What it holds |
-|---|---|
-| `production-quality-ready` | `audit-app` and the audit owners (`code-audit`, `security-audit`, `reliability-audit`, `release-audit`, `commercial-readiness`, `design-pro`), `run_all_owners.py`, `apply_gates.py`, `CONTRACTS.md` |
-| `pqr-cycle` | `bootstrap-project`, the universal cycle rules and the adapter contracts it writes from |
-| `pqr-process` | `spec`, `diagnose`, `grill`, `slice`, `map`, `triage`, `handoff`, `ship`, `improve` |
-| `pqr-website` | `audit-website` (SEO, GEO, Core Web Vitals, cookies) |
-| `pqr-desktop` | `drive-app-window` (Win32/WebView2 driver) |
-| `pqr-ui-system` | `ui-system` (OKLCH tokens, `data-ui` contract, `audit_ui.py`) |
+| Plugin | Install it for | What it holds |
+|---|---|---|
+| `production-quality-ready` (base) | every project | `bootstrap-project` (the cycle rules and adapter contracts it writes from), `audit-app` and the audit owners (`code-audit`, `security-audit`, `reliability-audit`, `release-audit`, `commercial-readiness`, `design-pro`), `ship`, `run_all_owners.py`, `apply_gates.py`, `CONTRACTS.md` |
+| `pqr-website` | a public site (Astro, any static build) | `audit-website` (SEO, GEO, Core Web Vitals, cookies) |
+| `pqr-desktop` | a native desktop app on Windows (Tauri, WebView2) | `drive-app-window` (Win32/WebView2 driver) |
+| `pqr-ui-system` | a project that adopts the `data-ui` design system | `ui-system` (OKLCH tokens, `data-ui` contract, `audit_ui.py`) |
+| `pqr-process` | planning the work before the code | `spec`, `grill`, `map`, `slice`, `triage`, `diagnose`, `improve`, `handoff` |
 
 ## Install
 
@@ -35,14 +37,19 @@ Claude Code:
 ```
 /plugin marketplace add JoaoPeixoto72/production-quality-ready
 /plugin install production-quality-ready@production-quality-ready
-/plugin install pqr-cycle@production-quality-ready
 ```
+
+From a shell (a cloud session, CI), the same two steps are
+`claude plugin marketplace add JoaoPeixoto72/production-quality-ready` and
+`claude plugin install production-quality-ready@production-quality-ready`.
+`claude plugin details <plugin>@production-quality-ready` prints what each
+plugin costs in context.
 
 Other hosts: clone, then link the skills of the plugins you want.
 
 ```bash
 git clone https://github.com/JoaoPeixoto72/production-quality-ready.git .agents/plugins/production-quality-ready
-bash scripts/link-skills.sh --plugins production-quality-ready,pqr-cycle   # or: pwsh scripts/link-skills.ps1 -Plugins …
+bash scripts/link-skills.sh --plugins production-quality-ready,pqr-website   # or: pwsh scripts/link-skills.ps1 -Plugins …
 ```
 
 **Codex reads `.agents/skills`, not `.agents/plugins/`**, so the link step
@@ -87,7 +94,7 @@ credentials, how a change reaches production), and writes:
 ## Audit loop (when you want to ship or sell)
 
 ```bash
-python <core>/scripts/run_all_owners.py --repo . [--website-url https://…]
+python <plugin>/scripts/run_all_owners.py --repo . [--website-url https://…]
 ```
 
 Runs every instrument the plugin can run for your platform — the declared
@@ -127,21 +134,22 @@ Code reads `SKILL.md` alone.
 ```
 production-quality-ready/
 ├── PURPOSE.md · POLICY.md · README.md
-├── .claude-plugin/marketplace.json   # the six plugins
+├── .claude-plugin/marketplace.json   # the five plugins
 ├── rules/                            # source of the rule copies each plugin carries
-├── scripts/                          # measure-descriptions.py, link-skills.*
+├── scripts/                          # link-skills.* (hosts that read .agents/skills)
 ├── plugins/
-│   ├── production-quality-ready/     # CONTRACTS.md, scripts/run_all_owners.py, skills/<owner>/
-│   │   └── skills/audit-app/scripts/ # apply_gates.py, validate_evidence.py, validate_report.py
-│   ├── pqr-cycle/                    # adapter-contracts/, skills/bootstrap-project/{references,templates}
-│   ├── pqr-process/ · pqr-website/ · pqr-desktop/ · pqr-ui-system/
+│   ├── production-quality-ready/     # CONTRACTS.md, adapter-contracts/, scripts/{run_all_owners,measure-descriptions}.py, skills/<owner>/
+│   │   ├── skills/audit-app/scripts/ # apply_gates.py, validate_evidence.py, validate_report.py
+│   │   └── skills/bootstrap-project/ # references/universal/<rule>/, templates/
+│   ├── pqr-website/ · pqr-desktop/ · pqr-ui-system/ · pqr-process/
 └── tests/                            # one red case per instrument, gates, runner, docs coherence
 ```
 
 ## Verify the plugins themselves
 
 ```bash
-python scripts/measure-descriptions.py plugins      # exit 1 if any description > 250
+python plugins/production-quality-ready/scripts/measure-descriptions.py plugins      # exit 1 if any description > 250
+python plugins/production-quality-ready/skills/code-audit/scripts/quality_scan.py --repo . --baseline quality-baseline.json --format md   # exit 1 on new debt
 python -m pip install pytest && python -m pytest tests -q
 python plugins/production-quality-ready/scripts/run_all_owners.py --repo <repo> --dry-run
 ```
@@ -170,10 +178,23 @@ or *runs a fixed tool* from one that misuses it — its README lists that limit.
 A hold is a request for a person to read the flagged line, which is what this
 table does.
 
+## Which stacks the instruments know
+
+The rules are stack-neutral. The instruments are not, and where one does not
+know a stack it says `NOT_VERIFIED` with the reason — never a `PASS` or a
+`FAIL` it did not measure.
+
+| Stack | Runs on its own | The project declares (`CONTRACTS §7.5.4`) |
+|---|---|---|
+| Node (npm, pnpm, yarn), web | build, typecheck and tests; the package manager's audit; lockfile tracked; `quality_scan` over TS/JS, Svelte, Vue and Astro; webhook idempotency; SQL migrations applied to a throwaway SQLite | smoke, accessibility capture, tenant isolation, billing paths |
+| Rust (Cargo), Tauri desktop on Windows | build, typecheck and tests; `cargo audit` when installed; `Cargo.lock` tracked; `quality_scan` over `.rs`; `drive-app-window` | signing and updater checks, the crash harness |
+| Sites (Astro and any static build) | `audit-website` over the built folder or the URL | the target |
+| Anything else | the commands `adapter-hints` declares | every other check stays `NOT_VERIFIED` until an instrument for that stack exists |
+
 ## What it does NOT
 
-- **Correct anything from the core.** The core audits; `diagnose`,
-  `improve` and `ship` (pqr-process) act, each on a request of its own.
+- **Correct anything while auditing.** The audit owners judge; `diagnose`
+  and `improve` (pqr-process) and `ship` act, each on a request of its own.
 - **Write a PASS from reading code.** CONTRACTS §4.6.
 - **Replace looking at the running app.** It forces you to say when you did not.
 

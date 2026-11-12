@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 import tempfile
 import textwrap
@@ -33,14 +34,27 @@ class Repo:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text, encoding="utf-8")
 
-    def ev(self, owner, check, result="PASS", severity="", root_cause=""):
+    def commit(self) -> str:
+        """Make the repo a git checkout with one commit; returns its HEAD."""
+        def git(*args):
+            return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+                                   "-c", "commit.gpgsign=false", *args],
+                                  cwd=self.root, check=True, capture_output=True, text=True).stdout.strip()
+        git("init", "-q")
+        git("add", "-A")
+        git("commit", "-q", "-m", "c", "--allow-empty")
+        return git("rev-parse", "HEAD")
+
+    def ev(self, owner, check, result="PASS", severity="", root_cause="", producer="",
+           instrument="test-runner", head=""):
+        producer = producer or owner
         log = f".audit/{owner}/{check}.log"
         self._write(log, "ok\n")
         body = textwrap.dedent(f"""\
             check: {check}
             owner: {owner}
-            producer: {owner}
-            instrument: test-runner
+            producer: {producer}
+            instrument: {instrument}
             rule: r
             rule-version: "owasp-asvs-5.0"
             methods:
@@ -57,13 +71,15 @@ class Repo:
             body += f"severity: {severity}\n"
         if root_cause:
             body += f"root-cause: {root_cause}\n"
-        name = f"{owner}--{check}{'-' + root_cause if root_cause else ''}.evidence.yaml"
+        if head:  # the stamp the runner writes (CONTRACTS §4.1.4)
+            body += f"context:\n  head: {head}\n  platform: web\n"
+        name = f"{producer}--{check}{'-' + root_cause if root_cause else ''}.evidence.yaml"
         self._write(f".audit/{owner}/{name}", body)
 
-    def all_pass(self, owner):
+    def all_pass(self, owner, head=""):
         for c, tag in REGISTRY["canonical"][owner].items():
             if tag in ("both", "web"):
-                self.ev(owner, c)
+                self.ev(owner, c, head=head)
 
     def judge(self):
         return ag.Judge(self.root, ROOT)
@@ -217,6 +233,130 @@ class StandardGates(unittest.TestCase):
         a = r.judge().gate("production-ready")
         b = r.judge().gate("production-ready")
         self.assertEqual(a, b)
+
+
+class ReadingFindings(unittest.TestCase):
+    """§4.5.3 — what audit-app finds reading the code can close a gate and can never open one."""
+
+    def green(self):
+        r = Repo()
+        r.all_pass("code-audit")
+        r.all_pass("verify")
+        return r
+
+    def test_a_blocker_found_by_reading_closes_release_candidate(self):
+        r = self.green()
+        self.assertTrue(r.judge().gate("release-candidate")[0])
+        r.ev("code-audit", "contract.input-not-trusted", result="FAIL", severity="BLOCKER",
+             producer="audit-app", instrument="code-reading")
+        ok, why = r.judge().gate("release-candidate")
+        self.assertFalse(ok)
+        self.assertTrue(any("contract.input-not-trusted" in w for w in why), why)
+
+    def test_a_reading_never_passes_a_check(self):
+        r = Repo()
+        r.ev("security-audit", "sec.deps-no-cve", producer="audit-app", instrument="code-reading")
+        j = r.judge()
+        self.assertEqual(j.coverage("security-audit").label(), "BLOCKED (0/4)")
+        self.assertTrue(any("never PASS" in x for v in j.verdicts for x in v.reasons))
+
+    def test_a_reading_never_declares_a_check_not_applicable(self):
+        r = self.green()
+        r.ev("verify", "smoke-test-passes", result="NOT_APPLICABLE", producer="audit-app",
+             instrument="code-reading")
+        (r.root / ".audit/verify/verify--smoke-test-passes.evidence.yaml").unlink()
+        self.assertFalse(r.judge().gate("release-candidate")[0])
+
+    def test_only_the_reading_instrument_carries_that_authority(self):
+        r = self.green()
+        r.ev("code-audit", "contract.input-not-trusted", result="FAIL", severity="BLOCKER",
+             producer="audit-app", instrument="test-runner")
+        j = r.judge()
+        self.assertTrue(j.gate("release-candidate")[0])
+        self.assertTrue(any("unauthorized-instrument" in x for v in j.verdicts for x in v.reasons))
+
+
+class NotApplicableIsDeclared(unittest.TestCase):
+    """§4.3.4 — the cheapest way to open a gate was one sentence in an evidence file."""
+
+    def smokeless(self, owners=None):
+        r = Repo(owners=owners)
+        r.all_pass("code-audit")
+        r.ev("verify", "smoke-test-passes", result="NOT_APPLICABLE")
+        body = (r.root / ".audit/verify/verify--smoke-test-passes.evidence.yaml")
+        text = body.read_text(encoding="utf-8")  # a hand-written file: no command, no log
+        body.write_text("\n".join(l for l in text.splitlines() if not l.startswith(("command:", "log:")))
+                        + "\nreason: nothing to smoke\n", encoding="utf-8")
+        return r
+
+    def test_a_written_not_applicable_does_not_open_release_candidate(self):
+        ok, why = self.smokeless().judge().gate("release-candidate")
+        self.assertFalse(ok)
+        self.assertTrue(any("verify" in w and "smoke-test-passes" in w for w in why), why)
+
+    def test_the_same_check_declared_in_gates_json_does(self):
+        owners = dict(ALL_OWNERS, verify={"not-applicable-checks": {"smoke-test-passes": "a library: nothing runs"}})
+        ok, why = self.smokeless(owners).judge().gate("release-candidate")
+        self.assertTrue(ok, why)
+
+
+class StaleEvidence(unittest.TestCase):
+    """§4.1.4 — what was proved at another commit proves nothing about this one."""
+
+    OTHER = "0123456789abcdef0123456789abcdef01234567"
+
+    def setUp(self):
+        self.r = Repo()
+        self.head = self.r.commit()
+
+    def green(self, head):
+        for o in ("code-audit", "verify"):
+            self.r.all_pass(o, head=head)
+
+    def test_evidence_of_this_commit_opens(self):
+        self.green(self.head)
+        j = self.r.judge()
+        self.assertEqual((j.stale, j.unstamped), (0, 0))
+        self.assertTrue(j.gate("release-candidate")[0])
+
+    def test_a_short_stamp_of_this_commit_is_current(self):
+        self.green(self.head[:7])  # the runner stamps `git rev-parse --short HEAD`
+        self.assertTrue(self.r.judge().gate("release-candidate")[0])
+
+    def test_a_pass_of_another_commit_cannot_open(self):
+        self.green(self.OTHER)
+        j = self.r.judge()
+        self.assertGreater(j.stale, 0)
+        ok, why = j.gate("release-candidate")
+        self.assertFalse(ok)
+        self.assertTrue(any("BLOCKED" in w for w in why), why)
+
+    def test_a_fail_of_another_commit_still_closes(self):
+        self.green(self.head)
+        self.r.ev("code-audit", "runtime.tests-pass", result="FAIL", severity="BLOCKER", head=self.OTHER)
+        self.assertFalse(self.r.judge().no_open(["BLOCKER"])[0])
+
+    def test_allow_stale_judges_what_is_on_disk(self):
+        self.green(self.OTHER)
+        self.assertTrue(ag.Judge(self.r.root, ROOT, allow_stale=True).gate("release-candidate")[0])
+        args = ["--repo", str(self.r.root), "--plugin", str(ROOT), "--gate", "release-candidate"]
+        self.assertEqual(ag.main(args), 1)
+        self.assertEqual(ag.main(args + ["--allow-stale"]), 0)
+
+    def test_unstamped_evidence_is_counted_not_downgraded(self):
+        self.green("")
+        j = self.r.judge()
+        self.assertEqual(j.stale, 0)
+        self.assertGreater(j.unstamped, 0)
+        self.assertTrue(j.gate("release-candidate")[0])
+
+    def test_outside_git_nothing_is_stale(self):
+        r = Repo()
+        for o in ("code-audit", "verify"):
+            r.all_pass(o, head=self.OTHER)
+        j = r.judge()
+        self.assertEqual(j.stale, 0)
+        self.assertTrue(j.gate("release-candidate")[0])
 
 
 class RegistryMatchesContracts(unittest.TestCase):

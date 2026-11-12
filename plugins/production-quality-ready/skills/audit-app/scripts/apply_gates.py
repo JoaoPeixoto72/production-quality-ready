@@ -15,12 +15,15 @@ the model:
         conditional and gate
   §7.3  the standard gates (`references/gates.spec.json`) plus any gate the
         project adds in gates.json
+  §4.1.4 evidence stamped with another commit (`context.head`) is stale: it can
+        still close a gate, it can no longer open one
 
-Read-only: writes nothing to `.audit/`, runs nothing against the repo, and two
-runs over the same files give the same verdict (§4.2).
+Read-only: writes nothing to `.audit/`, runs nothing against the repo beyond
+asking git for HEAD, and two runs over the same files at the same commit give
+the same verdict (§4.2).
 
 Usage:
-  python apply_gates.py --repo . [--plugin <root>] [--gate production-ready] [--json]
+  python apply_gates.py --repo . [--plugin <root>] [--gate production-ready] [--json] [--allow-stale]
 
 Exit: 0 every evaluated gate is open, 1 at least one is closed, 2 the run
 cannot be judged (no gates.json, no platform, an owner undeclared).
@@ -31,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -43,6 +47,22 @@ REFS = HERE.parent / "references"
 SEVERITIES = ["BLOCKER", "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
 RESOLVED = {"PASS", "FAIL", "WAIVED", "NOT_APPLICABLE"}
 ALL_APPLICABLE = "<all-applicable-owners>"
+# `context:` is a nested map the minimal parser does not descend into; the stamp is read here.
+HEAD_STAMP = re.compile(r"^context:[ \t]*\n(?:[ \t]+.*\n)*?[ \t]+head:[ \t]*[\"']?([0-9a-fA-F]{4,40})\b", re.M)
+
+
+def current_head(repo: Path) -> str:
+    """HEAD of the audited repo, or "" when it is not a git checkout (then nothing is stale)."""
+    try:
+        p = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return p.stdout.strip() if p.returncode == 0 else ""
+
+
+def stamped_head(text: str) -> str:
+    m = HEAD_STAMP.search(text)
+    return m.group(1).lower() if m else ""
 
 
 @dataclass
@@ -85,7 +105,7 @@ def applies(tag: str, platform: str) -> bool:
 
 
 class Judge:
-    def __init__(self, repo: Path, plugin: Path, today=None):
+    def __init__(self, repo: Path, plugin: Path, today=None, allow_stale=False):
         self.repo = repo
         self.gates, gates_path = ve.load_gates(repo)
         if self.gates is None:
@@ -100,16 +120,38 @@ class Judge:
         if missing:
             raise Abort("owner-undeclared-in-gates: declare each as applicable or with "
                         f"`not-applicable: <reason>` — {', '.join(missing)}")
-        self.verdicts = [ve.validate_file(p, repo, plugin, self.platform, ve.load_waivers(self.gates), today)
+        self.verdicts = [ve.validate_file(p, repo, plugin, self.platform, ve.load_waivers(self.gates), today,
+                                          ve.load_not_applicable(self.gates))
                          for p in ve.iter_evidence(repo / ".audit")]
-        self.raw = {v.path: ve.parse_yaml_min((repo / v.path).read_text(encoding="utf-8", errors="replace"))
-                    for v in self.verdicts}
+        texts = {v.path: (repo / v.path).read_text(encoding="utf-8", errors="replace") for v in self.verdicts}
+        self.raw = {path: ve.parse_yaml_min(text) for path, text in texts.items()}
+        self.stale = self.unstamped = 0
+        if not allow_stale:
+            self._mark_stale(texts, current_head(repo))
         spec = load_json(REFS / "gates.spec.json")["gates"]
         self.gate_defs = {g["name"]: g for g in spec}
         for g in self.gates.get("gates") or []:
             if isinstance(g, dict) and g.get("name") not in self.gate_defs:
                 self.gate_defs[g["name"]] = g  # a project adds gates; it cannot redefine the standard ones
         self._memo: dict[str, tuple[bool, list]] = {}
+
+    def _mark_stale(self, texts: dict, head: str):
+        """§4.1.4: a file stamped with another commit proves nothing about this one. A
+        stale FAIL stays open (re-run the instrument to clear it); anything else that
+        would count towards a gate reads as NOT_VERIFIED. A file with no stamp cannot be
+        dated: it is judged as written, and counted so the report says how many there are."""
+        if not head:  # not a git checkout, or no commit yet: nothing to compare with
+            return
+        head = head.lower()
+        for v in self.verdicts:
+            at = stamped_head(texts[v.path])
+            if not at:
+                self.unstamped += 1
+            elif not (head.startswith(at) or at.startswith(head)):
+                self.stale += 1
+                v.reasons.append(f"stale (captured at {at}, HEAD is {head[:len(at)]})")
+                if v.result_effective in ("PASS", "NOT_APPLICABLE", "WAIVED"):
+                    v.result_effective = "NOT_VERIFIED"
 
     # ------------------------------------------------------------ owners
 
@@ -255,6 +297,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--plugin", default=None, help="plugin root (default: autodetect)")
     ap.add_argument("--gate", action="append", help="evaluate only this gate (repeatable)")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--allow-stale", action="store_true",
+                    help="judge evidence stamped with another commit as if it were current")
     a = ap.parse_args(argv)
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -266,7 +310,7 @@ def main(argv: list[str] | None = None) -> int:
         print("plugin root not found (pass --plugin)", file=sys.stderr)
         return 2
     try:
-        j = Judge(repo, plugin)
+        j = Judge(repo, plugin, allow_stale=a.allow_stale)
         names = a.gate or j.requested()
         results = {n: j.gate(n) for n in names}
     except Abort as e:
@@ -283,10 +327,15 @@ def main(argv: list[str] | None = None) -> int:
             "open-findings": [f.__dict__ for f in j.findings()],
             "files": len(j.verdicts),
             "downgraded": sum(1 for v in j.verdicts if v.downgraded),
+            "stale": j.stale,
+            "unstamped": j.unstamped,
         }, indent=2, ensure_ascii=False))
     else:
         print(f"platform={j.platform} files={len(j.verdicts)} "
-              f"downgraded={sum(1 for v in j.verdicts if v.downgraded)}\n\nCoverage:")
+              f"downgraded={sum(1 for v in j.verdicts if v.downgraded)}"
+              + (f" stale={j.stale} (re-run the owners at this commit, or pass --allow-stale)" if j.stale else "")
+              + (f" unstamped={j.unstamped} (no context.head: cannot be dated)" if j.unstamped else "")
+              + "\n\nCoverage:")
         for o, c in cov.items():
             print(f"  {o:22} {c.label()}")
         print("\nGates:")

@@ -23,6 +23,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from validate_evidence import plugin_roots  # noqa: E402
+
 EXIT_OK = 0
 EXIT_PROBLEMS = 1
 EXIT_CANNOT_ANALYSE = 2
@@ -90,8 +93,8 @@ def registry_v2(plugin_root: Path) -> dict:
     """
     registry: dict[str, dict] = {}
     declared: dict[str, list[str]] = {}
-    # The owners are spread over the marketplace's plugins; installed, they are siblings.
-    roots = [plugin_root, *plugin_root.glob("plugins/*"), *plugin_root.parent.glob("*")]
+    # The owners are spread over the marketplace's plugins, wherever those are installed.
+    roots = plugin_roots(plugin_root)
     manifests = {m.parent.name: m for r in roots
                  for pat in ("skills/*/instruments.yaml",
                              "skills/bootstrap-project/references/universal/*/instruments.yaml")

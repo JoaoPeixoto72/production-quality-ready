@@ -168,6 +168,46 @@ class SingleFileComponents(unittest.TestCase):
             self.assertEqual(sorted(r for _, r in qs.source_files(repo, [], [], None)), ["A.svelte", "B.vue"])
 
 
+    def test_astro_fence_and_script_are_measured_and_markup_is_not(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "Card.astro"
+            f.write_text('---\nconst { title } = Astro.props;\nfunction pick(a, b, c, d, e) {\n  return a;\n}\n---\n'
+                         '<h1 onclick={() => { x(); }}>{title}</h1>\n<hr />\n---\n'
+                         '<script>\n  function later(a) {\n    if (a) { if (a) { if (a) { if (a) {} } } }\n  }\n</script>\n',
+                         encoding="utf-8")
+            ms = qs.measure_file(f, "Card.astro")
+            got = {(m.check, m.name): m for m in ms}
+            self.assertEqual((got[("quality.params", "pick")].value, got[("quality.params", "pick")].line), (5, 3))
+            self.assertEqual((got[("quality.nesting", "later")].value, got[("quality.nesting", "later")].line), (4, 11))
+            self.assertEqual({m.name for m in ms if m.name}, {"pick", "later"})
+
+
+class NothingMeasured(unittest.TestCase):
+    """A scan that read no file never passes (CONTRACTS §4.6.4)."""
+
+    def _run(self, files: dict) -> tuple[int, dict]:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / ".claude").mkdir()
+            (repo / ".claude" / "gates.json").write_text("{}", encoding="utf-8")
+            for name, text in files.items():
+                (repo / name).write_text(text, encoding="utf-8")
+            p = subprocess.run([sys.executable, qs.__file__, "--repo", str(repo)], capture_output=True, text=True)
+            return p.returncode, {r["check"]: r for r in json.loads(p.stdout)["results"]}
+
+    def test_a_repo_in_a_language_it_does_not_read_is_not_verified(self):
+        code, rows = self._run({"main.go": "package main\nfunc main() {}\n"})
+        self.assertEqual(code, 0)
+        for check in (*qs.CHECKS, "quality.budgets-met"):
+            self.assertEqual(rows[check]["result"], "NOT_VERIFIED", check)
+        self.assertIn("nothing-measured", rows["quality.budgets-met"]["reason"])
+
+    def test_one_readable_file_is_enough_and_the_count_is_said(self):
+        code, rows = self._run({"main.go": "package main\n", "a.ts": "const a = 1;\n"})
+        self.assertEqual((code, rows["quality.budgets-met"]["result"]), (0, "PASS"))
+        self.assertIn("1 source file(s)", rows["quality.budgets-met"]["reason"])
+
+
 class BaselineVersion(unittest.TestCase):
     def test_a_baseline_from_another_version_is_not_compared(self):
         with tempfile.TemporaryDirectory() as tmp:

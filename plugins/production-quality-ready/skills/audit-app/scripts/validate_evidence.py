@@ -207,6 +207,17 @@ def load_waivers(gates: dict | None) -> list:
     return w if isinstance(w, list) else []
 
 
+def load_not_applicable(gates: dict | None) -> set:
+    """The (owner, check) pairs the project declares not applicable, each with a reason:
+    `owners.<owner>.not-applicable-checks: {"<check>": "<reason>"}` (§4.3.4)."""
+    out = set()
+    for raw, cfg in ((gates or {}).get("owners") or {}).items():
+        declared = cfg.get("not-applicable-checks") if isinstance(cfg, dict) else None
+        if isinstance(declared, dict):
+            out |= {(canonical_owner(raw), str(c)) for c, why in declared.items() if str(why or "").strip()}
+    return out
+
+
 def _parse_date(s: object) -> _date | None:
     try:
         return _date.fromisoformat(str(s).strip())
@@ -286,15 +297,38 @@ def canonical_owner(name: str) -> str:
     return ALIASES.get(name, name)
 
 
+def _plugin_name(p: Path) -> str:
+    try:
+        return json.loads((p / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["name"]
+    except (OSError, ValueError, KeyError):
+        return p.name
+
+
+def plugin_roots(plugin: Path) -> list[Path]:
+    """Every folder whose `skills/` may hold an owner: the marketplace clone's `plugins/*`,
+    or, installed, this plugin and the others beside it. Copied by hand they sit side by
+    side (`<dir>/<plugin>/`); Claude Code keeps `<marketplace>/<plugin>/<version>/`, where
+    a plugin it has dropped is marked `.orphaned_at` and this plugin's own version wins."""
+    if not (plugin / "skills").is_dir():
+        return [plugin, *sorted(plugin.glob("plugins/*"))]
+    mine = _plugin_name(plugin)
+    versioned = plugin.parent.name == mine
+    beside = plugin.parent.parent.glob("*/*") if versioned else plugin.parent.glob("*")
+    others: dict[str, Path] = {}
+    for cand in sorted(beside):
+        name = _plugin_name(cand)
+        if name == mine or not (cand / "skills").is_dir() or (cand / ".orphaned_at").exists():
+            continue
+        if name not in others or cand.name == plugin.name:
+            others[name] = cand
+    return [plugin, *others.values()]
+
+
 def skill_dir(plugin: Path, name: str) -> Path | None:
-    """Where an owner or producer lives. The plugins share one marketplace; an
-    owner may sit in any of them, or be a cycle rule kept as a bootstrap reference
-    (start-work, review-change, close-work, verify). Installed plugins are siblings."""
+    """Where an owner or producer lives: a skill of any plugin of the marketplace, or a
+    cycle rule kept as a bootstrap reference (start-work, review-change, close-work, verify)."""
     name = canonical_owner(name)
-    roots = [plugin, *plugin.glob("plugins/*")]
-    if (plugin / "skills").is_dir():
-        roots += [s for s in plugin.parent.glob("*") if s != plugin]
-    for r in roots:
+    for r in plugin_roots(plugin):
         for cand in (r / "skills" / name,
                      r / "skills" / "bootstrap-project" / "references" / "universal" / name):
             if cand.is_dir():
@@ -317,10 +351,19 @@ def _matches(pattern: str, check: str) -> bool:
     return re.match(rx, check) is not None
 
 
+READER = ("audit-app", "code-reading")  # §4.5.3 — the orchestrator's own reading of the code
+
+
 def authority_ok(manifest: dict | None, owner: str, producer: str,
-                 instrument: str, check: str) -> tuple[bool, str]:
+                 instrument: str, check: str, result: str = "") -> tuple[bool, str]:
     if owner == producer:
         return True, ""
+    if (producer, instrument) == READER:
+        # A reading may fail any owner's rule (§3.1.5) and may never settle one: what
+        # audit-app found reading the code has to be able to close a gate.
+        if result in ("FAIL", "NOT_VERIFIED"):
+            return True, ""
+        return False, f"unauthorized-instrument (audit-app::code-reading can FAIL a check, never {result or 'settle it'})"
     if manifest is None:
         return False, "unauthorized-instrument (owner has no instruments.yaml)"
     for entry in manifest.get("accepts", []) or []:
@@ -359,7 +402,7 @@ def platform_applies(manifest: dict | None, producer: str, instrument: str,
 
 def validate_file(path: Path, repo: Path, plugin: Path | None,
                   project_platform: str | None, waivers: list | None = None,
-                  today: _date | None = None) -> Verdict:
+                  today: _date | None = None, not_applicable: set | None = None) -> Verdict:
     waivers = waivers or []
     today = today or _date.today()
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -413,7 +456,7 @@ def validate_file(path: Path, repo: Path, plugin: Path | None,
             downgrade(f"owner-undeclared ({owner})")
         if producer and producer != "unknown" and skill_dir(plugin, producer) is None:
             downgrade(f"producer-undeclared ({producer})")
-        ok, why = authority_ok(manifest, owner, producer, instrument, check)
+        ok, why = authority_ok(manifest, owner, producer, instrument, check, result)
         if not ok and v.result_effective != "NOT_VERIFIED":
             downgrade(why)
         elif not ok:
@@ -440,6 +483,15 @@ def validate_file(path: Path, repo: Path, plugin: Path | None,
     elif result == "FAIL" and conf == "OBSERVED" and not str(d.get("command", "")).strip():
         v.confidence_effective = "INFERRED"
         v.reasons.append("observed-without-trace -> INFERRED")
+
+    # §4.3.4 — "does not apply" is a claim: an instrument that ran says it (command + log),
+    # or the project declares it in gates.json. A sentence in the file is neither.
+    if result == "NOT_APPLICABLE" and v.result_effective == "NOT_APPLICABLE":
+        log = str(d.get("log", "")).strip()
+        traced = bool(str(d.get("command", "")).strip()) and bool(log) and (repo / log).is_file()
+        if not traced and (owner, check) not in (not_applicable or set()):
+            downgrade(f"not-applicable-undeclared (no command + log, and gates.json does not list it in "
+                      f"owners.{owner}.not-applicable-checks)")
 
     # §4.7 — a dated project waiver turns a FAIL into WAIVED (accepted, not open).
     if v.result_effective == "FAIL":
@@ -486,7 +538,8 @@ def main(argv: list[str] | None = None) -> int:
         print("plugin root not found (pass --plugin)", file=sys.stderr)
         return 2
 
-    verdicts = [validate_file(p, repo, plugin, platform, load_waivers(gates))
+    verdicts = [validate_file(p, repo, plugin, platform, load_waivers(gates),
+                              not_applicable=load_not_applicable(gates))
                 for p in iter_evidence(repo / ".audit")]
     downgraded = [v for v in verdicts if v.downgraded]
 

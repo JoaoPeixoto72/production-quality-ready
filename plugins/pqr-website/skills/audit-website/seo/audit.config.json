@@ -10,7 +10,6 @@
     "descriptionMax": 160,
     "lcpGoodMs": 2500,
     "inpGoodMs": 200,
-    "clsGood": 0.1,
-    "targetPassScore": 90
+    "clsGood": 0.1
   }
 }

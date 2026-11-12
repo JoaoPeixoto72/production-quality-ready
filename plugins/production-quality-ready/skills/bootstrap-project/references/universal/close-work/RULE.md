@@ -54,7 +54,7 @@ does not need is paid for each time, and drifts. Run the instrument on the
 lines this work added:
 
 ```bash
-python <pqr-cycle>/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py --repo . --format md
+python <plugin>/skills/bootstrap-project/references/universal/close-work/scripts/trim_check.py --repo . --format md
 ```
 
 It must say `nothing to trim`; what stays, the reply says why. It finds

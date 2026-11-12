@@ -1,7 +1,10 @@
 {
   "name": "pqr-ui-system",
-  "version": "4.0.0",
-  "description": "ui-system: OKLCH tokens and the data-ui contract of a design system; writes UI code.",
+  "version": "5.0.0",
+  "description": "For a project that adopts the data-ui design system: ui-system holds the OKLCH tokens and the contract, and writes UI code. Brings the base.",
+  "dependencies": [
+    "production-quality-ready"
+  ],
   "author": {
     "name": "Joao Peixoto",
     "email": "joaopeixoto@hotmail.com",

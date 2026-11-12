@@ -14,10 +14,10 @@ jobs:
           python-version: "3.12"
       - name: Install test dependencies
         run: python -m pip install --upgrade pip pytest
-      - name: Version manifests agree
-        run: python -c "import json,glob; vs={f: json.load(open(f,encoding='utf-8'))['version'] for f in ['plugin.json', *glob.glob('plugins/*/.claude-plugin/plugin.json')]}; m=json.load(open('.claude-plugin/marketplace.json',encoding='utf-8')); vs.update({'marketplace:'+p['name']: p['version'] for p in m['plugins']}); assert len(set(vs.values()))==1, ('version drift', vs); print('version', set(vs.values()))"
       - name: Description ceiling (fails above 250 characters)
-        run: python scripts/measure-descriptions.py plugins
+        run: python plugins/production-quality-ready/scripts/measure-descriptions.py plugins
+      - name: The plugin's own code under its own budgets (debt in the baseline may only shrink)
+        run: python plugins/production-quality-ready/skills/code-audit/scripts/quality_scan.py --repo . --baseline quality-baseline.json --format md
       - name: Documents agree with each other and the tree
         run: python -m pytest tests/docs -q
       - name: Unit tests (gates, runner, evidence, report, instruments)

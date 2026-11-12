@@ -31,8 +31,8 @@ history (`git log` keeps it). Files stay small, one subject each.
 
 ## Installed skills
 
-- Plugins `production-quality-ready` (audits) and `pqr-cycle`
-  (`bootstrap-project`); `platform: {{PLATFORM}}` in `{{HOST}}/gates.json`.
+- Plugin `production-quality-ready` (audits, `bootstrap-project`, `ship`);
+  `platform: {{PLATFORM}}` in `{{HOST}}/gates.json`.
 - The project's own skills in `{{HOST}}/skills/`, which work with no plugin
   loaded: start, review, close, verify and ship, under the names in
   `owners.<rule>.adapter` of `gates.json`.

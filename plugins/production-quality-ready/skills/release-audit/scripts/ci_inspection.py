@@ -48,7 +48,7 @@ CI_GLOBS = (
 )
 CHANGELOG_NAMES = ("CHANGELOG.md", "CHANGELOG", "CHANGES.md", "HISTORY.md", "NEWS.md")
 ROLLBACK_HINT = re.compile(
-    r"\broll\s?back\b|\brollback\b|\brevert\b|\bversions?\s+anterior|"
+    r"\broll\s?back\b|\brollback\b|\brevert\w*|\bvers(?:ion|ão|ao)s?\s+anterior|"
     r"\bwrangler\s+(?:rollback|deployments)\b|\bvercel\s+rollback\b|"
     r"\bkubectl\s+rollout\s+undo\b|\bgit\s+revert\b|\bpromote\b",
     re.IGNORECASE,
@@ -128,6 +128,26 @@ def load_pkg(repo: Path) -> dict:
         return json.loads(f.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return {}
+
+
+def ship_skill(repo: Path) -> Path | None:
+    """The project's own ship skill (`owners.ship.adapter` in gates.json): by the adapter
+    contract it is where the project writes its way back."""
+    for host in (".agents", ".claude"):
+        try:
+            gates = json.loads((repo / host / "gates.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        name = ((gates.get("owners") or {}).get("ship") or {}).get("adapter")
+        skill = repo / host / "skills" / str(name) / "SKILL.md"
+        return skill if name and skill.is_file() else None
+    return None
+
+
+def scripts_run_by(cmd: str, scripts: dict) -> list[str]:
+    """The package scripts a CI command starts (`pnpm deploy:production`, `npm run build`)."""
+    names = re.findall(r"\b(?:pnpm|npm|yarn|bun)\s+(?:run\s+)?([\w:.-]+)", cmd)
+    return [n for n in names if n in scripts]
 
 
 def finding(check: str, result: str, reason: str, evidence: list[str] | None = None,
@@ -214,19 +234,21 @@ def check_deploy(repo: Path, pkg: dict, ci_files: list[Path]) -> dict:
         return finding("release.deploy-single-command", "FAIL",
                        "no declared deploy command (no `deploy` script, no deploy step in CI)",
                        severity="HIGH")
-    prod = scripts.get("deploy")
+    # With one script per environment, the production one is the entry point.
+    name = next((n for n in ("deploy", "deploy:production", "deploy:prod") if scripts.get(n)), "deploy")
+    prod = scripts.get(name)
     where = "" if prod else next((d for d in sub_packages(repo) if load_pkg(repo / d).get("scripts", {}).get("deploy")), "")
     if where:  # a web part in its own folder, beside a desktop app (`servidor/`, `worker/`)
         prod = load_pkg(repo / where)["scripts"]["deploy"]
     if prod:
         chained = prod.count("&&")
-        ev.append(f"steps chained in `deploy`: {chained + 1}")
+        ev.append(f"steps chained in `{name}`: {chained + 1}")
         cd = f"cd {where} && " if where else ""
         return finding("release.deploy-single-command", "PASS",
-                       f"one command deploys from a clean clone: `{cd}npm run deploy` -> {prod}", ev)
+                       f"one command deploys from a clean clone: `{cd}npm run {name}` -> {prod}", ev)
     return finding("release.deploy-single-command", "FAIL",
-                   "deploy commands exist but none is the single canonical entry point (`deploy`)",
-                   ev, severity="MEDIUM")
+                   "deploy commands exist but none is the single canonical entry point "
+                   "(`deploy`, or `deploy:production`)", ev, severity="MEDIUM")
 
 
 def check_rollback(repo: Path, pkg: dict, ci_files: list[Path]) -> dict:
@@ -254,29 +276,38 @@ def check_rollback(repo: Path, pkg: dict, ci_files: list[Path]) -> dict:
         text = f.read_text(encoding="utf-8", errors="replace")
         if ROLLBACK_HINT.search(text):
             ev.append(f"{rel(f, repo)}: rollback mentioned in CI")
+    skill = ship_skill(repo)  # every line of it is about releasing: no release word needed beside
+    for k, line in enumerate(skill.read_text(encoding="utf-8", errors="replace").splitlines() if skill else [], 1):
+        if ROLLBACK_HINT.search(line):
+            ev.append(f"{rel(skill, repo)}:{k}: {line.strip()[:110]}")
+            break
     if not ev:
         return finding("release.rollback-declared", "FAIL",
-                       "no documented way back: no rollback script, no rollback section in README/docs, nothing in CI",
-                       severity="HIGH")
+                       "no documented way back: no rollback script, no rollback section in README/docs "
+                       "or in the project's ship skill, nothing in CI", severity="HIGH")
     return finding("release.rollback-declared", "PASS",
                    "a rollback path is documented", ev[:6])
 
 
-def check_migrations_pipeline(repo: Path, pkg: dict, ci_files: list[Path]) -> dict:
-    has_migrations = any((repo / d).is_dir() for d in ("migrations", "prisma/migrations", "drizzle", "db/migrate"))
-    if not has_migrations:
+def check_migrations_pipeline(repo: Path, pkg: dict, ci_files: list[Path], declared: str = "") -> dict:
+    """`declared` is the folder gates.json names in owners.reliability-audit.migrations-dir."""
+    usual = ("migrations", "prisma/migrations", "drizzle", "db/migrate")
+    if not any((repo / d).is_dir() for d in ((declared,) if declared else usual)):
         return finding("release.migrations-in-pipeline", "NOT_APPLICABLE",
-                       "no migrations directory in the repository")
+                       f"no migrations directory in the repository ({declared or ', '.join(usual)}); another "
+                       "folder is declared as owners.reliability-audit.migrations-dir in gates.json")
     ev: list[str] = []
     in_ci = False
+    scripts = pkg.get("scripts") or {}
     for f in ci_files:
         text = f.read_text(encoding="utf-8", errors="replace")
         names = [m.group(1).strip() for m in re.finditer(r"^\s*-\s*name:\s*([^\n]+)$", text, re.M)]
         for line in names + run_lines(text):
-            if MIGRATION_CMD.search(line):
-                ev.append(f"{rel(f, repo)}: {line[:110]}")
+            # A step that starts a package script runs what that script runs.
+            via = next((n for n in scripts_run_by(line, scripts) if MIGRATION_CMD.search(str(scripts[n]))), "")
+            if MIGRATION_CMD.search(line) or via:
+                ev.append(f"{rel(f, repo)}: {line[:110]}" + (f" -> scripts.{via}" if via else ""))
                 in_ci = True
-    scripts = pkg.get("scripts") or {}
     for k, v in scripts.items():
         if MIGRATION_CMD.search(k) or MIGRATION_CMD.search(str(v)):
             ev.append(f"package.json scripts.{k}: {str(v)[:110]}")
@@ -326,6 +357,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--repo", default=".")
     ap.add_argument("--platform", default="web")
+    ap.add_argument("--migrations", default="", help="the migrations folder, as gates.json declares it in "
+                    "owners.reliability-audit.migrations-dir (otherwise the usual names)")
     a = ap.parse_args()
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -342,7 +375,7 @@ def main() -> int:
         check_changelog(repo),
         check_deploy(repo, pkg, ci_files),
         check_rollback(repo, pkg, ci_files),
-        check_migrations_pipeline(repo, pkg, ci_files),
+        check_migrations_pipeline(repo, pkg, ci_files, a.migrations),
         check_env_parity(repo, pkg, ci_files),
         finding("release.reproducible-artifact", "NOT_VERIFIED",
                 "missing-instrument: needs two clean builds of the same commit on different machines and a hash compare; this instrument only reads the repository"),

@@ -13,12 +13,15 @@ JSON on stdout, summary on stderr, exit 0 (the verdict is in the JSON).
 from __future__ import annotations
 
 import argparse
+import functools
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
-DOC_CANDIDATES = ("docs/threat-model.md", "THREAT_MODEL.md", "docs/seguranca/threat-model.md")
+DOC_CANDIDATES = ("docs/threat-model.md", "docs/THREAT_MODEL.md", "THREAT_MODEL.md",
+                  "docs/seguranca/threat-model.md")
 
 # `src/x.ts:123`, `routes/y.ts` (relative to `src/`), `migrations/0033_x.sql:7` — a
 # path, optionally with a line. Extensions are a list, not `\w{1,6}`, so `event.id` is not a citation.
@@ -34,6 +37,7 @@ CODE_EXT = {
 
 # A citation like `routes/x.ts` implies a code root; these are tried before calling it dangling.
 ROOTS = ('', 'src/', 'src/routes/', 'src/lib/', 'tests/', 'scripts/', 'migrations/', 'public/')
+PRUNED = {'node_modules', 'target', 'dist', 'build', 'vendor'}
 
 
 def find_doc(repo: Path, explicit: str | None) -> Path | None:
@@ -59,19 +63,34 @@ def citations_of(text: str) -> list[tuple[str, int | None]]:
     return out
 
 
-def resolve(repo: Path, path: str) -> Path | None:
-    """The file a citation points at, trying the project's roots."""
+@functools.lru_cache(maxsize=None)
+def files_of(repo: Path) -> tuple[str, ...]:
+    """Every file a citation may name by the end of its path; dependencies, build output and dot-folders apart."""
+    out: list[str] = []
+    for base, dirs, names in os.walk(repo):
+        dirs[:] = [d for d in dirs if d not in PRUNED and not d.startswith(".")]
+        out += [(Path(base) / n).relative_to(repo).as_posix() for n in names]
+    return tuple(out)
+
+
+def resolve(repo: Path, path: str) -> tuple[Path | None, str]:
+    """The file a citation points at: under one of the usual roots, or the one file whose
+    path ends with it (a package of a monorepo, a short name). Otherwise, why it does not resolve."""
     for root in ROOTS:
         candidate = repo / (root + path)
         if candidate.is_file():
-            return candidate
-    return None
+            return candidate, ""
+    ends = [f for f in files_of(repo) if f.endswith("/" + path)]
+    if len(ends) == 1:
+        return repo / ends[0], ""
+    return None, "file missing" if not ends else f"{len(ends)} files end with this path: cite more of it"
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--repo", default=".")
-    ap.add_argument("--doc", help="threat model path (otherwise the usual candidates)")
+    ap.add_argument("--doc", help="threat model path, as gates.json declares it in "
+                                  "owners.security-audit.threat-model (otherwise the usual candidates)")
     a = ap.parse_args(argv)
     # A Windows pipe is cp1252: a `—` in a reason crashed or garbled the report.
     if hasattr(sys.stdout, "reconfigure"):
@@ -83,8 +102,10 @@ def main(argv: list[str] | None = None) -> int:
     doc = find_doc(repo, a.doc)
     if doc is None:
         result, severity = "FAIL", "HIGH"
-        reason = (f"no threat model found at any of {', '.join(DOC_CANDIDATES)}: "
-                  "there is no declared boundary, no adversary list and nothing to hold the controls to")
+        where = (f"the threat model declared at {a.doc} does not exist" if a.doc else
+                 f"no threat model found at any of {', '.join(DOC_CANDIDATES)} (another path is declared "
+                 "as owners.security-audit.threat-model in gates.json)")
+        reason = f"{where}: there is no declared boundary, no adversary list and nothing to hold the controls to"
         evidence.append("a threat model is a versioned file; the check is not about its length")
     else:
         rel_doc = doc.relative_to(repo).as_posix()
@@ -93,9 +114,9 @@ def main(argv: list[str] | None = None) -> int:
         dangling: list[str] = []
         tests = 0
         for path, line in cites:
-            target = resolve(repo, path)
+            target, why_not = resolve(repo, path)
             if target is None:
-                dangling.append(f"{path} (file missing)")
+                dangling.append(f"{path} ({why_not})")
                 continue
             body = target.read_text(encoding="utf-8", errors="replace").splitlines()
             # Rust keeps unit tests in the same file, below `#[cfg(test)]`.

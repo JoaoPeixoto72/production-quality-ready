@@ -1,5 +1,5 @@
 {
-  "_comment": "CONTRACTS §7.4 in machine form: the canonical checks each owner must emit, with their platform. apply_gates.py reads it; tests/audit-app/test_registry.py fails when the CONTRACTS table and this file disagree.",
+  "_comment": "CONTRACTS §7.4 in machine form: the canonical checks each owner must emit, with their platform. apply_gates.py reads it; tests/audit-app/test_apply_gates.py (RegistryMatchesContracts) fails when the CONTRACTS table and this file disagree.",
   "aliases": {
     "code-review": "code-audit"
   },

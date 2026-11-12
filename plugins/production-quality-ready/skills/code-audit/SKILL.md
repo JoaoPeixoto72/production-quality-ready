@@ -128,7 +128,7 @@ Loaded by the `stack` in `gates.json`:
 - **security-audit** — the adversary: threat model, CVEs, secrets. Here: correctness and shape of the contract.
 - **reliability-audit** — persistence, migrations, diagnosability. If the contract is the on-disk schema, bilateral pair applies.
 - **verify** — proof by looking at the running app. Here: automated evidence.
-- **The project's review skill** (rule: pqr-cycle `review-change`) — the pre-commit gate over one diff; it cites this owner's checks, it does not re-declare them.
+- **The project's review skill** (rule: `review-change`) — the pre-commit gate over one diff; it cites this owner's checks, it does not re-declare them.
 - **improve** (pqr-process) — plans structural work against these budgets; the budgets and their verdict stay here.
 
 ## Accepted instruments

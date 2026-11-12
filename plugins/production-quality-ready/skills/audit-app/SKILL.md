@@ -7,21 +7,27 @@ allowed-tools: Read Glob Grep Bash Write
 # audit-app
 
 Audit the app and answer one question: **is it correct, and ready to ship?**
-Read-only: it reads code and evidence and writes a report; it changes nothing.
+It changes no code: it reads code and evidence, writes its findings as
+evidence files under `.audit/`, and writes a report.
 
 Two steps, two promises — never mixed:
 
 1. **Find** (judgement). The owners' instruments run
    (`python <plugin>/scripts/run_all_owners.py --repo . --no-gates`), and you
    read the code by the H/V/T/C method (`references/method.md`). Each finding of
-   your reading becomes an evidence file like any other, with `producer:
-   audit-app` (§3), under the owner of the rule it breaks. A finding you cannot
-   back with `file:line`, a request/response or a failing test stays in
+   your reading becomes an evidence file under the owner of the rule it breaks,
+   with `producer: audit-app`, `instrument: code-reading`, `result: FAIL`, a
+   `severity:` and `context.head:` (`git rev-parse --short HEAD`). A reading
+   fails a check and never passes one (CONTRACTS §4.5.3); the runner keeps
+   these files (§4.1.5), so delete one when its finding is fixed. A finding you
+   cannot back with `file:line`, a request/response or a failing test stays in
    `audit/notes.md` as a hypothesis.
 2. **Decide** (code). `python scripts/apply_gates.py --repo .` reads only
    `.audit/`, validates every file against the contract and applies the gates.
    Its output is the verdict; two runs over the same files give the same one.
-   You do not overrule it — you add evidence and run it again.
+   You do not overrule it — you add evidence and run it again. Evidence of
+   another commit no longer opens a gate (§4.1.4): run step 1 at the commit
+   you are judging.
 
 ## The rule that is not negotiable
 

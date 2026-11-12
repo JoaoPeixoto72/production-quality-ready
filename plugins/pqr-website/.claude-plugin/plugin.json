@@ -1,7 +1,10 @@
 {
   "name": "pqr-website",
-  "version": "4.0.0",
-  "description": "audit-website: SEO, Core Web Vitals, cookies and links of a public website.",
+  "version": "5.0.0",
+  "description": "For a public site: audit-website checks SEO, Core Web Vitals, cookies and links. Brings the base.",
+  "dependencies": [
+    "production-quality-ready"
+  ],
   "author": {
     "name": "Joao Peixoto",
     "email": "joaopeixoto@hotmail.com",

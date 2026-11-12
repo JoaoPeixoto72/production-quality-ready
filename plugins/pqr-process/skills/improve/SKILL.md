@@ -27,9 +27,10 @@ exists yet, the first candidate is the test that creates it, not the move.
 
 ## Start from the owner's numbers
 
-`code-audit` owns the budgets and the ratchet (`../code-audit/references/maintainability.md`,
-`../code-audit/scripts/quality_scan.py`), and `start-work` owns the table of where code
-repeats. Cite them; never re-declare a threshold here. Run the scan across the
+`code-audit` (in the base plugin, which this one brings) owns the budgets and the
+ratchet (`skills/code-audit/references/maintainability.md` and
+`skills/code-audit/scripts/quality_scan.py` there), and `start-work` owns the table
+of where code repeats. Cite them; never re-declare a threshold here. Run the scan across the
 whole codebase, not over a diff — a diff review is `review-change`.
 
 ## Scope first, and read what is already decided

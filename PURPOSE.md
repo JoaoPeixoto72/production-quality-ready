@@ -42,17 +42,18 @@ verified.
 Every skill wakes when its `description` matches the task. None
 invokes another.
 
-It ships as six plugins in one marketplace, so a project installs only
-what it uses and pays context only for those descriptions:
+It ships as five plugins in one marketplace: a base every project
+installs, whose skills hand work to each other, and four that depend on it,
+one per kind of project. A project pays context only for the descriptions
+of what it installs:
 
 | Plugin | Skills |
 |---|---|
-| `production-quality-ready` (core) | `audit-app` (orchestrator) and the owners `code-audit`, `security-audit`, `reliability-audit`, `release-audit`, `commercial-readiness`, `design-pro` |
-| `pqr-cycle` | `bootstrap-project`, which writes the project's own start, review, close, verify and ship skills from the rules it carries |
-| `pqr-process` | `spec`, `diagnose`, `grill`, `slice`, `map`, `triage`, `handoff`, `ship`, `improve` |
+| `production-quality-ready` (base) | `bootstrap-project`, which writes the project's own start, review, close, verify and ship skills from the rules it carries; `audit-app` (orchestrator) and the owners `code-audit`, `security-audit`, `reliability-audit`, `release-audit`, `commercial-readiness`, `design-pro`; `ship` |
 | `pqr-website` | `audit-website` |
 | `pqr-desktop` | `drive-app-window` |
 | `pqr-ui-system` | `ui-system` |
+| `pqr-process` | `spec`, `grill`, `map`, `slice`, `triage`, `diagnose`, `improve`, `handoff` |
 
 ---
 
@@ -219,7 +220,7 @@ Falsifiable criteria. The plugin refutes itself if it fails two.
 
 | Criterion | How you verify it |
 |---|---|
-| Every `description` ≤ 250 chars | `python scripts/measure-descriptions.py plugins` — exit 0 |
+| Every `description` ≤ 250 chars | `python plugins/production-quality-ready/scripts/measure-descriptions.py plugins` — exit 0 |
 | Permanent context cost | the same command over the installed plugins and the project's skills prints the total; it is measured, never written down |
 | No PASS without a trace | `python plugins/production-quality-ready/skills/audit-app/scripts/validate_evidence.py --repo <repo>` — 0 `no-log` downgrades |
 | Manifests coherent | `python -m pytest tests -q` — every owner has `platforms:`, every accepted producer exists |
@@ -237,9 +238,9 @@ release. The commands above are the source of truth; run them.
 
 ## 7. Deliberately out of scope
 
-- The core plugin corrects nothing and publishes nothing: it audits.
-  Acting is `pqr-process` (`diagnose`, `improve`, `ship`), each on a
-  request of its own, and `ship` only when the user names it.
+- The audit owners correct nothing and publish nothing: they audit.
+  Acting is `diagnose` and `improve` (`pqr-process`) and `ship`, each on
+  a request of its own, and `ship` only when the user names it.
   `release-audit` audits the pipeline; it does not run it.
 - Does not do product analytics, growth, or usage metrics — usage is
   not quality.
@@ -260,8 +261,8 @@ release. The commands above are the source of truth; run them.
 | `POLICY.md` | who owns what — subject authority, activation, local adapter, discovery |
 | `plugins/<plugin>/skills/<name>/SKILL.md` | the verb, the trigger, and that owner's workflow |
 | `plugins/<plugin>/skills/<name>/instruments.yaml` | which external `(producer, instrument)` that owner accepts |
-| `plugins/pqr-cycle/adapter-contracts/<name>.md` | what a project's cycle skill must provide |
-| `scripts/measure-descriptions.py` | the single source of truth on `description` counts |
+| `plugins/production-quality-ready/adapter-contracts/<name>.md` | what a project's cycle skill must provide |
+| `plugins/production-quality-ready/scripts/measure-descriptions.py` | the single source of truth on `description` counts |
 
 **What still remains.** One thing, and no file in the plugin can close
 it: install the plugin, run `audit-app` against a real project, and

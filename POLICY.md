@@ -1,9 +1,10 @@
 # POLICY — the `production-quality-ready` marketplace
 
-Governance of the six plugins: `production-quality-ready` (the core: audit
-owners, `CONTRACTS.md`, the runner and the gates), `pqr-cycle`
-(`bootstrap-project`, the cycle rules and adapter contracts), `pqr-process`,
-`pqr-website`, `pqr-desktop` and `pqr-ui-system` (optional). **Authoritative** on: who owns which subject, when a
+Governance of the five plugins: `production-quality-ready` (the base:
+`bootstrap-project` with the cycle rules and adapter contracts, the audit
+owners, `ship`, `CONTRACTS.md`, the runner and the gates) and the four that
+depend on it, one per kind of project: `pqr-website`, `pqr-desktop`,
+`pqr-ui-system` and `pqr-process`. **Authoritative** on: who owns which subject, when a
 skill activates, how it composes with a local adapter, how conflicts
 between owners are resolved.
 
@@ -160,7 +161,7 @@ the cause, `ui-system` writes design-system code, `ship` deploys.
 ## 3. The project's cycle skills
 
 The work cycle — open, review, close, verify, ship — is **the project's own
-skills**, not plugin skills. `pqr-cycle` carries the rules
+skills**, not plugin skills. The base plugin carries the rules
 (`skills/bootstrap-project/references/universal/*/RULE.md`) and the shape each
 project skill must have (`adapter-contracts/*.md`); `bootstrap-project` writes
 the skills into the project.
@@ -224,8 +225,9 @@ Source: `<repo-root>/.agents/gates.json` or `<repo-root>/.claude/gates.json`
   "stack": ["typescript", "hono", "d1"],
   "owners": {
     "code-audit": { "adapter": "code-audit.local.md" },
-    "security-audit": {},
-    "audit-website": { "target": "https://example.com" },
+    "security-audit": { "threat-model": "docs/threat-model.md" },   // only when not at a usual path
+    "reliability-audit": { "migrations-dir": "db/migrations" },     // default: migrations
+    "audit-website": { "target": "https://example.com" },           // a URL, or a built folder
     "drive-app-window": { "not-applicable": "web app; verify uses browser automation" },
     "review-change": { "adapter": "myapp-review-change" },   // local name of the adapter skill
     "ui-system": { "ignore-dirs": ["servidor"] },      // passed to audit_ui.py as --ignore-dir
@@ -235,6 +237,7 @@ Source: `<repo-root>/.agents/gates.json` or `<repo-root>/.claude/gates.json`
     "build-command": "npm run build",
     "tests-command": "npm test",
     "typecheck-command": "npm run typecheck",
+    "smoke-command": "npm run smoke",
     "migrations-verify-command": "node scripts/verify-migrations.mjs"
   },
   "gates": ["release-candidate", "production-ready", "sellable"]
@@ -242,8 +245,10 @@ Source: `<repo-root>/.agents/gates.json` or `<repo-root>/.claude/gates.json`
 ```
 
 **Rule 5.1.1 (declared scope).** Every plugin owner is listed. An
-inapplicable owner declares `not-applicable: "<reason>"`. Omitting an
-owner is a defect of the file: `audit-app` aborts with
+inapplicable owner declares `not-applicable: "<reason>"`; one check that
+does not apply is declared under its owner as
+`not-applicable-checks: {"<check>": "<reason>"}` (`CONTRACTS §4.3.4`).
+Omitting an owner is a defect of the file: `audit-app` aborts with
 `owner-undeclared: <slug>`.
 
 Reason: "silent omission" is silent PASS. Rule inherited from
@@ -254,7 +259,9 @@ Reason: "silent omission" is silent PASS. Rule inherited from
 cycle skills and `scripts/run_all_owners.py`, which runs the declared
 commands and writes `.audit/code-audit/*` with `command:` + `log:`.
 `audit-app` **never reads it**. Not runnable commands from
-`audit-app`'s point of view.
+`audit-app`'s point of view. The keys the runner reads, and the check
+each one settles, are the table of `CONTRACTS §7.5.4`; a command under
+any other key settles nothing.
 
 **Rule 5.1.3 (platform).** `platform:` is required. Owners and checks
 whose `platforms:` exclude it are `NOT_APPLICABLE/platform` without
