@@ -427,10 +427,7 @@ def baseline_of(debts: list[Measure]) -> dict:
 
 # ------------------------------------------------------------ reporting
 
-def results(debts: list[Measure], baseline: dict, budgets: dict, declared: bool,
-            files: int | None = None) -> list[dict]:
-    """`files` is how many source files the repo has for this instrument; None when the
-    caller did not count. Zero is not a pass: nothing was measured (CONTRACTS §4.6.4)."""
+def results(debts: list[Measure], baseline: dict, budgets: dict, declared: bool) -> list[dict]:
     new, known = split_by_baseline(debts, baseline)
     out = [{"check": "quality.budgets-declared",
             "result": "PASS" if declared else "FAIL",
@@ -438,12 +435,6 @@ def results(debts: list[Measure], baseline: dict, budgets: dict, declared: bool,
             "reason": "budgets in gates.json owners.code-audit.budgets" if declared
                       else f"no budgets declared; plugin defaults used: {DEFAULT_BUDGETS}",
             "evidence": []}]
-    if files == 0:
-        reads = ", ".join(sorted(BRACE_LANGS.keys() | PY_EXTS | SFC_EXTS))
-        why = (f"nothing-measured: the repo tracks no file this instrument reads ({reads}); "
-               "a pass over zero files would mean nothing")
-        return out + [{"check": c, "result": "NOT_VERIFIED", "reason": why, "evidence": []}
-                      for c in (*CHECKS, "quality.budgets-met")]
     for check, (key, what) in CHECKS.items():
         mine = [m for m in new if m.check == check]
         tolerated = sum(1 for m in known if m.check == check)
@@ -455,10 +446,22 @@ def results(debts: list[Measure], baseline: dict, budgets: dict, declared: bool,
     failed = any(r["result"] == "FAIL" for r in out[1:])
     out.append({"check": "quality.budgets-met", "result": "FAIL" if failed else "PASS",
                 "severity": "MEDIUM" if failed else None,
-                "reason": "every size/nesting/params budget met, baseline debts not grown"
-                          + ("" if files is None else f"; {files} source file(s) in the repo"),
+                "reason": "every size/nesting/params budget met, baseline debts not grown",
                 "evidence": []})
     return [{k: v for k, v in r.items() if v is not None} for r in out]
+
+
+def counted(rows: list[dict], files: int) -> list[dict]:
+    """Say how many source files the repo has for this instrument. Zero is not a pass:
+    nothing was measured (CONTRACTS §4.6.4)."""
+    if files:
+        rows[-1]["reason"] += f"; {files} source file(s) in the repo"
+        return rows
+    reads = ", ".join(sorted(BRACE_LANGS.keys() | PY_EXTS | SFC_EXTS))
+    why = (f"nothing-measured: the repo tracks no file this instrument reads ({reads}); "
+           "a pass over zero files would mean nothing")
+    return rows[:1] + [{"check": r["check"], "result": "NOT_VERIFIED", "reason": why, "evidence": []}
+                       for r in rows[1:]]
 
 
 def evidence_lines(debts: list[Measure], budget: int) -> list[str]:
@@ -517,7 +520,7 @@ def main(argv: list[str] | None = None) -> int:
                                         "reason": why, "evidence": []}]}, indent=2))
         print(why, file=sys.stderr)
         return 2
-    rows = results(debts, baseline, budgets, declared, files)
+    rows = counted(results(debts, baseline, budgets, declared), files)
     print(as_markdown(rows) if a.format == "md" else json.dumps({"results": rows}, indent=2))
     return 1 if any(r["result"] == "FAIL" and r["check"] != "quality.budgets-declared" for r in rows) else 0
 

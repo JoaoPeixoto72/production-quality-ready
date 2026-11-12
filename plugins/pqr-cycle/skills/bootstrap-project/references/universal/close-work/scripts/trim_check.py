@@ -116,67 +116,102 @@ def added_lines(repo: Path, since: str | None) -> dict[str, set[int] | None]:
     return out
 
 
-def scan(repo: Path, since: str | None) -> dict[str, list[str]]:
-    cfg = config(repo)
-    history = re.compile("|".join(cfg["history"]), re.I)
-    vis = cfg.get("visible-text") or {}
-    forbidden = re.compile(vis["forbidden"], re.I) if vis.get("forbidden") else None
-    ignore = re.compile(vis["ignore"]) if vis.get("ignore") else None
-    max_block = int(cfg["comment-lines"])
-    found: dict[str, list[str]] = {"trim.comment-budget": [], "trim.no-history": [],
-                                   "trim.no-constant-echo": [], "trim.visible-text": []}
+class Rules:
+    """The project's trim config, compiled once."""
 
-    for f, only in sorted(added_lines(repo, since).items()):
-        path = repo / f
-        ext = path.suffix.lower()
-        if any(fnmatch.fnmatch(f, g) or fnmatch.fnmatch("/" + f, "*/" + g) for g in cfg["skip"]):
-            continue
-        if not path.is_file() or ext not in CODE | HASH | SQL | DOCS:
-            continue
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-        is_comment = comment_lines(ext, lines)
-        header_free = any(fnmatch.fnmatch(f, g) for g in cfg.get("header-exempt") or [])
-        new = (lambda k: True) if only is None else (lambda k: k + 1 in only)
+    def __init__(self, cfg: dict):
+        vis = cfg.get("visible-text") or {}
+        self.max_block = int(cfg["comment-lines"])
+        self.history = re.compile("|".join(cfg["history"]), re.I)
+        self.forbidden = re.compile(vis["forbidden"], re.I) if vis.get("forbidden") else None
+        self.ignore = re.compile(vis["ignore"]) if vis.get("ignore") else None
+        self.visible_paths = vis.get("paths", [])
+        self.skip = cfg["skip"]
+        self.header_exempt = cfg.get("header-exempt") or []
+
+
+class Source:
+    """One file this work touched: its lines, which are comment, which are new."""
+
+    def __init__(self, repo: Path, name: str, only: set[int] | None):
+        self.name, self.only = name, only
+        self.ext = Path(name).suffix.lower()
+        self.lines = (repo / name).read_text(encoding="utf-8", errors="replace").splitlines()
+        self.is_comment = comment_lines(self.ext, self.lines)
         # An inline `#[cfg(test)] mod x {` starts the tests; `#[cfg(test)] mod x;` lives elsewhere,
         # and `#[cfg(test)]` on a lone fn or struct is not where the tests begin.
-        tests_from = next((k for k, l in enumerate(lines) if TEST_MODULE.search(l)
-                           and TEST_MOD_OPEN.search(" ".join(lines[k:k + 3]))), len(lines))
+        self.tests_from = next((k for k, l in enumerate(self.lines) if TEST_MODULE.search(l)
+                                and TEST_MOD_OPEN.search(" ".join(self.lines[k:k + 3]))), len(self.lines))
 
+    def new(self, k: int) -> bool:
+        return self.only is None or k + 1 in self.only
+
+    def blocks(self):
+        """(start, end) of each run of comment lines."""
         k = 0
-        while k < len(lines):
-            if not is_comment[k]:
-                k += 1
-                continue
+        while k < len(self.lines):
             end = k
-            while end < len(lines) and is_comment[end]:
+            while end < len(self.lines) and self.is_comment[end]:
                 end += 1
-            touched = any(new(j) for j in range(k, end))
-            limit = 2 * max_block if k == 0 else max_block  # a file header may say what the file is
-            text_lines = sum(1 for j in range(k, end) if not BARE_DELIMITER.match(lines[j]))
-            exempt = header_free and not any(not is_comment[j] and lines[j].strip() for j in range(k))
-            if touched and text_lines > limit and k < tests_from and not exempt:
-                found["trim.comment-budget"].append(f"{f}:{k + 1} {text_lines} lines")
-            m = CONSTANT.match(lines[end]) if end < len(lines) else None
-            if m and touched:
-                values = {v for v in NUMBER.findall(m.group(6)) if len(v) > 1}
-                said = NUMBER.findall(" ".join(lines[k:end]))
-                echo = next((v for v in said if v in values), None)
-                if echo:
-                    found["trim.no-constant-echo"].append(f"{f}:{k + 1} repeats {m.group(5)} = {echo}")
-            k = end
+            if end > k:
+                yield k, end
+            k = max(end, k + 1)
 
-        for k, line in enumerate(lines):
-            if not new(k):
-                continue
-            if (is_comment[k] or ext in DOCS) and history.search(line):
-                found["trim.no-history"].append(f"{f}:{k + 1} {line.strip()[:80]}")
-            if forbidden and not is_comment[k] and k < tests_from and \
-                    any(fnmatch.fnmatch(f, g) for g in vis.get("paths", [])) and \
-                    not (ignore and ignore.search(line)):
-                text = " ".join(STRING.findall(line)) if ext in {".rs", ".py", ".go"} \
-                    else re.sub(r"\s//.*$", "", line)
-                if forbidden.search(text):
-                    found["trim.visible-text"].append(f"{f}:{k + 1} {line.strip()[:80]}")
+
+def constant_echo(lines: list[str], k: int, end: int) -> str | None:
+    """`NAME = value` when the comment in lines[k:end] repeats the value of the constant below it."""
+    m = CONSTANT.match(lines[end]) if end < len(lines) else None
+    if not m:
+        return None
+    values = {v for v in NUMBER.findall(m.group(6)) if len(v) > 1}
+    echo = next((v for v in NUMBER.findall(" ".join(lines[k:end])) if v in values), None)
+    return f"{m.group(5)} = {echo}" if echo else None
+
+
+def comment_findings(src: Source, rules: Rules, found: dict[str, list[str]]) -> None:
+    header_free = any(fnmatch.fnmatch(src.name, g) for g in rules.header_exempt)
+    for k, end in src.blocks():
+        if not any(src.new(j) for j in range(k, end)):
+            continue
+        limit = 2 * rules.max_block if k == 0 else rules.max_block  # a file header may say what the file is
+        text_lines = sum(1 for j in range(k, end) if not BARE_DELIMITER.match(src.lines[j]))
+        exempt = header_free and not any(not src.is_comment[j] and src.lines[j].strip() for j in range(k))
+        if text_lines > limit and k < src.tests_from and not exempt:
+            found["trim.comment-budget"].append(f"{src.name}:{k + 1} {text_lines} lines")
+        echo = constant_echo(src.lines, k, end)
+        if echo:
+            found["trim.no-constant-echo"].append(f"{src.name}:{k + 1} repeats {echo}")
+
+
+def line_findings(src: Source, rules: Rules, found: dict[str, list[str]]) -> None:
+    visible = rules.forbidden and any(fnmatch.fnmatch(src.name, g) for g in rules.visible_paths)
+    for k, line in enumerate(src.lines):
+        if not src.new(k):
+            continue
+        where = f"{src.name}:{k + 1} {line.strip()[:80]}"
+        if (src.is_comment[k] or src.ext in DOCS) and rules.history.search(line):
+            found["trim.no-history"].append(where)
+        if not visible or src.is_comment[k] or k >= src.tests_from or (rules.ignore and rules.ignore.search(line)):
+            continue
+        text = " ".join(STRING.findall(line)) if src.ext in {".rs", ".py", ".go"} \
+            else re.sub(r"\s//.*$", "", line)
+        if rules.forbidden.search(text):
+            found["trim.visible-text"].append(where)
+
+
+def scan(repo: Path, since: str | None) -> dict[str, list[str]]:
+    rules = Rules(config(repo))
+    found: dict[str, list[str]] = {"trim.comment-budget": [], "trim.no-history": [],
+                                   "trim.no-constant-echo": [], "trim.visible-text": []}
+    for f, only in sorted(added_lines(repo, since).items()):
+        path = repo / f
+        if any(fnmatch.fnmatch(f, g) or fnmatch.fnmatch("/" + f, "*/" + g) for g in rules.skip):
+            continue
+        if not path.is_file() or path.suffix.lower() not in CODE | HASH | SQL | DOCS:
+            continue
+        src = Source(repo, f, only)
+        comment_findings(src, rules, found)
+        line_findings(src, rules, found)
     return found
 
 
