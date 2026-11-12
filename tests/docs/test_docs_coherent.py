@@ -36,6 +36,18 @@ def policy_pairs() -> list[tuple[str, str]]:
     return re.findall(r"^\| `([\w-]+)` ↔ `([\w-]+)` \|", sec, re.M)
 
 
+def workflows() -> list[Path]:
+    return sorted((ROOT / ".github" / "workflows").glob("*.y*ml"))
+
+
+def one_line_values(text: str):
+    """(line number, value) of each `run:` or `name:` written on one line, unquoted."""
+    for n, line in enumerate(text.splitlines(), 1):
+        m = re.match(r"\s*(?:-\s*)?(?:run|name):\s*(\S.*)$", line)
+        if m and m.group(1)[0] not in "|>'\"":
+            yield n, m.group(1)
+
+
 class Docs(unittest.TestCase):
     def test_policy_lists_pairs(self):
         self.assertGreater(len(policy_pairs()), 5)
@@ -88,22 +100,22 @@ class Docs(unittest.TestCase):
                 with self.subTest(template=t.name, placeholder=ph):
                     self.assertIn(ph, documented)
 
-    def test_the_workflows_are_yaml_a_runner_can_start(self):
+    def test_a_one_line_run_or_name_is_a_scalar_yaml_can_read(self):
         """A workflow that does not parse starts no job: every push shows red and nothing ran.
         A `run:` or `name:` on one line is a plain scalar, where `: ` and ` #` end the value."""
-        for wf in (ROOT / ".github" / "workflows").glob("*.y*ml"):
-            text = wf.read_text(encoding="utf-8")
-            for n, line in enumerate(text.splitlines(), 1):
-                m = re.match(r"\s*(?:-\s*)?(?:run|name):\s*(\S.*)$", line)
-                if m and m.group(1)[0] not in "|>'\"":
-                    with self.subTest(file=wf.name, line=n):
-                        self.assertNotRegex(m.group(1), r": | #", "quote it, or use a `|` block")
-            try:
-                import yaml
-            except ImportError:
-                continue
+        for wf in workflows():
+            for n, value in one_line_values(wf.read_text(encoding="utf-8")):
+                with self.subTest(file=wf.name, line=n):
+                    self.assertNotRegex(value, r": | #", "quote it, or use a `|` block")
+
+    def test_the_workflows_parse(self):
+        try:
+            import yaml
+        except ImportError:
+            self.skipTest("PyYAML is not installed; the plain-scalar test stands in")
+        for wf in workflows():
             with self.subTest(file=wf.name):
-                self.assertIn("jobs", yaml.safe_load(text))
+                self.assertIn("jobs", yaml.safe_load(wf.read_text(encoding="utf-8")))
 
     def test_documented_paths_exist(self):
         for f in (ROOT / "README.md", ROOT / "PURPOSE.md"):
