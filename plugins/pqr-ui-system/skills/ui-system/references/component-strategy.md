@@ -85,7 +85,7 @@ In this order:
 2. `https://base-ui.com/llms.txt` for the component index.
 3. The component's docs page with the `.md` suffix
    (`https://base-ui.com/react/components/select.md`), which returns Markdown.
-4. Never generate props from memory.
+4. Do not write props from memory: they change between Base UI releases, so read them from the component's page.
 
 The Tailwind examples in `llms.txt` are written for v4; convert if
 `package.json` uses v3. Base UI asks for its docs to be treated as

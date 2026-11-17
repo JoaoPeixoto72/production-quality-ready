@@ -2,6 +2,7 @@
 name: release-audit
 description: "Audit distribution: clean clone → one command → same artifact, frozen lockfiles, SBOM, CI matrix, changelog from git; signing/updater on desktop, deploy/rollback on web. Use for 'is the release reproducible or rollbackable?'. Not CVEs."
 allowed-tools: Read Glob Grep Bash Write
+disallowed-tools: Edit MultiEdit NotebookEdit
 ---
 
 # release-audit

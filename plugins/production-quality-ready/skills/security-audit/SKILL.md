@@ -2,6 +2,7 @@
 name: security-audit
 description: "Audit security against OWASP ASVS 5.0 and the project's threat model: untrusted input, auth, sessions, tenant isolation, paths, child processes, capabilities, CSP, CVEs, secrets in history. Use for 'is this input/dependency/endpoint safe?'."
 allowed-tools: Read Glob Grep Bash Write
+disallowed-tools: Edit MultiEdit NotebookEdit
 ---
 
 # security-audit

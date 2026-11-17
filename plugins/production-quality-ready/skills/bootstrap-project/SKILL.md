@@ -2,6 +2,7 @@
 name: bootstrap-project
 description: "Write gates.json and the project's own work-cycle skills (start, review, close, verify, ship) from what the repo declares. Run after installing, and after a major upgrade. Not for audits. User-invoked only."
 allowed-tools: Read Glob Grep Bash Edit Write
+disable-model-invocation: true
 ---
 
 # bootstrap-project

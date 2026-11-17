@@ -102,9 +102,12 @@ Every owner is **model-invoked**; two skills are **user-invoked**, because
 an automatic trigger can cost more than it saves: `bootstrap-project`
 writes adapters into a repo and a re-run rewrites what an earlier run
 wrote, and `ship` acts on production, where the person owns that decision.
-Both say so in their `description` ("User-invoked only.") and carry
-`policy.allow_implicit_invocation: false` in `agents/openai.yaml` (Codex);
-the user reaches each by name in either harness.
+Both say so in their `description` ("User-invoked only."), and the harness
+enforces it: `disable-model-invocation: true` in the frontmatter (Claude
+Code) and `policy.allow_implicit_invocation: false` in `agents/openai.yaml`
+(Codex). A sentence in the description is read by the model and followed
+almost always; the field is applied by the harness every time. The user
+reaches each by name in either harness.
 
 This is why every `description` says *when* (after writing code, at the
 start of a conversation), not only *what*: the trigger is the only

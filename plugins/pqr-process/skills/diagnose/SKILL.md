@@ -112,7 +112,7 @@ variable at a time**.
 1. Debugger or REPL inspection where the environment allows it — one
    breakpoint beats ten logs.
 2. Targeted logs at the boundaries that separate the hypotheses.
-3. Never "log everything and grep".
+3. Not "log everything and grep": the signal drowns, and the run that reproduces the bug is spent on noise.
 
 Tag every temporary log with a unique prefix (`[DEBUG-a4f2]`) so cleanup is
 one grep. **Performance regressions take the other branch**: establish a

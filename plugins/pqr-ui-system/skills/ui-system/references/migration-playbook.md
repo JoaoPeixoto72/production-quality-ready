@@ -16,7 +16,7 @@ stopping it from working or building.
 
 ## Golden rule: non-destructive migration
 
-> [!IMPORTANT]
+> [!NOTE]
 > A migration **never** deletes old classes or uninstalls packages in its first
 > phase. The app stays buildable and testable at every step. It moves in
 > **concentric layers**: token foundation → atomic controls → layout surfaces →
