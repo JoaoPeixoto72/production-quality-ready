@@ -1,7 +1,7 @@
 # Anti-patterns: the UI anti-slop guide
 
 What generated interfaces ("AI slop") tend to do wrong. Any interface built
-under `ui-system` MUST respect these rules.
+under `ui-system` follows these rules.
 
 ## 1. Colour and light
 

@@ -22,10 +22,11 @@ Base UI (@base-ui/react v1.8.0) used privately for behaviour, focus and a11y
 Semantic Tokens (OKLCH), 4 Elevation Layers and Swappable Themes
 ```
 
-> [!IMPORTANT]
+> [!NOTE]
 > **Rigid Architectural Boundary**: Base UI (`@base-ui/react`) is an
-> internal, private implementation detail. Application code NEVER imports
-> Base UI, Radix or HeroUI directly. The application consumes exclusively
+> internal, private implementation detail. Application code does not import
+> Base UI, Radix or HeroUI directly: swapping the primitives later must touch
+> one package, not every screen. The application consumes exclusively
 > the `@project/ui` package or module.
 
 ## Boundary with design-pro (bilateral pair, POLICY §1.2)
@@ -143,7 +144,7 @@ packs/
 └── react-components/                 # Optional React pack (HeroUI parity, Level 2)
 ```
 
-> [!IMPORTANT]
+> [!NOTE]
 > **The count is verifiable, and is meant to be verified before writing a
 > new component:** `ls packs/react-components/*.tsx | wc -l`. If the number
 > differs from what a caller expected, this list is stale and a hidden

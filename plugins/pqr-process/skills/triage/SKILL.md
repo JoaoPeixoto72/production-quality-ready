@@ -45,7 +45,7 @@ any state; confirm what you are about to do, then do it and skip the interview.
 
 ## Verify the claim before anything else
 
-Never brief work that has not been checked against the code.
+Brief only work that has been checked against the code: a brief built on a guess sends the next session after the wrong fix.
 
 1. **Reproduce a bug** from the reporter's steps. No reproduction means
    `needs-info`, and `diagnose` is what turns it into one.

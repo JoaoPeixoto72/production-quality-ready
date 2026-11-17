@@ -2,6 +2,7 @@
 name: code-audit
 description: "Audit code repo-wide and write .audit evidence: build, tests, oracles, races, IPC/API contracts, maintainability budgets (size, nesting, params), perf. Not for one diff before commit (the project's review skill) or CVEs (security-audit)."
 allowed-tools: Read Glob Grep Bash Write
+disallowed-tools: Edit MultiEdit NotebookEdit
 ---
 
 # code-audit

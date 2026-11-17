@@ -1,7 +1,8 @@
 ---
 name: audit-app
-description: "Audit the app: run the owners, read code by the H/V/T/C method into evidence files, then apply_gates.py decides release-candidate, production-ready, sellable. Not for one diff (the project's review adapter)."
+description: "Audit the app: run the owners, read code by the H/V/T/C method into evidence files, then apply_gates.py decides release-candidate, production-ready, sellable. Use before a release decision. Not for one diff (the project's review adapter)."
 allowed-tools: Read Glob Grep Bash Write
+disallowed-tools: Edit MultiEdit NotebookEdit
 ---
 
 # audit-app

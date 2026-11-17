@@ -2,6 +2,7 @@
 name: {{ADAPTER_NAME}}
 description: "Ship {{PROJECT_NAME}} to production: the deploy order, what runs it, the smoke test after, how to roll back, what needs a person. Use when a change is merged and must go live. Not for review."
 allowed-tools: Read, Glob, Grep, Bash
+disable-model-invocation: true
 ---
 
 # Ship {{PROJECT_NAME}}

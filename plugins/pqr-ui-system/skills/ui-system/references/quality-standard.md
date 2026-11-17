@@ -104,7 +104,7 @@ addition to this generic standard.
 
 ## Verification report
 
-Never claim a test passed if it was not run.
+Report a test as passed only when it ran: an unrun test reported green hides the defect it was written to catch.
 
 Use:
 
