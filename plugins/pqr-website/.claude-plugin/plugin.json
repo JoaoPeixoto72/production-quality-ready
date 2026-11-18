@@ -1,6 +1,6 @@
 {
   "name": "pqr-website",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "For a public site: audit-website checks SEO, Core Web Vitals, cookies and links. Brings the base.",
   "dependencies": [
     "production-quality-ready"
