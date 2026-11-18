@@ -1,6 +1,6 @@
 {
   "name": "pqr-desktop",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "For a native desktop app on Windows: drive-app-window drives the window to prove a change. Brings the base.",
   "dependencies": [
     "production-quality-ready"
