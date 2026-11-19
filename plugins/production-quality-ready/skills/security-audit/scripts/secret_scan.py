@@ -202,7 +202,7 @@ def gitleaks_findings(data: list) -> list[dict]:
     return [{
         "rule": d.get("RuleID", "?"), "path": d.get("File", "?"),
         "line": d.get("StartLine", 0), "match": d.get("Secret", "…"),
-        "commit": (d.get("Commit") or "")[:12], "soft": False,
+        "commit": (d.get("Commit") or "")[:12], "soft": bool(SOFT_PATH.search(str(d.get("File", "")))),
     } for d in data if isinstance(d, dict)]
 
 

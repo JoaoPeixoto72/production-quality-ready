@@ -200,6 +200,33 @@ class SecretScanGoesRed(unittest.TestCase):
             r = by_check(payload)["sec.secrets-not-committed"]
             self.assertEqual(r["result"], "NOT_VERIFIED")
 
+    def test_a_gitleaks_finding_in_a_test_fixture_is_soft_and_one_in_source_is_not(self):
+        """The engine changes what is found, never how a path is judged: a fixture under
+        tests/ is soft for gitleaks as it is for the builtin engine."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.txt").write_text("x\n", encoding="utf-8")
+            for cmd in (["git", "init", "-q"], ["git", "add", "-A"],
+                        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x"]):
+                run(cmd, root)
+            head = run(["git", "rev-parse", "HEAD"], root).stdout.strip()
+            report = root / ".audit" / "gitleaks-report.json"
+            report.parent.mkdir()
+            report.with_suffix(".head").write_text(head, encoding="utf-8")
+            hit = lambda path: {"RuleID": "generic-api-key", "File": path, "StartLine": 3,  # noqa: E731
+                                "Secret": "REDACTED", "Commit": head}
+            scan = lambda: by_check(instrument_json(  # noqa: E731
+                "plugins/production-quality-ready/skills/security-audit/scripts/secret_scan.py",
+                ["--repo", ".", "--gitleaks-report", str(report)], root)[1])["sec.secrets-not-committed"]
+            report.write_text(json.dumps([hit("apps/api/src/tests/x.test.ts")]), encoding="utf-8")
+            self.assertEqual(scan()["result"], "PASS")
+            report.write_text(json.dumps([hit("apps/api/src/tests/x.test.ts"), hit("src/config.ts")]),
+                              encoding="utf-8")
+            r = scan()
+            self.assertEqual(r["result"], "FAIL")
+            self.assertTrue(any("src/config.ts" in e for e in r["evidence"]))
+            self.assertFalse(any("x.test.ts" in e and "fixture" not in e for e in r["evidence"]))
+
 
 class MigrationHarnessGoesRed(unittest.TestCase):
     def test_a_broken_migration_fails_the_chain(self):
