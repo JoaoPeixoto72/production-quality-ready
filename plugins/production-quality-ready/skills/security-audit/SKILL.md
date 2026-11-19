@@ -45,6 +45,7 @@ instrument to produce evidence closes as `NOT_VERIFIED` (§4.5), never
 | V1 | `sec.process-boundaries` | desktop | Every child process / sidecar treats its parent's input as hostile: argv sanitized, no shell interpolation, `stdin` bounded, exit code checked. |
 | V2.2 | `sec.input-validated` | both | Every untrusted input validated at the receiver with fuzzer or property test — includes IPC commands, URL params, deep links, drag-and-drop, clipboard, file open dialogs. |
 | V2.3 | `sec.business-logic-abuse` | both | The threat model's abuse cases (replay, race, TOCTOU, quota bypass) each have an adversarial test. |
+| V2.4 | `sec.anti-automation` | both | Every action a low-trust caller can repeat is bounded (rate, page size, fan-out, paid calls) before it spends shared resources or operator money; the bound exercised by test. |
 | V3 | `sec.csp-strict` | both | CSP declared, no `unsafe-inline` / `unsafe-eval` without dated waiver; report-only stage passed. |
 | V4 | `sec.api-surface-declared` | both | Every network / IPC endpoint enumerated in a versioned manifest; unlisted endpoints refuse by default. |
 | V5 | `sec.paths-canonicalized` | desktop | Every filesystem path derived from user input is canonicalized and confined to a declared root; symlink and `..` traversal exercised by test. |
@@ -72,6 +73,13 @@ instrument to produce evidence closes as `NOT_VERIFIED` (§4.5), never
   SBOM, reproducible).
 - **reliability-audit** — accidental corruption vs malicious
   corruption.
+- **security-hunt** — finds what these checks do not name: hunters per
+  trust boundary, a fresh verifier per candidate, each confirmed by a red
+  test. Its confirmed findings arrive here as `FAIL` evidence through
+  `instruments.yaml`; the verdict stays here. User-invoked, in its own
+  plugin; reach for it when `sec.business-logic-abuse`,
+  `sec.access-control-default-deny` or `sec.input-validated` has no
+  adversarial test to close it.
 - **reliability-audit** (§2 diagnosability) — `observability.pii-redacted`
   lives there; here we check the rule is declared.
 

@@ -1,10 +1,10 @@
 # POLICY — the `production-quality-ready` marketplace
 
-Governance of the five plugins: `production-quality-ready` (the base:
+Governance of the six plugins: `production-quality-ready` (the base:
 `bootstrap-project` with the cycle rules and adapter contracts, the audit
-owners, `ship`, `CONTRACTS.md`, the runner and the gates) and the four that
+owners, `ship`, `CONTRACTS.md`, the runner and the gates) and the five that
 depend on it, one per kind of project: `pqr-website`, `pqr-desktop`,
-`pqr-ui-system` and `pqr-process`. **Authoritative** on: who owns which subject, when a
+`pqr-ui-system`, `pqr-process` and `pqr-security-hunt`. **Authoritative** on: who owns which subject, when a
 skill activates, how it composes with a local adapter, how conflicts
 between owners are resolved.
 
@@ -60,6 +60,7 @@ when either side of a pair stops naming the other:
 |---|---|
 | `design-pro` ↔ `ui-system` | design-pro: "don't build the DS — ui-system"; ui-system: "UX/a11y verdict — design-pro" |
 | `design-pro` ↔ `audit-app` | design-pro: "full app audit — audit-app"; audit-app: "single screen — design-pro" |
+| `security-audit` ↔ `security-hunt` | security-audit: "hunting what the checks do not name — security-hunt"; security-hunt: "the release verdict — security-audit" |
 | `code-audit` ↔ `security-audit` | code-audit: "the adversary, CVEs — security"; security: "shape of the contract — code-audit" |
 | `release-audit` ↔ `security-audit` | release: "vulnerable deps — security"; security: "signing, SBOM, deploy — release" |
 | `commercial-readiness` ↔ `design-pro` | commercial: "onboarding UX — design-pro"; design-pro: "activation, checkout — commercial" |
@@ -98,11 +99,12 @@ A skill wakes when its `description` matches the task — the host's model
 picks it, or the user or harness names it. **Never because another skill
 called it.**
 
-Every owner is **model-invoked**; two skills are **user-invoked**, because
+Every owner is **model-invoked**; three skills are **user-invoked**, because
 an automatic trigger can cost more than it saves: `bootstrap-project`
 writes adapters into a repo and a re-run rewrites what an earlier run
-wrote, and `ship` acts on production, where the person owns that decision.
-Both say so in their `description` ("User-invoked only."), and the harness
+wrote, `ship` acts on production, where the person owns that decision, and
+`security-hunt` launches agents whose number the person approves first.
+Each says so in their `description` ("User-invoked only."), and the harness
 enforces it: `disable-model-invocation: true` in the frontmatter (Claude
 Code) and `policy.allow_implicit_invocation: false` in `agents/openai.yaml`
 (Codex). A sentence in the description is read by the model and followed

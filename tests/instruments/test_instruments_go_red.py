@@ -44,6 +44,7 @@ RED_CASE: dict[str, tuple[str, str]] = {
     "billing-harness": ("plugins/production-quality-ready/scripts/declared-command.py", "DeclaredCommandGoesRed"),
     "run_seo_audit.mjs": ("plugins/pqr-website/skills/audit-website/seo/run_seo_audit.mjs", "SeoEngineGoesRed"),
     "run_website_audit.mjs": ("plugins/pqr-website/skills/audit-website/scripts/run_website_audit.mjs", "WebsiteEngineGoesRed"),
+    "hunt-proof": ("plugins/pqr-security-hunt/skills/security-hunt/scripts/hunt.py", "HuntProofGoesRed"),
 }
 
 # Instruments that are not ours to test, each with its reason (an exception without one is no rule).
@@ -915,12 +916,13 @@ class EveryInstrumentHasARedCase(unittest.TestCase):
             with self.subTest(instrument=instrument):
                 self.assertTrue((PLUGIN / script).is_file(), f"{instrument}: {script} does not exist")
 
-    def test_every_red_case_names_a_test_class_in_this_file(self):
-        here = Path(__file__).read_text(encoding="utf-8")
+    def test_every_red_case_names_a_test_class_in_this_folder(self):
+        """A red case lives in this file or beside it, so no file outgrows its budget."""
+        here = "\n".join(f.read_text(encoding="utf-8") for f in Path(__file__).parent.glob("test_*.py"))
         for instrument, (_, klass) in RED_CASE.items():
             with self.subTest(instrument=instrument):
                 self.assertIn(f"class {klass}(", here,
-                              f"{instrument}: class {klass} does not exist in this file")
+                              f"{instrument}: class {klass} does not exist in tests/instruments/")
 
     def test_every_excuse_has_a_reason(self):
         for instrument, reason in NO_RED_CASE.items():
