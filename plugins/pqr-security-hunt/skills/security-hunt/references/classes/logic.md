@@ -44,3 +44,10 @@ Owner: `security-hunt`. Card format and fields: see the head of
 - **Where it hides:** seconds compared with milliseconds; local time against UTC; `<=` vs `<` at expiry; client-sent timestamps trusted.
 - **Red test:** use a token or offer exactly at, and one unit after, its expiry; assert the rule.
 - **Not a finding:** a boundary off by one unit the domain does not care about.
+
+### logic.declared-size
+- **Check:** `sec.business-logic-abuse`
+- **Invariant:** a quota, credit or balance moves by what the server measured, never by a size, count or amount the caller declares or a snapshot carries.
+- **Where it hides:** a restore or import that charges the `size_bytes` written in the snapshot; an upload metered by `Content-Length` or a body field rather than bytes stored; a delete that refunds the stored declared value, so a small declared charge and a large refund drive the quota negative or to zero.
+- **Red test:** import or upload with a declared size far from the real one (zero, huge, negative), then delete; assert the quota equals the measured bytes before, during and after.
+- **Not a finding:** a declared value the server overwrites with its own measurement before it is stored, cited.

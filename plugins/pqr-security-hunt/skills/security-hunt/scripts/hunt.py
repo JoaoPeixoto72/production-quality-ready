@@ -15,7 +15,7 @@ commit for the reason the claim gives).
     python hunt.py emit    [--repo .]
 
 Files, all under `<repo>/.audit/security-hunt/` (gitignored with `.audit/`):
-  plan.json      scope, budget, agents launched, coverage units
+  plan.json      scope, budget, agents launched, external sources, coverage units
   findings.json  one record per fingerprint
   proofs/        the red tests and their logs
 
@@ -73,6 +73,11 @@ CHECK_RULE = {
 SEVERITIES = ["BLOCKER", "CRITICAL", "HIGH", "MEDIUM", "LOW"]
 NEEDS_IMPACT = {"BLOCKER", "CRITICAL", "HIGH"}
 ROLES = {"hunter", "verifier"}
+# An audit run outside the hunt (another tool, a person, a pentest) is recorded in
+# `plan.external`. Its findings name it in `found_by`; it costs no agent of the
+# budget, and it never settles a finding — a verifier or an adopted test does.
+EXTERNAL = "external"
+FINDERS = {"hunter", EXTERNAL}
 UNIT_STATES = {"planned", "in_progress", "covered", "candidate", "blocked", "deferred", "out_of_scope"}
 FINDING_STATES = {"candidate", "confirmed", "needs_validation", "rejected", "fixed"}
 CLAIM_FIELDS = ("principal", "input", "control", "boundary", "affected", "result")
@@ -255,8 +260,18 @@ def plan_errors(ctx: Ctx, plan: dict) -> int:
         if role not in ROLES:
             ctx.err(f"plan.agents[{i}].role: `{role}` is not hunter or verifier")
         ctx.agents[aid] = role
-    if budget and len(ctx.agents) > budget:
-        ctx.err(f"budget: {len(ctx.agents)} agents launched, {budget} approved — stop and ask before the next one")
+    launched = sum(1 for r in ctx.agents.values() if r in ROLES)
+    for i, x in enumerate(plan.get("external", []) or []):
+        xid = str(x.get("id", ""))
+        if not AGENT_ID.match(xid):
+            ctx.err(f"plan.external[{i}].id: `{xid}` is not a lowercase id")
+        if xid in ctx.agents:
+            ctx.err(f"plan.external[{i}].id: `{xid}` is already recorded — one id per agent or source")
+        if not norm(x.get("report", "")):
+            ctx.err(f"plan.external[{i}].report: where the source's report lives — its findings cite it")
+        ctx.agents[xid] = EXTERNAL
+    if budget and launched > budget:
+        ctx.err(f"budget: {launched} agents launched, {budget} approved — stop and ask before the next one")
     return budget
 
 
@@ -280,8 +295,11 @@ def unit_errors(ctx: Ctx, u: dict, where: str, by_fp: dict) -> set[str]:
     if status not in UNIT_STATES:
         ctx.err(f"{where}.status: `{status}` is not a unit state")
         return set()
-    if status in ("in_progress", "covered", "candidate") and ctx.agents.get(str(u.get("agent"))) != "hunter":
-        ctx.err(f"{where}.agent: a {status} unit names the hunter recorded in plan.agents")
+    finder = ctx.agents.get(str(u.get("agent")))
+    if status == "in_progress" and finder != "hunter":
+        ctx.err(f"{where}.agent: an in_progress unit names the hunter recorded in plan.agents")
+    elif status in ("covered", "candidate") and finder not in FINDERS:
+        ctx.err(f"{where}.agent: a {status} unit names the hunter in plan.agents or the source in plan.external")
     if status in ("covered", "candidate"):
         paths = u.get("reviewed_paths") or []
         if not paths:
@@ -312,8 +330,8 @@ def finding_errors(ctx: Ctx, f: dict, where: str) -> None:
     claim = f.get("claim") or {}
     for k in (k for k in CLAIM_FIELDS if not norm(claim.get(k, ""))):
         ctx.err(f"{where}.claim.{k}: a candidate names {k} — without it there is no boundary to cross")
-    if ctx.agents.get(str(f.get("found_by"))) != "hunter":
-        ctx.err(f"{where}.found_by: the hunter recorded in plan.agents")
+    if ctx.agents.get(str(f.get("found_by"))) not in FINDERS:
+        ctx.err(f"{where}.found_by: the hunter recorded in plan.agents, or the source in plan.external")
     # Independence is structural: an id has one role, so the hunter that found a
     # candidate can never be the verifier that settles it. A finding fixed by an
     # adopted regression test may have had none: the person accepted the claim by
@@ -400,7 +418,8 @@ def summarise(ctx: Ctx, units: list, findings: list, budget: int) -> dict:
         return {s: sum(1 for x in items if str(x.get(key)) == s) for s in sorted({str(x.get(key)) for x in items})}
     roles = list(ctx.agents.values())
     return {"head": ctx.head,
-            "agents": {"launched": len(roles), "budget": budget,
+            "agents": {"launched": sum(1 for r in roles if r in ROLES), "budget": budget,
+                       "external": roles.count(EXTERNAL),
                        "hunters": roles.count("hunter"), "verifiers": roles.count("verifier")},
             "units": count(units, "status"), "findings": count(findings, "state")}
 

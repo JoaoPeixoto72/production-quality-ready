@@ -137,6 +137,46 @@ class HuntProofGoesRed(unittest.TestCase):
         self.write_ledger(plan, self.findings())
         self.assertIn("3 agents launched, 2 approved", self.errors())
 
+    # -- an external audit: a source, not an agent of the budget
+    def external(self) -> str:
+        """The candidate found by an audit run outside the hunt, the budget already spent."""
+        fp, plan = self.ledger(found_by="cf-audit")
+        plan["external"] = [{"id": "cf-audit", "report": "~/cf/run-1/REPORT.md"}]
+        plan["units"][0]["agent"] = "cf-audit"
+        self.write_ledger(plan, self.findings())
+        return fp
+
+    def test_an_external_source_finds_without_spending_the_budget(self):
+        self.external()
+        code, out = self.check()
+        self.assertEqual((code, out["errors"]), (0, []))
+        self.assertEqual(out["summary"]["agents"]["launched"], 2)
+
+    def test_an_external_source_never_settles_a_finding(self):
+        fp = self.external()
+        self.proof("print('AssertionError: expected 404, got 200'); raise SystemExit(1)\n")
+        self.prove(fp)
+        data = self.findings()
+        data[0].update(state="confirmed", verified_by="cf-audit", severity="HIGH", impact="x", fix="y")
+        (self.hunt / "findings.json").write_text(json.dumps(data), encoding="utf-8")
+        self.assertIn("names a verifier", self.errors())
+
+    def test_an_external_source_names_its_report(self):
+        fp, plan = self.ledger(found_by="cf-audit")
+        plan["external"] = [{"id": "cf-audit"}]
+        self.write_ledger(plan, self.findings())
+        self.assertIn("plan.external[0].report", self.errors())
+
+    def test_an_external_id_is_not_an_agent_id(self):
+        _, plan = self.ledger()
+        plan["external"] = [{"id": "hunter-1", "report": "r.md"}]
+        self.write_ledger(plan, self.findings())
+        self.assertIn("already recorded", self.errors())
+
+    def test_an_unrecorded_finder_still_fails(self):
+        self.ledger(found_by="cf-audit")
+        self.assertIn("found_by", self.errors())
+
     # -- severity follows proof
     def test_an_unproven_claim_carries_no_severity(self):
         self.ledger(severity="HIGH")

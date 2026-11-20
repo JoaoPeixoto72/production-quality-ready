@@ -47,3 +47,10 @@ Prove with counted work in a local fixture, never against a live service.
 - **Where it hides:** reconnect without backoff, or backoff reset on open; refresh loops driven by reactive state; polling that continues in hidden tabs.
 - **Red test:** drive the client logic with the server failing in a unit test; assert attempts per minute stay at the bound.
 - **Not a finding:** a loop bounded by a cap the code proves.
+
+### cost.per-target-ceiling
+- **Check:** `sec.anti-automation`
+- **Invariant:** an action aimed at a target (an account, email address, phone, tenant) has a ceiling per target as well as per origin, so many origins together cannot flood one victim or spend on them at will.
+- **Where it hides:** password reset, invite, verification resend or OTP limited per IP only; a lockout per account with no ceiling on what each attempt sends; a per-target ceiling that answers differently when it trips and so enumerates accounts.
+- **Red test:** fire the action at one target from several origins in a fixture, with the provider stubbed; assert the stub is called at most the per-target ceiling and the response stays neutral.
+- **Not a finding:** a per-target ceiling enforced on the server, cited.

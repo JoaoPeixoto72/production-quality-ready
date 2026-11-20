@@ -44,3 +44,10 @@ Owner: `security-hunt`. Card format and fields: see the head of
 - **Where it hides:** confirmation checked in the UI only; a precondition (fresh backup, re-authentication) enforced on one path and not on its API twin.
 - **Red test:** call the action directly without the precondition; assert refusal.
 - **Not a finding:** a precondition the server enforces, cited at its line.
+
+### authz.derived-copy
+- **Check:** `sec.access-control-default-deny`
+- **Invariant:** a value a permission gates stays gated in every copy of it — a total cached on a parent row, a snapshot, a denormalised column, an export, a list that selects the whole row.
+- **Where it hides:** the detail route checks "may see finance" but the project row carries `fees_total_cents` and the list or header route returns the row whole; a snapshot or PDF built before the gate; a search index or notification body that copies the gated field.
+- **Red test:** as a role without the permission, call every route that returns the parent row or its copies; assert the gated field is absent, not only the gated route refused.
+- **Not a finding:** a copy the role matrix shows to that role on purpose, cited.

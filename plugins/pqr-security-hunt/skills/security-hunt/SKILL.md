@@ -65,6 +65,13 @@ Severity is what the red test demonstrates, never more:
    runs that committed test and, when it passes, marks the finding `fixed`
    with the test as its proof. `--found-at` is the commit the trace was read
    at; a fixed finding's trace is checked there, since the fix moved the code.
+   A finding of an audit run outside the hunt (another tool, a pentest) enters
+   the same way: record the source in `plan.external`
+   (`{"id", "report"}` — no agent of the budget), give it a unit with
+   `agent` set to that id, write the finding with `found_by` set to it and
+   a trace read at `found_at`, then `adopt` its regression test. A source
+   never verifies: an unfixed external finding is a `candidate` until a
+   verifier proves it.
    *Done when* `reprove` has run, or there was nothing to re-prove, and every
    fixed finding is adopted.
 
