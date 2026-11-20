@@ -39,7 +39,10 @@ Mais: a revogação no tempo real faltava em 5 caminhos. Corrigimos o alcance do
 5. ✅ **FEITO (5.3.0) — o crítico de cobertura**, 1 agente no fim da caça: papel `critic` no `hunt.py` (gasta orçamento, não encontra nem verifica) e `raised_by` nas unidades que levanta (`planned` se o orçamento ainda paga um caçador, senão `deferred`).
    - Recebe o plano e as unidades, e devolve as zonas que ficaram por ver como unidades `deferred` no `plan.json`.
    - O crítico da Cloudflare apontou 7 zonas que ninguém viu: o import de backups pelo super, os papéis dentro do atelier, as rotas de orçamentos e templates, o suporte com o RGPD, o custo do tempo real, o webhook do Stripe e o OAuth do Google.
-6. **Por fazer — hunters mais estreitos.** O ganho da Cloudflare veio de 1 unidade estreita por agente, com o bloco de classe colado no prompt. Medir antes de mudar o orçamento por omissão: na próxima caça ao Forma, correr as mesmas unidades com caçadores largos e estreitos e comparar achados por agente. Só se mede numa caça real, por isso não entrou na 5.3.0.
+6. **Medido (caça 2 ao Forma, 2026-11-20) — hunters mais estreitos.** As mesmas 4 unidades (U15–U18) caçadas por 1 caçador largo e por 4 estreitos, sem verem os resultados uns dos outros:
+   - largo: 192 k tokens, 3 candidatos; estreitos: 486 k tokens (2,5×), 5 candidatos.
+   - Só os estreitos viram 2 defeitos distintos: a quota contornada no multipart (depois **confirmada**, MEDIUM) e a injecção de fórmulas no CSV de horas. Só o largo viu 2 caminhos paralelos dos mesmos defeitos (recusa a correr contra a aceitação; envio de proposta personalizada).
+   - Leitura: o estreito encontra mais defeitos distintos por unidade; o largo encontra mais por token. Uma amostra de 4 unidades não chega para mudar o orçamento por omissão. Proposta para medir de novo: estreito só nas classes com vários sumidouros distintos (`input.upload`, `input.markup-injection`), largo no resto.
 
 ## O que NÃO copiar da Cloudflare
 
@@ -52,7 +55,7 @@ Mais: a revogação no tempo real faltava em 5 caminhos. Corrigimos o alcance do
 
 - **Forma:**
   - ✅ `9612aab7` em produção (v1.143, deploy do CI verde a 2026-11-20).
-  - Na próxima caça, ver as 7 zonas do crítico mais as que já estavam fora: HTML nos emails/PDF, uploads, fluxos repetíveis e a confiança web→API.
+  - ✅ Caça 2 (2026-11-20, 20 agentes, ledger em `.audit/security-hunt/`): as 7 zonas do crítico da Cloudflare e U15–U18. 4 confirmados, 1 `needs_validation`, 4 candidatos por verificar (orçamento gasto); o crítico novo levantou 12 zonas que nenhuma das duas caças leu (U33–U44, `deferred`).
   - Confirmar em produção (sem tráfego de ataque): registo self-serve, Turnstile e WAF por /64.
 - ✅ **Limpeza** feita (worktree, `cf-audit-src`, `pqr-scratch`, `skills/` da raiz).
 - **Ledger da caça no Forma** (`.audit/security-hunt/`):
