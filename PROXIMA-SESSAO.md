@@ -1,6 +1,6 @@
-# Próxima sessão: plugin 5.3.0 (pqr-security-hunt) — a 5.2.0 saiu a 2026-11-20 (PR #6) — o que aprendemos com a Cloudflare
+# Próxima sessão: pqr-security-hunt depois da 5.3.0 — o que aprendemos com a Cloudflare
 
-Escrito a 2026-11-20. Ler isto e depois decidir o que fazer.
+Escrito a 2026-11-20. A 5.2.0 (PR #6) e a 5.3.0 saíram nesse dia; falta só o item 6, que se mede numa caça real. Ler isto e depois decidir o que fazer.
 
 ## Contexto em 5 linhas
 
@@ -26,20 +26,20 @@ Escrito a 2026-11-20. Ler isto e depois decidir o que fazer.
 
 Mais: a revogação no tempo real faltava em 5 caminhos. Corrigimos o alcance do kick, mas não os caminhos que nunca chamavam kick.
 
-## Melhorias a fazer (proposta para a 5.2.0)
+## Melhorias (as 5 primeiras publicadas)
 
 1. ✅ **FEITO (commit `2259314`, publicado na 5.2.0) — `hunt.py adopt <fingerprint> <teste> --command --found-at`.** Trouxe também `found_at`: a trace de um `fixed` verifica-se no commit onde foi encontrada (antes, todo o `fixed` falhava o `check` porque a correcção mexe nas linhas citadas). Corre um teste de regressão permanente do projecto e, se passar, marca o achado como `fixed` com esse teste como prova.
    Resolve dois problemas:
    - depois de uma correcção, o `reprove` deu `broken`, porque a prova montava o ataque pelo caminho que a correcção fechou. O `check` exige `red` e o `emit` recusa o ledger inteiro;
    - as candidatas corrigidas ficavam `candidate` para sempre.
-2. **Brief do verificador.** Montar o estado do atacante directamente (seed na D1) e não pelo caminho vulnerável, para a prova continuar válida depois da correcção.
-3. **Passo «corrigir» no SKILL.md.** Teste vermelho e também o teste do utilizador legítimo. Em 2 casos o defeito real era maior do que o achado: o kick falhava a quem não tinha o sino aberto, e o restore descartava backups legítimos.
+2. ✅ **FEITO (5.3.0) — brief do verificador.** Montar o estado do atacante directamente (seed na D1) e não pelo caminho vulnerável, para a prova continuar válida depois da correcção.
+3. ✅ **FEITO (5.3.0) — passo 7 «corrigir» no SKILL.md** (o alcance primeiro; dois testes com a correcção). Teste vermelho e também o teste do utilizador legítimo. Em 2 casos o defeito real era maior do que o achado: o kick falhava a quem não tinha o sino aberto, e o restore descartava backups legítimos.
 4. ✅ **FEITO (commit `f92a4bf`, publicado na 5.2.0) — cartões de classe novos:** `iso.namespace-collision`, `auth.revocation-lifecycle`, `authz.derived-copy`, `logic.declared-size`, `cost.per-target-ceiling`. Cada um usa um check que já existia, por isso o `CHECK_RULE` ficou igual.
    No mesmo commit, **`plan.external`**: uma auditoria de fora (id + relatório) pode ser `found_by` e `agent` de unidade, não conta para o orçamento e nunca verifica. Sem isto, os achados da Cloudflare não cabiam no ledger. Suite: 307 testes.
-5. **Um crítico de cobertura barato**, 1 agente no fim da caça.
+5. ✅ **FEITO (5.3.0) — o crítico de cobertura**, 1 agente no fim da caça: papel `critic` no `hunt.py` (gasta orçamento, não encontra nem verifica) e `raised_by` nas unidades que levanta (`planned` se o orçamento ainda paga um caçador, senão `deferred`).
    - Recebe o plano e as unidades, e devolve as zonas que ficaram por ver como unidades `deferred` no `plan.json`.
    - O crítico da Cloudflare apontou 7 zonas que ninguém viu: o import de backups pelo super, os papéis dentro do atelier, as rotas de orçamentos e templates, o suporte com o RGPD, o custo do tempo real, o webhook do Stripe e o OAuth do Google.
-6. **Opcional: hunters mais estreitos.** O ganho da Cloudflare veio de 1 unidade estreita por agente, com o bloco de classe colado no prompt. Medir antes de mudar o orçamento por omissão.
+6. **Por fazer — hunters mais estreitos.** O ganho da Cloudflare veio de 1 unidade estreita por agente, com o bloco de classe colado no prompt. Medir antes de mudar o orçamento por omissão: na próxima caça ao Forma, correr as mesmas unidades com caçadores largos e estreitos e comparar achados por agente. Só se mede numa caça real, por isso não entrou na 5.3.0.
 
 ## O que NÃO copiar da Cloudflare
 
@@ -59,6 +59,4 @@ Mais: a revogação no tempo real faltava em 5 caminhos. Corrigimos o alcance do
   - ✅ os 10 estão `fixed` por `adopt` (found_at `6e3a0787`), `check` OK, `reprove` 10× held, `emit` limpou os 2 FAIL velhos;
   - ✅ os 7 da Cloudflare (os 6 da tabela + os caminhos de revogação no tempo real) entraram como fonte externa `cf-audit` (U19–U25), fechados por `adopt` com os testes de `9612aab7`: `check` OK com o plugin instalado, 17 `fixed`, `reprove` 17× held.
   - Os candidatos de finanças da Cloudflare sobre o calendário e o download do backup já eram 2 dos 10 da nossa caça.
-- **Repositório do plugin:**
-  - 2 branches remotos `claude/project-thread-*` com commits por integrar, ainda por decidir;
-  - os branches locais `wip-seo-audit-website` (o WIP de SEO, feito para o layout antigo) e `correcoes-do-justclip` (já integrado).
+- ✅ **Repositório do plugin:** os branches soltos foram resolvidos (os `claude/project-thread-*` já estavam nos PRs #1/#2; o WIP de SEO foi adaptado e saiu na 5.2.1).

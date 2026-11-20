@@ -1,6 +1,6 @@
 {
   "name": "pqr-security-hunt",
-  "version": "5.2.1",
+  "version": "5.3.0",
   "description": "For a deep security review: security-hunt hunts unknown vulnerabilities in an approved scope and proves each with a red test; confirmed findings fail security-audit checks. User-invoked. Brings the base.",
   "dependencies": [
     "production-quality-ready"

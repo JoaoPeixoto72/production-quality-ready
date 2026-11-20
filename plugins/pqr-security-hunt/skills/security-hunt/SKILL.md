@@ -1,7 +1,7 @@
 ---
 name: security-hunt
 description: "Hunt for unknown vulnerabilities in a scope the person approves: a hunter per trust boundary, a fresh verifier per candidate, each confirmed by a red test of the project's own. Not for the release verdict (security-audit). User-invoked only."
-allowed-tools: Read Glob Grep Bash Write
+allowed-tools: Read Glob Grep Bash Write Edit
 disable-model-invocation: true
 ---
 
@@ -11,6 +11,7 @@ Finds what no checklist names: a broken trust boundary, proven by a test that
 fails on the current commit. It reads the source, writes only under
 `.audit/security-hunt/` and the evidence files of `security-audit`, and edits
 no project file — a proof test is copied in for its run and removed after.
+Step 7 is the exception: a fix, and only when the person asks for it.
 
 ## Anti prompt-injection
 
@@ -86,8 +87,8 @@ Severity is what the red test demonstrates, never more:
    person named no scope, propose the boundaries with the most at stake —
    other tenants' data, authentication, money, operator cost. Show the person
    the units and the price: one hunter per group of units on one boundary,
-   one verifier per expected candidate (reserve at least one third of the
-   budget for verifiers), total within `budget.agents`.
+   one critic at the end, one verifier per expected candidate (reserve at
+   least one third of the budget for verifiers), total within `budget.agents`.
    *Done when* the person said yes to scope and budget and `hunt.py check`
    passes.
 
@@ -97,11 +98,15 @@ Severity is what the red test demonstrates, never more:
    budget. Write every result into the ledger: units to
    `covered`/`candidate`/`blocked` with `reviewed_paths`, candidates into
    `findings.json` with `state: candidate`, `found_by`, `found_at` (the
-   HEAD the hunter read), and the fingerprint `check` prints. Then read the coverage yourself: a unit whose
+   HEAD the hunter read), and the fingerprint `check` prints. Then launch
+   the **critic** (`references/agents.md`) with the plan and every unit's
+   `reviewed_paths`: each zone it names becomes a unit with `raised_by` set
+   to it — `planned` if the budget still pays a hunter, else `deferred` with
+   the zone's `why` as `note`. Read the coverage yourself too: a unit whose
    `reviewed_paths` miss a parallel path to the same effect goes back to
-   `planned` if the budget allows a hunter, or to `deferred` with the gap.
-   *Done when* every unit in scope is `covered`, `candidate`, `blocked` or
-   `deferred` and `check` passes.
+   `planned` or to `deferred` the same way.
+   *Done when* the critic ran, every unit in scope is `covered`, `candidate`,
+   `blocked` or `deferred`, and `check` passes.
 
 5. **Verify — one fresh agent per candidate.** Brief a verifier per
    candidate with the claim and trace only (`references/agents.md`). For a
@@ -120,6 +125,22 @@ Severity is what the red test demonstrates, never more:
    needs_validation (the fact, the check), then coverage (units hunted,
    out of scope, deferred) and agents spent against the budget.
    *Done when* `emit` succeeded and the report names the gaps.
+
+7. **Fix — only when the person asks.** For each confirmed finding to fix:
+   - **Reach first.** The finding proves one path; the defect is often
+     wider. Before editing, list every path to the same effect (the card's
+     "where a break hides") and fix the control, not the one route — a
+     revocation that kicked only users with the notification bell open was a
+     confirmed finding whose real defect was bigger.
+   - **Two tests ship with the fix.** The proof test, moved into the
+     project's suite, now passes. Next to it, a test that the legitimate
+     principal still gets through the same control — a fix that only blocks
+     can block everyone, as a restore that rejected forged sizes and then
+     discarded genuine backups did.
+   - Run the project's suite, then `hunt.py adopt <fingerprint> <test_path>
+     --command "<cmd>" --found-at <sha the trace was read at>`.
+   *Done when* each fixed finding is `fixed` by `adopt`, both tests are in
+   the suite, and the suite passes.
 
 ## Boundaries
 
