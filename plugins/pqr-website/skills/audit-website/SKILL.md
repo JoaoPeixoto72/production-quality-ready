@@ -62,11 +62,18 @@ Paths are relative to this skill folder (`<plugin>/skills/audit-website/`).
 ## Deep SEO/GEO engine invariants
 
 - A heuristic check **never** emits critical `FAIL`; it downgrades to `WARN`.
+- **A critical — `FAIL` or `PASS` — needs `machine_verified` evidence** (HTTP
+  status, DOM/XML/JSON-LD parse, CrUX/PSI field number). A lab-only CWV number
+  is `heuristic`; only field data closes a critical CWV pass (`references/seo-methodology.md` §8).
 - Missing evidence is `NOT_VERIFIED`, never `PASS` by omission.
-- `llms.txt` is informational (`WARN` at most).
+- `llms.txt` is informational (`WARN` at most) — Google states it carries no weight.
 - Deprecated Schema.org types (HowTo, FAQ rich results) surface as `WARN` with link, never as auto-remove.
 - Client-only SPA: technical-SEO signals are `heuristic` (many LLM crawlers do not run JS).
-- No paid keyword research, no algorithmic E-E-A-T, no copywriting.
+- No paid keyword research, no backlinks, no geo-grid, no copywriting — that
+  data is **consumed** from an external provider, never reimplemented here
+  (`references/seo-external-data.md`).
+- AI-crawler findings must name the **right** bot for the claim
+  (`references/seo-ai-crawlers.md`); a claim on the wrong bot is a false finding.
 
 Profiles in `seo/profiles/`: `content-site`, `spa-app`, `ecommerce`.
 
@@ -84,6 +91,7 @@ Profiles in `seo/profiles/`: `content-site`, `spa-app`, `ecommerce`.
 | `web.cro-heuristics` | CRO heuristics pass; no dark patterns. |
 | `web.link-health` | Spider finds no 404 / redirect loop on internal links. |
 | `web.a11y-public` | Candidate WCAG AA findings for `design-pro`. |
+| `web.seo-no-regression` | Current findings vs a committed baseline; a `PASS` that became `FAIL` (or a new `FAIL`) is a regression (`scripts/seo_baseline.py`). Record the baseline with `--write-baseline` and commit it. |
 
 ## Outputs
 
@@ -96,7 +104,7 @@ Verdicts: `BLOCKED`, `FIX_BEFORE_LAUNCH`, `READY_WITH_FOLLOWUPS`, `PARTIAL_AUDIT
 
 - `references/methodology.md` — 360º scoring and verdict rules.
 - `references/privacy-runtime.md`, `references/cro-heuristics.md`.
-- `references/seo-methodology.md`, `references/seo-checklist-core.md`, `references/seo-geo-notes.md`, `references/seo-schema-deprecations.md`, `references/seo-audit-config-schema.json`.
+- `references/seo-methodology.md`, `references/seo-checklist-core.md`, `references/seo-geo-notes.md`, `references/seo-ai-crawlers.md`, `references/seo-external-data.md`, `references/seo-schema-deprecations.md`, `references/seo-audit-config-schema.json`.
 
 ## Boundaries
 
@@ -107,7 +115,7 @@ Verdicts: `BLOCKED`, `FIX_BEFORE_LAUNCH`, `READY_WITH_FOLLOWUPS`, `PARTIAL_AUDIT
 
 ## Accepted instruments
 
-See `instruments.yaml`. Both engines are canonical producers.
+See `instruments.yaml`. Both engines are canonical producers; `seo_baseline.py` settles the regression check.
 
 ## Licence
 

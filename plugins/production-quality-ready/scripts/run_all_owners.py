@@ -359,6 +359,10 @@ class Runner:
             else:
                 self.write(o, check, name, "sarif-2.1.0", "FAIL", rule_version="sarif-2.1.0", severity="HIGH",
                            command=cmd, log=log_rel, reason="engine exited non-zero; see log and SARIF")
+        # The SEO ratchet reads the report the deep engine just wrote and compares it with the
+        # project's committed baseline: a PASS that became a FAIL is a regression, known debt is not.
+        self.json_instrument(o, self.instrument(o, "scripts/seo_baseline.py"), "seo-baseline",
+                             rule="seo-baseline-ratchet")
         # Core Web Vitals need a browser on the real pages (or field data behind a key): the
         # project's own measurement settles the check, or the gap is said.
         self.declared(o, "web.core-web-vitals", "measurement-run", "cwv-within-thresholds",
