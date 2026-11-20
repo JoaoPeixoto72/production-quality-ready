@@ -195,6 +195,114 @@ class HuntProofGoesRed(unittest.TestCase):
         self.assertEqual(self.findings()[0]["state"], "fixed")
         self.assertEqual(self.check()[1]["errors"], [])
 
+    # -- adopt: a regression test of the project closes a finding after the fix
+    def commit(self, files: dict[str, str]) -> str:
+        for name, text in files.items():
+            (self.repo / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.repo / name).write_text(text, encoding="utf-8")
+        run(["git", "add", "--", *files], self.repo)
+        run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "fix"], self.repo)
+        return run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+
+    FIXED_API = "export function getProject(db, tenant, id) {\n  return scoped(db, tenant, id);\n}\n"
+    REGRESSION = "tests/test_tenant.py"
+
+    def fix_with_regression(self, body: str = "print('ok')\n") -> str:
+        """The candidate at the first commit, then a commit with the fix and its test."""
+        found_at = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+        self.commit({"src/api.ts": self.FIXED_API, self.REGRESSION: body})
+        return found_at
+
+    def adopt(self, fp: str, *extra: str) -> tuple[int, dict]:
+        cmd = f'"{sys.executable}" {self.REGRESSION}'
+        return instrument_json(HUNT, ["adopt", fp, self.REGRESSION, "--command", cmd, *extra,
+                                      "--repo", str(self.repo)], self.repo)
+
+    def test_adopt_closes_a_fixed_candidate_and_the_ledger_passes(self):
+        fp, _ = self.ledger()
+        found_at = self.fix_with_regression()
+        self.assertIn("not in the file", self.errors())  # the fix moved the code the trace cites
+        code, out = self.adopt(fp, "--found-at", found_at)
+        self.assertEqual(code, 0, out)
+        f = self.findings()[0]
+        self.assertEqual((f["state"], f["found_at"], f["proof"]["kind"]), ("fixed", found_at, "regression"))
+        self.assertEqual(self.check()[1]["errors"], [])
+
+    def test_adopt_keeps_the_proof_it_replaces(self):
+        fp = self.confirm()
+        found_at = self.fix_with_regression()
+        self.assertEqual(self.adopt(fp, "--found-at", found_at)[0], 0)
+        f = self.findings()[0]
+        self.assertEqual(f["superseded_proofs"][0]["outcome"], "red")
+        self.assertEqual(self.check()[1]["errors"], [])
+
+    def test_adopt_refuses_a_regression_test_that_fails(self):
+        fp, _ = self.ledger()
+        found_at = self.fix_with_regression("raise SystemExit(1)\n")
+        code, out = self.adopt(fp, "--found-at", found_at)
+        self.assertEqual(code, 1)
+        self.assertIn("does not pass", out["error"])
+        self.assertEqual(self.findings()[0]["state"], "candidate")
+
+    def test_adopt_refuses_an_uncommitted_fix(self):
+        fp, _ = self.ledger()
+        found_at = self.fix_with_regression()
+        (self.repo / "src/api.ts").write_text("// the real fix, not yet committed\n", encoding="utf-8")
+        code, out = self.adopt(fp, "--found-at", found_at)
+        self.assertEqual(code, 1)
+        self.assertIn("uncommitted", out["error"])
+
+    def test_adopt_refuses_a_test_outside_the_history(self):
+        fp, _ = self.ledger()
+        found_at = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+        self.commit({"src/api.ts": self.FIXED_API})
+        (self.repo / self.REGRESSION).write_text("print('ok')\n", encoding="utf-8")
+        code, out = self.adopt(fp, "--found-at", found_at)
+        self.assertEqual(code, 1)
+        self.assertIn("not committed", out["error"])
+
+    def test_adopt_refuses_a_commit_where_the_trace_does_not_hold(self):
+        fp, _ = self.ledger()
+        self.fix_with_regression()
+        later = self.commit({"README.md": "x\n"})
+        code, out = self.adopt(fp, "--found-at", later)
+        self.assertIn("is HEAD", out["error"])
+        fixed = run(["git", "rev-parse", "HEAD~1"], self.repo).stdout.strip()
+        code, out = self.adopt(fp, "--found-at", fixed)
+        self.assertEqual(code, 1)
+        self.assertIn("does not hold", out["error"])
+
+    def test_adopt_refuses_a_rejected_finding(self):
+        fp, _ = self.ledger(state="rejected", verified_by="verify-1", reason="the query is scoped")
+        found_at = self.fix_with_regression()
+        code, out = self.adopt(fp, "--found-at", found_at)
+        self.assertEqual(code, 1)
+        self.assertIn("cannot be adopted", out["error"])
+
+    def test_a_fixed_finding_names_the_commit_it_was_found_at(self):
+        fp, _ = self.ledger()
+        self.adopt(fp, "--found-at", self.fix_with_regression())
+        data = self.findings()
+        del data[0]["found_at"]
+        (self.hunt / "findings.json").write_text(json.dumps(data), encoding="utf-8")
+        self.assertIn("found_at", self.errors())
+
+    def test_reprove_runs_the_adopted_test_and_a_regression_needs_a_verifier(self):
+        fp, _ = self.ledger()
+        self.adopt(fp, "--found-at", self.fix_with_regression())
+        self.commit({self.REGRESSION: "raise SystemExit(1)\n"})  # the fix regressed
+        code, out = instrument_json(HUNT, ["reprove", "--repo", str(self.repo)], self.repo)
+        self.assertEqual(code, 1)
+        self.assertEqual(out["need_a_verifier"], [fp])
+        self.assertIn("a fixed finding needs `held`", self.errors())
+
+    def test_a_deleted_regression_test_fails_the_ledger(self):
+        fp, _ = self.ledger()
+        self.adopt(fp, "--found-at", self.fix_with_regression())
+        run(["git", "rm", "-q", self.REGRESSION], self.repo)
+        run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "rm"], self.repo)
+        self.assertIn("does not exist", self.errors())
+
     # -- the evidence
     def test_emit_refuses_an_invalid_ledger(self):
         self.ledger(severity="HIGH")

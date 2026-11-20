@@ -59,8 +59,14 @@ Severity is what the red test demonstrates, never more:
 2. **Re-prove what is known — no agent.** With earlier findings on disk, run
    `hunt.py reprove`: each confirmed or fixed finding's test runs again;
    `held` turns confirmed into fixed, `red` keeps it open. A `broken` proof
-   needs one verifier in step 5.
-   *Done when* `reprove` has run, or there was nothing to re-prove.
+   needs one verifier in step 5. A finding the project fixed since the last
+   run is closed by its regression test, not by an agent:
+   `hunt.py adopt <fingerprint> <test_path> --command "<cmd>" --found-at <sha>`
+   runs that committed test and, when it passes, marks the finding `fixed`
+   with the test as its proof. `--found-at` is the commit the trace was read
+   at; a fixed finding's trace is checked there, since the fix moved the code.
+   *Done when* `reprove` has run, or there was nothing to re-prove, and every
+   fixed finding is adopted.
 
 3. **Plan and price — the person approves.** Write
    `.audit/security-hunt/plan.json`: `threat_model`, `scope`,
@@ -83,8 +89,8 @@ Severity is what the red test demonstrates, never more:
    `plan.agents` before launching; `check` fails when launches pass the
    budget. Write every result into the ledger: units to
    `covered`/`candidate`/`blocked` with `reviewed_paths`, candidates into
-   `findings.json` with `state: candidate`, `found_by`, and the fingerprint
-   `check` prints. Then read the coverage yourself: a unit whose
+   `findings.json` with `state: candidate`, `found_by`, `found_at` (the
+   HEAD the hunter read), and the fingerprint `check` prints. Then read the coverage yourself: a unit whose
    `reviewed_paths` miss a parallel path to the same effect goes back to
    `planned` if the budget allows a hunter, or to `deferred` with the gap.
    *Done when* every unit in scope is `covered`, `candidate`, `blocked` or
