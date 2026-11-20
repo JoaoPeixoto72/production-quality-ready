@@ -177,6 +177,44 @@ class HuntProofGoesRed(unittest.TestCase):
         self.ledger(found_by="cf-audit")
         self.assertIn("found_by", self.errors())
 
+    # -- the coverage critic: one agent at the end that only raises units
+    def critic(self, **unit) -> dict:
+        """A hunt whose critic named a zone nobody read, recorded as a deferred unit."""
+        _, plan = self.ledger()
+        plan["budget"]["agents"] = 3
+        plan["agents"].append({"id": "critic-1", "role": "critic"})
+        plan["units"].append({"id": "U2", "boundary": "backup import by the super user",
+                              "class": "iso.cross-tenant-id", "status": "deferred",
+                              "raised_by": "critic-1", "note": "no hunter read src/import.ts", **unit})
+        self.write_ledger(plan, self.findings())
+        return plan
+
+    def test_a_critic_raises_a_deferred_unit_within_the_budget(self):
+        self.critic()
+        code, out = self.check()
+        self.assertEqual((code, out["errors"]), (0, []))
+        self.assertEqual(out["summary"]["agents"]["critics"], 1)
+        self.assertEqual(out["summary"]["agents"]["launched"], 3)
+
+    def test_the_critic_spends_the_budget(self):
+        plan = self.critic()
+        plan["budget"]["agents"] = 2
+        self.write_ledger(plan, self.findings())
+        self.assertIn("3 agents launched, 2 approved", self.errors())
+
+    def test_a_unit_is_raised_only_by_a_critic(self):
+        self.critic(raised_by="hunter-1")
+        self.assertIn("is not a critic", self.errors())
+
+    def test_a_critic_neither_finds_nor_verifies(self):
+        self.critic()
+        data = self.findings()
+        data[0]["found_by"] = "critic-1"
+        (self.hunt / "findings.json").write_text(json.dumps(data), encoding="utf-8")
+        self.assertIn("found_by", self.errors())
+        self.critic(status="covered", agent="critic-1", reviewed_paths=["src/api.ts"])
+        self.assertIn("names the hunter", self.errors())
+
     # -- severity follows proof
     def test_an_unproven_claim_carries_no_severity(self):
         self.ledger(severity="HIGH")

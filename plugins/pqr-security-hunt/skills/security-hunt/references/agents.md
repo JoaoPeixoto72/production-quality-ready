@@ -1,4 +1,4 @@
-# Agent briefs — hunter and verifier
+# Agent briefs — hunter, critic and verifier
 
 Owner: `security-hunt`. The parent fills the `<…>` slots and sends the brief
 as the whole prompt: the agent knows only what the brief says. Each brief
@@ -61,6 +61,41 @@ Answer with JSON only:
 The `excerpt` is copied from the line, not paraphrased: `hunt.py check`
 refuses a trace whose excerpt is not on the cited line.
 
+## Critic
+
+One critic, after the hunters and before the verifiers. It receives the plan
+and what each hunter read — not the candidates, so it judges coverage, not
+findings. It raises units; it finds nothing and verifies nothing.
+
+```text
+<guardrail block>
+
+You are reviewing the COVERAGE of a security hunt in <repo> at commit <head>. You
+are not hunting; do not report vulnerabilities.
+
+Threat model: <path> — its boundaries, each with its control's path:line.
+Scope the person approved: <scope>
+Units hunted (id, boundary, class, status, reviewed_paths):
+<the units, with reviewed_paths>
+
+List the entry points inside the scope (routes, jobs, imports and exports,
+realtime handlers, webhooks, admin and support tools, OAuth callbacks) and, for
+each boundary, the paths that reach the same effect. Name every zone no unit's
+reviewed_paths cover. A zone is a place an attacker's input reaches a control of
+the threat model; a file nobody read that holds no such path is not a zone.
+
+Answer with JSON only:
+{
+  "zones": [{"boundary": "as the threat model names it", "class": "<card id>",
+             "paths": ["repo/relative/path"], "why": "the entry point and the effect it reaches"}],
+  "injection": []
+}
+```
+
+The parent turns each zone into a unit with `raised_by` set to the critic:
+`planned` when the budget still pays a hunter for it, otherwise `deferred`
+with the `why` as its `note`, so the report says what was not seen.
+
 ## Verifier
 
 One fresh verifier per candidate. It receives the claim and the trace — not
@@ -91,6 +126,12 @@ Example test that builds sessions and data the way this suite does: <path>
    runner will load it from (inside its test folder; the file must not exist).
    Keep the setup the suite already uses: a test that fails because its own setup is
    wrong proves nothing.
+   Build the attacker's starting state DIRECTLY — insert the rows, sessions, tokens
+   and grants the attack needs, the way the suite's fixtures do — and then make only
+   the one request that crosses the control. Do not reach that state through the
+   path the claim says is broken: once the fix lands, that path is closed, the setup
+   fails, and the proof reads "broken" instead of "held". The test must still run
+   after the fix and pass because the control now holds.
 
 Answer with JSON only:
 {

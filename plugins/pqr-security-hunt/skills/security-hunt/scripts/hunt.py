@@ -72,7 +72,9 @@ CHECK_RULE = {
 }
 SEVERITIES = ["BLOCKER", "CRITICAL", "HIGH", "MEDIUM", "LOW"]
 NEEDS_IMPACT = {"BLOCKER", "CRITICAL", "HIGH"}
-ROLES = {"hunter", "verifier"}
+# The critic reads the plan and what the hunters read, once the hunt is done, and names the
+# zones nobody looked at. It finds nothing and verifies nothing: it only raises units.
+ROLES = {"hunter", "verifier", "critic"}
 # An audit run outside the hunt (another tool, a person, a pentest) is recorded in
 # `plan.external`. Its findings name it in `found_by`; it costs no agent of the
 # budget, and it never settles a finding — a verifier or an adopted test does.
@@ -258,7 +260,7 @@ def plan_errors(ctx: Ctx, plan: dict) -> int:
         if aid in ctx.agents:
             ctx.err(f"plan.agents[{i}].id: `{aid}` launched twice — each agent is recorded once")
         if role not in ROLES:
-            ctx.err(f"plan.agents[{i}].role: `{role}` is not hunter or verifier")
+            ctx.err(f"plan.agents[{i}].role: `{role}` is not hunter, verifier or critic")
         ctx.agents[aid] = role
     launched = sum(1 for r in ctx.agents.values() if r in ROLES)
     for i, x in enumerate(plan.get("external", []) or []):
@@ -306,6 +308,8 @@ def unit_errors(ctx: Ctx, u: dict, where: str, by_fp: dict) -> set[str]:
             ctx.err(f"{where}.reviewed_paths: a {status} unit lists what the hunter read")
         for p in (p for p in paths if inside(ctx.repo, p) is None or not inside(ctx.repo, p).exists()):
             ctx.err(f"{where}.reviewed_paths: `{p}` does not exist")
+    if "raised_by" in u and ctx.agents.get(str(u.get("raised_by"))) != "critic":
+        ctx.err(f"{where}.raised_by: `{u.get('raised_by')}` is not a critic recorded in plan.agents")
     if status in ("blocked", "deferred", "out_of_scope") and not norm(u.get("note", "")):
         ctx.err(f"{where}.note: say why the unit is {status}")
     if status != "candidate":
@@ -420,7 +424,8 @@ def summarise(ctx: Ctx, units: list, findings: list, budget: int) -> dict:
     return {"head": ctx.head,
             "agents": {"launched": sum(1 for r in roles if r in ROLES), "budget": budget,
                        "external": roles.count(EXTERNAL),
-                       "hunters": roles.count("hunter"), "verifiers": roles.count("verifier")},
+                       "hunters": roles.count("hunter"), "verifiers": roles.count("verifier"),
+                       "critics": roles.count("critic")},
             "units": count(units, "status"), "findings": count(findings, "state")}
 
 

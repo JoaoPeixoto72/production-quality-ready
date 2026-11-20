@@ -1,6 +1,6 @@
 {
   "name": "production-quality-ready",
-  "version": "5.2.1",
+  "version": "5.3.0",
   "description": "The base: bootstrap-project writes a project's own work-cycle skills and gates.json; the audit owners write evidence files; apply_gates.py decides release-candidate, production-ready and sellable; ship releases.",
   "author": {
     "name": "Joao Peixoto",

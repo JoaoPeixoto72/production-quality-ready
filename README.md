@@ -29,7 +29,7 @@ what it installs.
 | `pqr-desktop` | a native desktop app on Windows (Tauri, WebView2) | `drive-app-window` (Win32/WebView2 driver) |
 | `pqr-ui-system` | a project that adopts the `data-ui` design system | `ui-system` (OKLCH tokens, `data-ui` contract, `audit_ui.py`) |
 | `pqr-process` | planning the work before the code | `spec`, `grill`, `map`, `slice`, `triage`, `diagnose`, `improve`, `handoff` |
-| `pqr-security-hunt` | a deep security review of a scope you choose | `security-hunt` (user-invoked: a hunter per trust boundary, a fresh verifier per candidate, a red test per confirmed finding, which fails a `security-audit` check) |
+| `pqr-security-hunt` | a deep security review of a scope you choose | `security-hunt` (user-invoked: a hunter per trust boundary, a critic that names what no hunter read, a fresh verifier per candidate, a red test per confirmed finding, which fails a `security-audit` check) |
 
 ## Install
 
