@@ -85,7 +85,7 @@ Write-Host "To use with Claude Code:" -ForegroundColor Cyan
 Write-Host "  1. In Claude Code terminal:"
 Write-Host "     /plugin marketplace add JoaoPeixoto72/production-quality-ready"
 Write-Host "     /plugin install production-quality-ready@production-quality-ready   # the base: bootstrap-project, audits, ship"
-Write-Host "     by kind of project: pqr-website, pqr-desktop, pqr-ui-system, pqr-process"
+Write-Host "     by kind of project: pqr-website, pqr-desktop, pqr-ui-system, pqr-process, pqr-security-hunt"
 Write-Host "  2. Or start with local flag: claude --plugin-dir $Dest/plugins/production-quality-ready"
 Write-Host ""
 Write-Host "To use with Antigravity:" -ForegroundColor Cyan

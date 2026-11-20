@@ -42,8 +42,8 @@ verified.
 Every skill wakes when its `description` matches the task. None
 invokes another.
 
-It ships as five plugins in one marketplace: a base every project
-installs, whose skills hand work to each other, and four that depend on it,
+It ships as six plugins in one marketplace: a base every project
+installs, whose skills hand work to each other, and five that depend on it,
 one per kind of project. A project pays context only for the descriptions
 of what it installs:
 
@@ -54,6 +54,7 @@ of what it installs:
 | `pqr-desktop` | `drive-app-window` |
 | `pqr-ui-system` | `ui-system` |
 | `pqr-process` | `spec`, `grill`, `map`, `slice`, `triage`, `diagnose`, `improve`, `handoff` |
+| `pqr-security-hunt` | `security-hunt` |
 
 ---
 

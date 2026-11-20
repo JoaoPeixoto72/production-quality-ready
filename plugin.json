@@ -1,5 +1,5 @@
 {
   "name": "production-quality-ready",
-  "version": "5.0.1",
-  "description": "Marketplace of five production-quality plugins (the base, plus website, desktop, ui-system and process by kind of project); see plugins/."
+  "version": "5.1.0",
+  "description": "Marketplace of six production-quality plugins (the base, plus website, desktop, ui-system, process and security-hunt by kind of project); see plugins/."
 }

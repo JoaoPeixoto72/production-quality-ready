@@ -44,6 +44,7 @@ RED_CASE: dict[str, tuple[str, str]] = {
     "billing-harness": ("plugins/production-quality-ready/scripts/declared-command.py", "DeclaredCommandGoesRed"),
     "run_seo_audit.mjs": ("plugins/pqr-website/skills/audit-website/seo/run_seo_audit.mjs", "SeoEngineGoesRed"),
     "run_website_audit.mjs": ("plugins/pqr-website/skills/audit-website/scripts/run_website_audit.mjs", "WebsiteEngineGoesRed"),
+    "hunt-proof": ("plugins/pqr-security-hunt/skills/security-hunt/scripts/hunt.py", "HuntProofGoesRed"),
 }
 
 # Instruments that are not ours to test, each with its reason (an exception without one is no rule).
@@ -198,6 +199,33 @@ class SecretScanGoesRed(unittest.TestCase):
                 "plugins/production-quality-ready/skills/security-audit/scripts/secret_scan.py", ["--repo", ".", "--engine", "gitleaks"], root)
             r = by_check(payload)["sec.secrets-not-committed"]
             self.assertEqual(r["result"], "NOT_VERIFIED")
+
+    def test_a_gitleaks_finding_in_a_test_fixture_is_soft_and_one_in_source_is_not(self):
+        """The engine changes what is found, never how a path is judged: a fixture under
+        tests/ is soft for gitleaks as it is for the builtin engine."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.txt").write_text("x\n", encoding="utf-8")
+            for cmd in (["git", "init", "-q"], ["git", "add", "-A"],
+                        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x"]):
+                run(cmd, root)
+            head = run(["git", "rev-parse", "HEAD"], root).stdout.strip()
+            report = root / ".audit" / "gitleaks-report.json"
+            report.parent.mkdir()
+            report.with_suffix(".head").write_text(head, encoding="utf-8")
+            hit = lambda path: {"RuleID": "generic-api-key", "File": path, "StartLine": 3,  # noqa: E731
+                                "Secret": "REDACTED", "Commit": head}
+            scan = lambda: by_check(instrument_json(  # noqa: E731
+                "plugins/production-quality-ready/skills/security-audit/scripts/secret_scan.py",
+                ["--repo", ".", "--gitleaks-report", str(report)], root)[1])["sec.secrets-not-committed"]
+            report.write_text(json.dumps([hit("apps/api/src/tests/x.test.ts")]), encoding="utf-8")
+            self.assertEqual(scan()["result"], "PASS")
+            report.write_text(json.dumps([hit("apps/api/src/tests/x.test.ts"), hit("src/config.ts")]),
+                              encoding="utf-8")
+            r = scan()
+            self.assertEqual(r["result"], "FAIL")
+            self.assertTrue(any("src/config.ts" in e for e in r["evidence"]))
+            self.assertFalse(any("x.test.ts" in e and "fixture" not in e for e in r["evidence"]))
 
 
 class MigrationHarnessGoesRed(unittest.TestCase):
@@ -915,12 +943,13 @@ class EveryInstrumentHasARedCase(unittest.TestCase):
             with self.subTest(instrument=instrument):
                 self.assertTrue((PLUGIN / script).is_file(), f"{instrument}: {script} does not exist")
 
-    def test_every_red_case_names_a_test_class_in_this_file(self):
-        here = Path(__file__).read_text(encoding="utf-8")
+    def test_every_red_case_names_a_test_class_in_this_folder(self):
+        """A red case lives in this file or beside it, so no file outgrows its budget."""
+        here = "\n".join(f.read_text(encoding="utf-8") for f in Path(__file__).parent.glob("test_*.py"))
         for instrument, (_, klass) in RED_CASE.items():
             with self.subTest(instrument=instrument):
                 self.assertIn(f"class {klass}(", here,
-                              f"{instrument}: class {klass} does not exist in this file")
+                              f"{instrument}: class {klass} does not exist in tests/instruments/")
 
     def test_every_excuse_has_a_reason(self):
         for instrument, reason in NO_RED_CASE.items():

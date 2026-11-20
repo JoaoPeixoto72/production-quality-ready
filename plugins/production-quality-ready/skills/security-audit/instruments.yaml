@@ -25,6 +25,7 @@ accepts:
       - sec.paths-canonicalized
       - sec.errors-no-leak
       - sec.business-logic-abuse
+      - sec.anti-automation
       - sec.file-uploads-safe
   - producer: security-audit
     instrument: tenant-isolation
@@ -39,3 +40,19 @@ accepts:
     instrument: secret-scanner
     for-checks:
       - sec.secrets-not-committed
+  - producer: security-hunt
+    instrument: hunt-proof
+    for-checks:
+      - sec.tenant-isolation
+      - sec.access-control-default-deny
+      - sec.session-integrity
+      - sec.auth-strength
+      - sec.input-validated
+      - sec.business-logic-abuse
+      - sec.anti-automation
+      - sec.file-uploads-safe
+      - sec.data-at-rest
+      - sec.csp-strict
+      - sec.errors-no-leak
+      - sec.crypto-primitives-justified
+      - sec.api-surface-declared

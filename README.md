@@ -14,10 +14,10 @@ Read first:
 - [`rules/writing-for-agents.md`](rules/writing-for-agents.md) — how to write anything an agent reads.
 - [`tests/instruments/`](tests/instruments/) — the red case of every instrument: the fixture where it must fail.
 
-## Five plugins, one marketplace
+## Six plugins, one marketplace
 
 The base is the machine every project runs: the skills in it hand work to
-each other and cannot be installed apart. Each of the other four is an island
+each other and cannot be installed apart. Each of the other five is an island
 for one kind of project; it declares the base in `dependencies`, so installing
 it brings the base along. A project pays context only for the descriptions of
 what it installs.
@@ -29,6 +29,7 @@ what it installs.
 | `pqr-desktop` | a native desktop app on Windows (Tauri, WebView2) | `drive-app-window` (Win32/WebView2 driver) |
 | `pqr-ui-system` | a project that adopts the `data-ui` design system | `ui-system` (OKLCH tokens, `data-ui` contract, `audit_ui.py`) |
 | `pqr-process` | planning the work before the code | `spec`, `grill`, `map`, `slice`, `triage`, `diagnose`, `improve`, `handoff` |
+| `pqr-security-hunt` | a deep security review of a scope you choose | `security-hunt` (user-invoked: a hunter per trust boundary, a fresh verifier per candidate, a red test per confirmed finding, which fails a `security-audit` check) |
 
 ## Install
 
@@ -134,14 +135,14 @@ Code reads `SKILL.md` alone.
 ```
 production-quality-ready/
 ├── PURPOSE.md · POLICY.md · README.md
-├── .claude-plugin/marketplace.json   # the five plugins
+├── .claude-plugin/marketplace.json   # the six plugins
 ├── rules/                            # source of the rule copies each plugin carries
 ├── scripts/                          # link-skills.* (hosts that read .agents/skills)
 ├── plugins/
 │   ├── production-quality-ready/     # CONTRACTS.md, adapter-contracts/, scripts/{run_all_owners,measure-descriptions}.py, skills/<owner>/
 │   │   ├── skills/audit-app/scripts/ # apply_gates.py, validate_evidence.py, validate_report.py
 │   │   └── skills/bootstrap-project/ # references/universal/<rule>/, templates/
-│   ├── pqr-website/ · pqr-desktop/ · pqr-ui-system/ · pqr-process/
+│   ├── pqr-website/ · pqr-desktop/ · pqr-ui-system/ · pqr-process/ · pqr-security-hunt/
 └── tests/                            # one red case per instrument, gates, runner, docs coherence
 ```
 
