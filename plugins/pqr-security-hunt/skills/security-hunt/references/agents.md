@@ -58,8 +58,11 @@ Answer with JSON only:
 }
 ```
 
-The `excerpt` is copied from the line, not paraphrased: `hunt.py check`
-refuses a trace whose excerpt is not on the cited line.
+The `excerpt` is copied from the line, not paraphrased, and the trace runs
+entry first, sink last: `hunt.py record <hunter-id> <answer.json>` re-reads
+each excerpt at its line and refuses the whole answer when one is elsewhere or
+the last step is not the sink. The hunter fixes its answer; the parent never
+corrects one by hand.
 
 ## Critic
 
@@ -92,9 +95,12 @@ Answer with JSON only:
 }
 ```
 
-The parent turns each zone into a unit with `raised_by` set to the critic:
-`planned` when the budget still pays a hunter for it, otherwise `deferred`
-with the `why` as its `note`, so the report says what was not seen.
+The parent saves the answer and runs `hunt.py record <critic-id> <answer.json>`
+(the critic recorded in `plan.agents` with role `critic`): each zone becomes a
+unit with `raised_by` set to the critic, `deferred` with the `why` as its
+`note`, or `planned` with `--plan` when the budget still pays a hunter for it,
+so the report says what was not seen. An answer with `units` or `candidates`
+is refused: a critic finds nothing.
 
 ## Verifier
 
