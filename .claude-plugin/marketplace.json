@@ -5,43 +5,43 @@
   },
   "metadata": {
     "description": "Production-quality plugins: install the base; add pqr-website, pqr-desktop, pqr-ui-system, pqr-process or pqr-security-hunt by kind of project (each brings the base).",
-    "version": "5.3.0"
+    "version": "5.4.0"
   },
   "plugins": [
     {
       "name": "production-quality-ready",
       "description": "The base: bootstrap-project writes a project's own work-cycle skills and gates.json; the audit owners write evidence files; apply_gates.py decides release-candidate, production-ready and sellable; ship releases.",
-      "version": "5.3.0",
+      "version": "5.4.0",
       "source": "./plugins/production-quality-ready"
     },
     {
       "name": "pqr-website",
       "description": "For a public site: audit-website checks SEO, Core Web Vitals, cookies and links. Brings the base.",
-      "version": "5.3.0",
+      "version": "5.4.0",
       "source": "./plugins/pqr-website"
     },
     {
       "name": "pqr-desktop",
       "description": "For a native desktop app on Windows: drive-app-window drives the window to prove a change. Brings the base.",
-      "version": "5.3.0",
+      "version": "5.4.0",
       "source": "./plugins/pqr-desktop"
     },
     {
       "name": "pqr-ui-system",
       "description": "For a project that adopts the data-ui design system: ui-system holds the OKLCH tokens and the contract, and writes UI code. Brings the base.",
-      "version": "5.3.0",
+      "version": "5.4.0",
       "source": "./plugins/pqr-ui-system"
     },
     {
       "name": "pqr-process",
       "description": "Planning before code: spec, grill, map, slice, triage, diagnose, improve, handoff. Brings the base.",
-      "version": "5.3.0",
+      "version": "5.4.0",
       "source": "./plugins/pqr-process"
     },
     {
       "name": "pqr-security-hunt",
       "description": "For a deep security review: security-hunt hunts unknown vulnerabilities in an approved scope and proves each with a red test; confirmed findings fail security-audit checks. User-invoked. Brings the base.",
-      "version": "5.3.0",
+      "version": "5.4.0",
       "source": "./plugins/pqr-security-hunt"
     }
   ]
