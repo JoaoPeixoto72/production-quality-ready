@@ -1,6 +1,6 @@
 {
   "name": "pqr-process",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "Planning before code: spec, grill, map, slice, triage, diagnose, improve, handoff. Brings the base.",
   "dependencies": [
     "production-quality-ready"

@@ -44,3 +44,10 @@ Owner: `security-hunt`. Card format and fields: see the head of
 - **Where it hides:** a state change on `GET`; a CSRF check skipped for one content type, one router, or requests without `Origin`; a second cookie set without the flags.
 - **Red test:** send the state change cross-site (foreign `Origin`, form content type, or no `Origin`) with the session cookie; assert refusal.
 - **Not a finding:** a missing flag on a cookie that holds nothing sensitive — trace what it carries first.
+
+### auth.revocation-lifecycle
+- **Check:** `sec.session-integrity`
+- **Invariant:** every credential or grant issued on a fact (a pending email change, a reset or invite link, an access row, an API token, an open realtime connection) dies when that fact changes — password, email, role, assignment, deactivation — and every gate re-reads the current fact instead of trusting the grant alone.
+- **Where it hides:** password change that revokes sessions but not the pending email-change or reset links; an access table checked on its own after the client was reassigned, deactivated or unlinked; revocation written in one handler and missing from its siblings (reset, change password, confirm email, change permissions, deactivate tenant); a realtime connection never told.
+- **Red test:** issue the grant, change the fact it was issued on, then redeem the grant (or call the gate) as its old holder; assert refusal. List every handler that changes the fact and assert each revokes.
+- **Not a finding:** a grant whose expiry the threat model accepts as its revocation bound, cited.

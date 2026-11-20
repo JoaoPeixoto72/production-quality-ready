@@ -55,3 +55,10 @@ card's `Check:` is the `security-audit` check a confirmed finding fails.
 - **Where it hides:** restore that trusts `tenant_id` or `created_by` inside the snapshot; undelete that resurrects access revoked since; a template or factory copy that carries rows of another tenant.
 - **Red test:** build a snapshot whose rows carry tenant A's id, restore it as tenant B; assert every restored row belongs to B and A is untouched.
 - **Not a finding:** a super-user-only restore whose guard is proven.
+
+### iso.namespace-collision
+- **Check:** `sec.tenant-isolation`
+- **Invariant:** a name built from an id (room, Durable Object, cache key, storage key, lock, topic) names exactly one resource of one kind, and is built only after that resource is found in the caller's scope.
+- **Where it hides:** two resource kinds sharing one namespace with a prefix convention (`project:<id>` beside bare quote ids) while one route takes the id unvalidated; `idFromName(prefix + param)` before any lookup; a separator the id may itself contain; a storage key joined from path segments the request supplies.
+- **Red test:** as a user entitled only to kind A, call kind A's route with an id shaped as kind B's name (`project:<P>`, `../`, the separator); assert not-found and that no B data or presence is delivered.
+- **Not a finding:** an id the route resolves from the database first and whose name is built from the stored row, cited.
