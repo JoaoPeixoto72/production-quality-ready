@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_instruments_go_red import PLUGIN, instrument_json, run  # noqa: E402
@@ -21,9 +23,9 @@ HUNT = "plugins/pqr-security-hunt/skills/security-hunt/scripts/hunt.py"
 SINK_LINE = '  return db.prepare("SELECT * FROM projects WHERE id = ?1").bind(id).first();'
 
 
-class HuntProofGoesRed(unittest.TestCase):
-    """security-hunt: the ledger holds the hunt to the code, the budget, independence
-    and a red test of the project's own; the evidence it emits is a FAIL the gate accepts."""
+class HuntFixture(unittest.TestCase):
+    """A temporary git repo with one cross-tenant read, its threat model and a tiny ledger.
+    No test of its own: the red cases below and in test_hunt_record.py build on it."""
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -94,6 +96,35 @@ class HuntProofGoesRed(unittest.TestCase):
                        impact="tenant B reads tenant A's project", fix="scope the query by tenant_id")
         (self.hunt / "findings.json").write_text(json.dumps(data), encoding="utf-8")
         return fp
+
+    def commit(self, files: dict[str, str]) -> str:
+        for name, text in files.items():
+            (self.repo / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.repo / name).write_text(text, encoding="utf-8")
+        run(["git", "add", "--", *files], self.repo)
+        run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "fix"], self.repo)
+        return run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+
+    FIXED_API = "export function getProject(db, tenant, id) {\n  return scoped(db, tenant, id);\n}\n"
+    REGRESSION = "tests/test_tenant.py"
+    # A regression test that reads the code it guards: it fails where the query is unscoped.
+    GUARD = "assert 'WHERE id = ?1' not in open('src/api.ts').read(), 'expected 404, got 200'\n"
+
+    def fix_with_regression(self, body: str = GUARD) -> str:
+        """The candidate at the first commit, then a commit with the fix and its test."""
+        found_at = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+        self.commit({"src/api.ts": self.FIXED_API, self.REGRESSION: body})
+        return found_at
+
+    def adopt(self, fp: str, *extra: str) -> tuple[int, dict]:
+        cmd = f'"{sys.executable}" {self.REGRESSION}'
+        return instrument_json(HUNT, ["adopt", fp, self.REGRESSION, "--command", cmd, *extra,
+                                      "--repo", str(self.repo)], self.repo)
+
+
+class HuntProofGoesRed(HuntFixture):
+    """security-hunt: the ledger holds the hunt to the code, the budget, independence
+    and a red test of the project's own; the evidence it emits is a FAIL the gate accepts."""
 
     # -- the green baseline the red cases are measured against
     def test_a_valid_candidate_ledger_passes(self):
@@ -274,28 +305,6 @@ class HuntProofGoesRed(unittest.TestCase):
         self.assertEqual(self.check()[1]["errors"], [])
 
     # -- adopt: a regression test of the project closes a finding after the fix
-    def commit(self, files: dict[str, str]) -> str:
-        for name, text in files.items():
-            (self.repo / name).parent.mkdir(parents=True, exist_ok=True)
-            (self.repo / name).write_text(text, encoding="utf-8")
-        run(["git", "add", "--", *files], self.repo)
-        run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "fix"], self.repo)
-        return run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
-
-    FIXED_API = "export function getProject(db, tenant, id) {\n  return scoped(db, tenant, id);\n}\n"
-    REGRESSION = "tests/test_tenant.py"
-
-    def fix_with_regression(self, body: str = "print('ok')\n") -> str:
-        """The candidate at the first commit, then a commit with the fix and its test."""
-        found_at = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
-        self.commit({"src/api.ts": self.FIXED_API, self.REGRESSION: body})
-        return found_at
-
-    def adopt(self, fp: str, *extra: str) -> tuple[int, dict]:
-        cmd = f'"{sys.executable}" {self.REGRESSION}'
-        return instrument_json(HUNT, ["adopt", fp, self.REGRESSION, "--command", cmd, *extra,
-                                      "--repo", str(self.repo)], self.repo)
-
     def test_adopt_closes_a_fixed_candidate_and_the_ledger_passes(self):
         fp, _ = self.ledger()
         found_at = self.fix_with_regression()
@@ -380,6 +389,79 @@ class HuntProofGoesRed(unittest.TestCase):
         run(["git", "rm", "-q", self.REGRESSION], self.repo)
         run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "rm"], self.repo)
         self.assertIn("does not exist", self.errors())
+
+    # -- the baseline: the regression test must fail on the unfixed code
+    def test_adopt_refuses_a_test_that_passes_on_the_unfixed_code(self):
+        fp, _ = self.ledger()
+        code, out = self.adopt(fp, "--found-at", self.fix_with_regression("print('ok')\n"))
+        self.assertEqual(code, 1)
+        self.assertIn("passes on the unfixed code", out["error"])
+        self.assertEqual(self.findings()[0]["state"], "candidate")
+
+    def test_adopt_keeps_a_red_baseline_at_found_at(self):
+        fp, _ = self.ledger()
+        found_at = self.fix_with_regression()
+        code, out = self.adopt(fp, "--found-at", found_at, "--expect", "expected 404, got 200")
+        self.assertEqual(code, 0, out)
+        b = self.findings()[0]["proof"]["baseline"]
+        self.assertEqual((b["outcome"], b["commit"]), ("red", found_at))
+        self.assertIn("expected 404, got 200", (self.repo / b["log"]).read_text(encoding="utf-8"))
+        code, out = self.check()
+        self.assertEqual((code, out["errors"], out["summary"]["baselines"]), (0, [], {"red": 1}))
+
+    def test_a_setup_failure_adopts_as_unproven_and_the_report_says_so(self):
+        fp, _ = self.ledger()
+        setup = f'"{sys.executable}" -c "raise SystemExit(3)"'
+        code, out = self.adopt(fp, "--found-at", self.fix_with_regression(), "--baseline-setup", setup)
+        self.assertEqual(code, 0, out)
+        b = self.findings()[0]["proof"]["baseline"]
+        self.assertEqual(b["outcome"], "unproven")
+        self.assertIn("--baseline-setup failed", b["reason"])
+        self.assertEqual(self.check()[1]["summary"]["baselines"], {"unproven": 1})
+        code, out = instrument_json(HUNT, ["emit", "--repo", str(self.repo)], self.repo)
+        self.assertEqual((code, out["unproven_fixes"]), (0, [fp]))
+        self.assertIn("never seen failing", out["note"])
+
+    def test_the_worktree_is_removed_even_when_the_baseline_fails(self):
+        fp, _ = self.ledger()
+        found_at = self.fix_with_regression("print('ok')\n")
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"TMPDIR": tmp}):
+            self.assertEqual(self.adopt(fp, "--found-at", found_at)[0], 1)
+            setup = f'"{sys.executable}" -c "raise SystemExit(3)"'
+            self.adopt(fp, "--found-at", found_at, "--baseline-setup", setup)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+        listed = run(["git", "worktree", "list", "--porcelain"], self.repo).stdout
+        self.assertEqual(listed.count("worktree "), 1, listed)
+
+    def test_no_baseline_is_recorded_as_skipped(self):
+        fp, _ = self.ledger()
+        code, _ = self.adopt(fp, "--found-at", self.fix_with_regression("print('ok')\n"), "--no-baseline")
+        self.assertEqual(code, 0)
+        self.assertEqual(self.findings()[0]["proof"]["baseline"]["outcome"], "skipped")
+        self.assertEqual(self.check()[1]["summary"]["baselines"], {"skipped": 1})
+
+    def rebaseline(self, *extra: str) -> tuple[int, dict]:
+        return instrument_json(HUNT, ["rebaseline", *extra, "--repo", str(self.repo)], self.repo)
+
+    def test_rebaseline_upgrades_an_old_adoption_without_changing_its_state(self):
+        fp, _ = self.ledger()
+        self.adopt(fp, "--found-at", self.fix_with_regression())
+        data = self.findings()
+        del data[0]["proof"]["baseline"]  # a ledger adopted before baselines existed
+        (self.hunt / "findings.json").write_text(json.dumps(data), encoding="utf-8")
+        self.assertEqual(self.check()[1]["summary"]["baselines"], {"missing": 1})
+        code, out = self.rebaseline()
+        self.assertEqual((code, out["rebaselined"][0]["outcome"]), (0, "red"), out)
+        self.assertEqual(self.findings()[0]["state"], "fixed")
+        self.assertEqual(self.check()[1]["errors"], [])
+
+    def test_rebaseline_exposes_a_test_that_never_failed(self):
+        fp, _ = self.ledger()
+        self.adopt(fp, "--found-at", self.fix_with_regression("print('ok')\n"), "--no-baseline")
+        code, out = self.rebaseline(fp)
+        self.assertEqual((code, out["held"]), (1, [fp]))
+        self.assertEqual(self.findings()[0]["state"], "fixed")
+        self.assertIn("passes on the unfixed code", self.errors())
 
     # -- the evidence
     def test_emit_refuses_an_invalid_ledger(self):

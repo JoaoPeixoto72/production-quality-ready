@@ -63,9 +63,19 @@ Severity is what the red test demonstrates, never more:
    needs one verifier in step 5. A finding the project fixed since the last
    run is closed by its regression test, not by an agent:
    `hunt.py adopt <fingerprint> <test_path> --command "<cmd>" --found-at <sha>`
-   runs that committed test and, when it passes, marks the finding `fixed`
-   with the test as its proof. `--found-at` is the commit the trace was read
-   at; a fixed finding's trace is checked there, since the fix moved the code.
+   marks the finding `fixed` with that committed test as its proof when it
+   passes on HEAD and fails at `found_at` — the **baseline**, run in a
+   temporary worktree with the test copied in as committed at HEAD. A test
+   that passes on both commits proves nothing and is refused.
+   `--baseline-setup "<cmd>"` prepares the old tree (`pnpm install --offline
+   --frozen-lockfile`); when the setup or the test cannot run there, the
+   finding is adopted with the baseline `unproven`, and `check` and `emit`
+   count it. `--no-baseline` is the person's explicit escape, kept as
+   `skipped`. `hunt.py rebaseline [<fingerprint>]` runs the baseline of
+   findings already fixed (without a fingerprint: each one with no red
+   baseline) and changes no state. `--found-at` is the commit the trace was
+   read at; a fixed finding's trace is checked there, since the fix moved
+   the code.
    A finding of an audit run outside the hunt (another tool, a pentest) enters
    the same way: record the source in `plan.external`
    (`{"id", "report"}` — no agent of the budget), give it a unit with
@@ -74,15 +84,19 @@ Severity is what the red test demonstrates, never more:
    never verifies: an unfixed external finding is a `candidate` until a
    verifier proves it.
    *Done when* `reprove` has run, or there was nothing to re-prove, and every
-   fixed finding is adopted.
+   fixed finding is adopted with a baseline.
 
 3. **Plan and price — the person approves.** Write
    `.audit/security-hunt/plan.json`: `threat_model`, `scope`,
    `budget.agents`, `agents: []`, and `units`, one per *boundary × class*,
    choosing classes from `references/classes/` (`isolation`, `authz`,
    `auth-session`, `input`, `logic`, `cost`, `client`, `platform`) by what
-   the boundary guards. A unit already covered on unchanged code is left out
-   unless the person asks for it; everything outside the scope is a unit with
+   the boundary guards. `hunt.py stale` lists the covered units whose
+   `reviewed_paths` changed since `covered_at`, whose card changed since
+   `card_sha`, or that lack `covered_at` (`unknown`): those go back into the
+   plan. "Covered on unchanged code" is what `stale` says, not a judgement;
+   such a unit is left out unless the person asks for it. Everything outside
+   the scope is a unit with
    `status: out_of_scope` and a `note`, so the report shows the edge. When the
    person named no scope, propose the boundaries with the most at stake —
    other tenants' data, authentication, money, operator cost. Show the person
@@ -95,16 +109,19 @@ Severity is what the red test demonstrates, never more:
 4. **Hunt.** Launch the hunters in parallel with the brief in
    `references/agents.md`, each with only its units' cards. Record each in
    `plan.agents` before launching; `check` fails when launches pass the
-   budget. Write every result into the ledger: units to
-   `covered`/`candidate`/`blocked` with `reviewed_paths`, candidates into
-   `findings.json` with `state: candidate`, `found_by`, `found_at` (the
-   HEAD the hunter read), and the fingerprint `check` prints. Then launch
+   budget. Save each answer as a file and write it with
+   `hunt.py record <agent-id> <answer.json>`: units get their status,
+   `reviewed_paths`, `covered_at` (HEAD) and `card_sha`; candidates enter
+   `findings.json` as `candidate` with `found_by`, `found_at` and their
+   fingerprint. It re-reads every excerpt at its line and refuses the whole
+   answer when one is off its line or a trace does not end at its sink —
+   the answer goes back to its hunter, not into a hand edit. Then launch
    the **critic** (`references/agents.md`) with the plan and every unit's
-   `reviewed_paths`: each zone it names becomes a unit with `raised_by` set
-   to it — `planned` if the budget still pays a hunter, else `deferred` with
-   the zone's `why` as `note`. Read the coverage yourself too: a unit whose
-   `reviewed_paths` miss a parallel path to the same effect goes back to
-   `planned` or to `deferred` the same way.
+   `reviewed_paths`, and `record` its answer: each zone becomes a unit
+   raised by it, `deferred` with the zone's `why` as `note`, or `planned`
+   with `--plan` when the budget still pays a hunter. Read the coverage
+   yourself too: a unit whose `reviewed_paths` miss a parallel path to the
+   same effect goes back to `planned` or to `deferred` the same way.
    *Done when* the critic ran, every unit in scope is `covered`, `candidate`,
    `blocked` or `deferred`, and `check` passes.
 
@@ -113,8 +130,10 @@ Severity is what the red test demonstrates, never more:
    proof, fill `proof` in the finding and run `hunt.py prove <fingerprint>`:
    `red` → `confirmed` with the verifier's severity, impact and fix;
    `held` → `rejected`; `broken` → back to the same verifier once, then
-   `needs_validation`. When the budget runs out, the rest stay `candidate`
-   and the report says the run is incomplete.
+   `needs_validation`. Open findings that `check` lists under `warnings`
+   share a sink or a control: one verifier can settle them together. When
+   the budget runs out, the rest stay `candidate` and the report says the
+   run is incomplete.
    *Done when* no finding is `candidate`, or the budget is spent and said so,
    and `check` passes.
 
@@ -122,8 +141,10 @@ Severity is what the red test demonstrates, never more:
    `security-audit` check from the confirmed findings, which `audit-app`
    judges with the rest. Report to the person, in this order: confirmed
    (severity, who loses what, the fix, the proof test to keep), then
-   needs_validation (the fact, the check), then coverage (units hunted,
-   out of scope, deferred) and agents spent against the budget.
+   needs_validation (the fact, the check), then fixed findings whose test
+   was never seen failing on the unfixed code (`emit`'s `unproven_fixes`),
+   then coverage (units hunted, out of scope, deferred) and agents spent
+   against the budget.
    *Done when* `emit` succeeded and the report names the gaps.
 
 7. **Fix — only when the person asks.** For each confirmed finding to fix:
@@ -138,9 +159,11 @@ Severity is what the red test demonstrates, never more:
      can block everyone, as a restore that rejected forged sizes and then
      discarded genuine backups did.
    - Run the project's suite, then `hunt.py adopt <fingerprint> <test_path>
-     --command "<cmd>" --found-at <sha the trace was read at>`.
-   *Done when* each fixed finding is `fixed` by `adopt`, both tests are in
-   the suite, and the suite passes.
+     --command "<cmd>" --found-at <sha the trace was read at>`, with
+     `--baseline-setup` when the old tree needs an install.
+   *Done when* each fixed finding is `fixed` by `adopt` with a red baseline
+   (or an `unproven` one the report names), both tests are in the suite, and
+   the suite passes.
 
 ## Boundaries
 

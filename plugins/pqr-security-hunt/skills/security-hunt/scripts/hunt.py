@@ -8,27 +8,36 @@ independence (the agent that found a candidate never confirms it), and to proof
 (a confirmed finding is a test of the project's own that fails on the current
 commit for the reason the claim gives).
 
-    python hunt.py check   [--repo .]
-    python hunt.py prove   <fingerprint> [--repo .]
-    python hunt.py reprove [--repo .]
-    python hunt.py adopt   <fingerprint> <test_path> --command "<cmd>" [--found-at <sha>] [--repo .]
-    python hunt.py emit    [--repo .]
+    python hunt.py check      [--repo .]
+    python hunt.py record     <agent-id> <answer.json> [--plan] [--repo .]
+    python hunt.py stale      [--repo .]
+    python hunt.py prove      <fingerprint> [--repo .]
+    python hunt.py reprove    [--repo .]
+    python hunt.py adopt      <fingerprint> <test_path> --command "<cmd>" [--found-at <sha>]
+                              [--baseline-setup "<cmd>"] [--expect "<msg>"] [--no-baseline] [--repo .]
+    python hunt.py rebaseline [<fingerprint>] [--baseline-setup "<cmd>"] [--expect "<msg>"] [--repo .]
+    python hunt.py emit       [--repo .]
 
 Files, all under `<repo>/.audit/security-hunt/` (gitignored with `.audit/`):
   plan.json      scope, budget, agents launched, external sources, coverage units
   findings.json  one record per fingerprint
   proofs/        the red tests and their logs
 
-`check`   validates both files against the repo and the class catalogue.
-`prove`   copies one proof test into place, runs its command, removes it, and
-          records the outcome: red (fails for the stated reason), held (passes:
-          the control held), broken (fails for another reason).
-`reprove` runs every recorded proof again: re-verification costs no agent.
-`adopt`   after a fix: runs a committed regression test of the project and, if it
-          passes, marks the finding fixed with that test as its proof; the
-          trace is then held to `found_at`, the commit it was read at.
-`emit`    writes one FAIL evidence file per `security-audit` check from the
-          confirmed findings; it refuses while `check` reports an error.
+`check`      validates both files against the repo and the class catalogue; its
+             `warnings` name open findings one verifier can settle together.
+`record`     writes a hunter's or the critic's JSON answer into the ledger, after
+             re-reading every cited line; a wrong answer is refused whole.
+`stale`      lists covered units whose code or card changed since they were read.
+`prove`      copies one proof test into place, runs its command, removes it, and
+             records the outcome: red (fails for the stated reason), held (passes:
+             the control held), broken (fails for another reason).
+`reprove`    runs every recorded proof again: re-verification costs no agent.
+`adopt`      after a fix: runs a committed regression test of the project and, if it
+             passes on HEAD and does not pass on `found_at` (the baseline, in a
+             temporary worktree), marks the finding fixed with that test as its proof.
+`rebaseline` runs that baseline for findings already fixed; their state stays.
+`emit`       writes one FAIL evidence file per `security-audit` check from the
+             confirmed findings; it refuses while `check` reports an error.
 
 JSON on stdout, summary on stderr. Exit 0 when the ledger is valid or the action
 ran; 1 when it is invalid or the action was refused.
@@ -37,19 +46,19 @@ ran; 1 when it is invalid or the action was refused.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 
-HERE = Path(__file__).resolve()
-CATALOGUE = HERE.parents[1] / "references" / "classes"
-HUNT = Path(".audit") / "security-hunt"
+from hunt_baseline import BASELINES, Baseline, Rebaseline, baseline_record, held_refusal, rebaseline
+from hunt_core import CATALOGUE, CLAIM_FIELDS, EXTERNAL, FINDERS, HUNT, ROLES, catalogue, commit_of, \
+    dirty_cited, fingerprint, head_of, inside, load, log_error, norm, now, outcome_of, \
+    regression_refusal, resolve_step, run_command, save, slug, write_log
+from hunt_record import Answer, record, stale
+
 OWNER, PRODUCER, INSTRUMENT = "security-audit", "security-hunt", "hunt-proof"
 RULE_VERSION = "owasp-asvs-5.0"
 
@@ -72,127 +81,11 @@ CHECK_RULE = {
 }
 SEVERITIES = ["BLOCKER", "CRITICAL", "HIGH", "MEDIUM", "LOW"]
 NEEDS_IMPACT = {"BLOCKER", "CRITICAL", "HIGH"}
-# The critic reads the plan and what the hunters read, once the hunt is done, and names the
-# zones nobody looked at. It finds nothing and verifies nothing: it only raises units.
-ROLES = {"hunter", "verifier", "critic"}
-# An audit run outside the hunt (another tool, a person, a pentest) is recorded in
-# `plan.external`. Its findings name it in `found_by`; it costs no agent of the
-# budget, and it never settles a finding — a verifier or an adopted test does.
-EXTERNAL = "external"
-FINDERS = {"hunter", EXTERNAL}
 UNIT_STATES = {"planned", "in_progress", "covered", "candidate", "blocked", "deferred", "out_of_scope"}
 FINDING_STATES = {"candidate", "confirmed", "needs_validation", "rejected", "fixed"}
-CLAIM_FIELDS = ("principal", "input", "control", "boundary", "affected", "result")
+OPEN_STATES = ("candidate", "confirmed", "needs_validation")
 AGENT_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}$")
-# A run that dies before its assertion is not proof of anything the claim says.
-CRASH = re.compile(
-    r"SyntaxError|Cannot find module|ModuleNotFoundError|ImportError|No test files found|"
-    r"Transform failed|Failed to load|is not defined|TS\d{4}:|command not found|not recognized as",
-    re.IGNORECASE)
-
-
-# ------------------------------------------------------------------ helpers
-
-def norm(s: str) -> str:
-    return " ".join(str(s).split())
-
-
-def fingerprint(cls: str, sink: dict) -> str:
-    digest = hashlib.sha1(norm(sink.get("excerpt", "")).encode("utf-8")).hexdigest()[:10]
-    return f"{cls}@{sink.get('path', '')}#{digest}"
-
-
-def slug(fp: str) -> str:
-    return re.sub(r"[^A-Za-z0-9]+", "-", fp).strip("-")[:80]
-
-
-def git(repo: Path, *args: str, raw: bool = False) -> tuple[int, str]:
-    p = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=repo, capture_output=True,
-                       text=True, encoding="utf-8", errors="replace")
-    return p.returncode, (p.stdout or "") if raw else (p.stdout or "").strip()
-
-
-def head_of(repo: Path) -> str:
-    code, out = git(repo, "rev-parse", "HEAD")
-    return out if code == 0 else ""
-
-
-def inside(repo: Path, rel: str) -> Path | None:
-    """The file a repository-relative path names, or None when it leaves the repo."""
-    rel = str(rel).replace("\\", "/")
-    if not rel or rel.startswith("/") or re.match(r"^[A-Za-z]:", rel) or ".." in rel.split("/"):
-        return None
-    p = (repo / rel).resolve()
-    return p if p.is_relative_to(repo) else None
-
-
-def sha256(p: Path) -> str:
-    return hashlib.sha256(p.read_bytes()).hexdigest()
-
-
-def load(path: Path, default):
-    if not path.is_file():
-        return default
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def save(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-
-
-def catalogue() -> dict[str, str]:
-    """class id -> check, read from the cards (the cards are the one source)."""
-    out: dict[str, str] = {}
-    for f in sorted(CATALOGUE.glob("*.md")):
-        current = None
-        for line in f.read_text(encoding="utf-8").splitlines():
-            m = re.match(r"^### ([a-z0-9][a-z0-9.-]*)\s*$", line)
-            if m:
-                current = m.group(1)
-                continue
-            m = re.match(r"^- \*\*Check:\*\* `([a-z0-9.-]+)`", line)
-            if m and current:
-                out[current] = m.group(1)
-                current = None
-    return out
-
-
-def commit_of(repo: Path, rev: str) -> str:
-    """The full sha `rev` names when it is a commit HEAD descends from; '' otherwise."""
-    if not re.match(r"^[0-9a-fA-F]{7,40}$", str(rev or "")):
-        return ""
-    code, sha = git(repo, "rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}")
-    if code != 0 or not sha:
-        return ""
-    code, _ = git(repo, "merge-base", "--is-ancestor", sha, "HEAD")
-    return sha if code == 0 else ""
-
-
-def resolve_step(repo: Path, step: dict, at: str = "") -> str:
-    """'' when the cited line says the excerpt — in the working tree, or at commit
-    `at` when given (a fixed finding's trace describes code the fix removed)."""
-    path, line, excerpt = step.get("path", ""), step.get("line"), norm(step.get("excerpt", ""))
-    target = inside(repo, path)
-    if target is None:
-        return f"{path}: not a repository-relative path"
-    if at:
-        code, text = git(repo, "show", f"{at}:{target.relative_to(repo).as_posix()}", raw=True)
-        if code != 0:
-            return f"{path}: file missing at {at[:12]}"
-    elif not target.is_file():
-        return f"{path}: file missing"
-    else:
-        text = target.read_text(encoding="utf-8", errors="replace")
-    if len(excerpt) < 6:
-        return f"{path}:{line}: excerpt too short to identify a line"
-    lines = text.splitlines()
-    if isinstance(line, int) and 1 <= line <= len(lines) and excerpt in norm(lines[line - 1]):
-        return ""
-    moved = [i + 1 for i, text in enumerate(lines) if excerpt in norm(text)]
-    if moved:
-        return f"{path}:{line}: the excerpt is now at line {moved[0]} — re-read the trace"
-    return f"{path}:{line}: the excerpt is not in the file — the claim no longer matches the code"
+CITED = re.compile(r"([\w@.-]+(?:/[\w@.-]+)*\.[A-Za-z0-9]+):(\d+)")
 
 
 # ------------------------------------------------------------------ check
@@ -231,7 +124,27 @@ def check(repo: Path) -> dict:
         finding_errors(ctx, f, f"findings[{i}]")
         if f.get("fingerprint") not in linked:
             ctx.err(f"findings[{i}]: `{f.get('fingerprint')}` is linked to no unit")
-    return {"ok": not ctx.errors, "errors": ctx.errors, "summary": summarise(ctx, units, findings, budget)}
+    return {"ok": not ctx.errors, "errors": ctx.errors, "warnings": duplicate_warnings(findings),
+            "summary": summarise(ctx, units, findings, budget)}
+
+
+def duplicate_warnings(findings: list) -> list[str]:
+    """Open findings that one verifier can settle together: the same class at the same
+    sink file, or claims that name the same control file. Advice, never an error."""
+    groups: dict[tuple, list[str]] = {}
+    for f in (f for f in findings if f.get("state") in OPEN_STATES):
+        fp, sink = str(f.get("fingerprint")), ((f.get("trace") or [{}])[-1]).get("path", "")
+        groups.setdefault(("sink", str(f.get("class")), str(sink)), []).append(fp)
+        cited = CITED.search(str((f.get("claim") or {}).get("control", "")))
+        if cited:
+            groups.setdefault(("control", "", cited.group(1)), []).append(fp)
+    out = []
+    for (kind, cls, path), fps in sorted(groups.items()):
+        if len(fps) < 2:
+            continue
+        shared = f"class {cls} and sink {path}" if kind == "sink" else f"the control in {path}"
+        out.append(f"{', '.join(fps)} share {shared} — one verifier can settle both")
+    return out
 
 
 def catalogue_errors(ctx: Ctx) -> None:
@@ -312,6 +225,7 @@ def unit_errors(ctx: Ctx, u: dict, where: str, by_fp: dict) -> set[str]:
         ctx.err(f"{where}.raised_by: `{u.get('raised_by')}` is not a critic recorded in plan.agents")
     if status in ("blocked", "deferred", "out_of_scope") and not norm(u.get("note", "")):
         ctx.err(f"{where}.note: say why the unit is {status}")
+    coverage_errors(ctx, u, where)
     if status != "candidate":
         return set()
     fps = u.get("fingerprints") or []
@@ -320,6 +234,16 @@ def unit_errors(ctx: Ctx, u: dict, where: str, by_fp: dict) -> set[str]:
     for fp in (fp for fp in fps if fp not in by_fp):
         ctx.err(f"{where}.fingerprints: `{fp}` is not in findings.json")
     return set(fps)
+
+
+def coverage_errors(ctx: Ctx, u: dict, where: str) -> None:
+    """`covered_at` and `card_sha` are optional (older ledgers lack them; `stale` reports
+    those units as unknown), but when present they name a real commit and a card hash."""
+    if "covered_at" in u and not commit_of(ctx.repo, str(u.get("covered_at"))):
+        ctx.err(f"{where}.covered_at: `{u.get('covered_at')}` is not a commit HEAD descends from "
+                "— the HEAD the hunter read")
+    if "card_sha" in u and not re.fullmatch(r"[0-9a-f]{64}", str(u.get("card_sha"))):
+        ctx.err(f"{where}.card_sha: the sha256 of the class card, 64 hex characters")
 
 
 def finding_errors(ctx: Ctx, f: dict, where: str) -> None:
@@ -406,15 +330,34 @@ def proof_errors(ctx: Ctx, f: dict, where: str, want: str) -> None:
         return
     if ctx.head and p.get("head") != ctx.head:
         ctx.err(f"{where}.proof: ran at {str(p.get('head'))[:12]}, HEAD is {ctx.head[:12]} — run `hunt.py reprove`")
-    log = inside(ctx.repo, str(p.get("log", "")))
-    if log is None or not log.is_file():
-        ctx.err(f"{where}.proof.log: missing on disk")
-    elif sha256(log) != p.get("log_sha256"):
-        ctx.err(f"{where}.proof.log: changed since `hunt.py prove` wrote it")
+    why = log_error(ctx.repo, p)
+    if why:
+        ctx.err(f"{where}.proof.{why.replace('`hunt.py`', '`hunt.py prove`')}")
     if p.get("kind") == "regression":
         why = regression_refusal(ctx.repo, str(p.get("test_path", "")), str(p.get("command", "")), clean=False)
         if why:
             ctx.err(f"{where}.proof: {why}")
+        baseline_errors(ctx, f, where)
+
+
+def baseline_errors(ctx: Ctx, f: dict, where: str) -> None:
+    """A regression test's run on the unfixed code. A ledger adopted before baselines
+    existed has none: `summary.baselines.missing` counts it, `rebaseline` settles it."""
+    b = (f.get("proof") or {}).get("baseline")
+    if b is None:
+        return
+    outcome = b.get("outcome")
+    if outcome not in BASELINES:
+        ctx.err(f"{where}.proof.baseline.outcome: `{outcome}` is not {', '.join(sorted(BASELINES))}")
+    elif outcome == "held":
+        ctx.err(f"{where}.proof.baseline: the regression test passes on the unfixed code at "
+                f"{str(b.get('commit'))[:12]} — it proves nothing; adopt a test that fails there")
+    elif outcome == "unproven" and not norm(b.get("reason", "")):
+        ctx.err(f"{where}.proof.baseline.reason: why the test could not run on the unfixed code")
+    if outcome in ("red", "held") and b.get("commit") != commit_of(ctx.repo, str(f.get("found_at", ""))):
+        ctx.err(f"{where}.proof.baseline: ran at {str(b.get('commit'))[:12]}, not at found_at — run `hunt.py rebaseline`")
+    if outcome == "red" and log_error(ctx.repo, b):
+        ctx.err(f"{where}.proof.baseline.{log_error(ctx.repo, b)}")
 
 
 def summarise(ctx: Ctx, units: list, findings: list, budget: int) -> dict:
@@ -426,7 +369,22 @@ def summarise(ctx: Ctx, units: list, findings: list, budget: int) -> dict:
                        "external": roles.count(EXTERNAL),
                        "hunters": roles.count("hunter"), "verifiers": roles.count("verifier"),
                        "critics": roles.count("critic")},
-            "units": count(units, "status"), "findings": count(findings, "state")}
+            "units": count(units, "status"), "findings": count(findings, "state"),
+            "baselines": baseline_counts(findings)}
+
+
+def baseline_outcome(f: dict) -> str:
+    """How a fixed finding's test was seen on the unfixed code. A finding fixed by
+    `reprove` ran its own proof red there before it held: that run is its baseline."""
+    p = f.get("proof") or {}
+    if p.get("kind") != "regression":
+        return "red"
+    return str((p.get("baseline") or {}).get("outcome") or "missing")
+
+
+def baseline_counts(findings: list) -> dict:
+    fixed = [baseline_outcome(f) for f in findings if f.get("state") == "fixed"]
+    return {k: fixed.count(k) for k in ("red", "unproven", "skipped", "missing", "held") if fixed.count(k)}
 
 
 # ------------------------------------------------------------------ prove
@@ -458,41 +416,6 @@ def proof_request(repo: Path, f: dict) -> tuple[dict | None, dict]:
     return {"src": src, "dest": dest, "command": command, "expect": expect}, {}
 
 
-def dirty_cited(repo: Path, f: dict) -> list[str]:
-    cited = sorted({str(s.get("path")) for s in f.get("trace") or [] if s.get("path")})
-    _, dirty = git(repo, "status", "--porcelain", "--", *cited) if cited else (0, "")
-    return dirty.splitlines()
-
-
-def regression_refusal(repo: Path, test_path: str, command: str, clean: bool = True) -> str:
-    """'' when `test_path` is a committed test of the project that `command` runs by name."""
-    dest = inside(repo, test_path)
-    if dest is None or dest.is_relative_to((repo / ".audit").resolve()):
-        return "the regression test is a file of the project, inside the repo and outside .audit/"
-    if not dest.is_file():
-        return f"the regression test `{test_path}` does not exist"
-    rel = dest.relative_to(repo).as_posix()
-    if git(repo, "ls-files", "--error-unmatch", "--", rel)[0] != 0:
-        return f"`{rel}` is not committed — a regression test lives in the project's history"
-    # The fix may live in files the trace never cites, so the whole tracked tree
-    # must be HEAD — not only the test and the cited lines.
-    dirty = git(repo, "status", "--porcelain", "--untracked-files=no")[1] if clean else ""
-    if dirty:
-        return f"uncommitted changes ({dirty.splitlines()[0].strip()} …) — the run would not be of HEAD"
-    if not command.strip() or dest.name not in command:
-        return "the command must run the regression test by name, not the whole suite"
-    return ""
-
-
-def run_command(repo: Path, command: str) -> tuple[str, int]:
-    try:
-        run = subprocess.run(command, cwd=repo, shell=True, capture_output=True, text=True,
-                             encoding="utf-8", errors="replace", timeout=900)
-        return (run.stdout or "") + (run.stderr or ""), run.returncode
-    except subprocess.TimeoutExpired:
-        return "timeout after 900s", 124
-
-
 def run_proof(repo: Path, req: dict) -> tuple[str, int]:
     """Copies the proof in, runs its command, and always removes it again."""
     shutil.copyfile(req["src"], req["dest"])
@@ -500,22 +423,6 @@ def run_proof(repo: Path, req: dict) -> tuple[str, int]:
         return run_command(repo, req["command"])
     finally:
         req["dest"].unlink(missing_ok=True)
-
-
-def outcome_of(exit_code: int, output: str, expect: str) -> str:
-    if exit_code == 0:
-        return "held"
-    return "red" if expect in norm(output) and not CRASH.search(output) else "broken"
-
-
-def write_log(repo: Path, name: str, command: str, result: tuple[str, int]) -> dict:
-    """Writes the run's log as proofs/<name>.log; returns the proof fields that pin it."""
-    output, exit_code = result
-    log = repo / HUNT / "proofs" / f"{name}.log"
-    log.parent.mkdir(parents=True, exist_ok=True)
-    log.write_text(f"$ {command}\n# exit {exit_code}\n\n{output}", encoding="utf-8")
-    return {"exit": exit_code, "head": head_of(repo), "log": log.relative_to(repo).as_posix(),
-            "log_sha256": sha256(log), "ran_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
 
 
 def prove(repo: Path, fp: str) -> tuple[bool, dict]:
@@ -581,10 +488,14 @@ ADOPTABLE = {"candidate", "confirmed", "needs_validation", "fixed"}
 @dataclass
 class Adoption:
     """What `adopt` is given: the project's regression test, the command that runs it
-    by name, and the commit the finding's trace was read at."""
+    by name, the commit the finding's trace was read at, and how the baseline runs
+    there (`setup` prepares that tree; `skip` is the person's explicit escape)."""
     test_path: str
     command: str
     found_at: str = ""
+    setup: str = ""
+    expect: str = ""
+    skip: bool = False
 
 
 def adopt(repo: Path, fp: str, a: Adoption) -> tuple[bool, dict]:
@@ -593,39 +504,56 @@ def adopt(repo: Path, fp: str, a: Adoption) -> tuple[bool, dict]:
     The hunt's own proof builds the attack along the path the fix closed, so after
     the fix it turns `broken`, not `held`; and a candidate fixed before any verifier
     ran has no proof at all. The project's regression test is the lasting proof: it
-    runs where it lives, and `reprove` runs it again on every hunt.
+    runs where it lives, and `reprove` runs it again on every hunt. It counts only
+    if it also fails on the unfixed code — the baseline, run at `found_at`.
     """
     path = repo / HUNT / "findings.json"
     findings = load(path, [])
     f = next((x for x in findings if x.get("fingerprint") == fp), None)
-    if f is None:
-        return False, {"error": f"no finding `{fp}`"}
-    if f.get("state") not in ADOPTABLE:
-        return False, {"error": f"a {f.get('state')} finding cannot be adopted — its claim did not hold"}
-    at = commit_of(repo, a.found_at or str(f.get("found_at", "")))
-    if not at:
-        return False, {"error": "--found-at: the commit the trace was read at, which HEAD descends from"}
-    if at == head_of(repo):
-        return False, {"error": "--found-at is HEAD — adopt a fix after it is committed, not before"}
-    stale = [w for w in (resolve_step(repo, s, at) for s in f.get("trace") or []) if w]
-    if stale:
-        return False, {"error": f"the trace does not hold at {at[:12]} — the claim is not of that commit",
-                       "trace": stale}
-    refusal = regression_refusal(repo, a.test_path, a.command)
+    at, refusal = adoption_refusal(repo, f, fp, a)
     if refusal:
-        return False, {"error": refusal}
+        return False, refusal
     rel = inside(repo, a.test_path).relative_to(repo).as_posix()
-    run = write_log(repo, f"{slug(fp)}.regression", a.command, run_command(repo, a.command))
-    if run["exit"] != 0:
+    result = run_command(repo, a.command)
+    if result[1] != 0:
+        run = write_log(repo, f"{slug(fp)}.regression", a.command, result)
         return False, {"error": "the regression test does not pass on HEAD — nothing adopted",
                        "exit": run["exit"], "log": run["log"]}
+    if a.skip:
+        baseline = {"outcome": "skipped", "commit": at, "reason": "--no-baseline"}
+    else:
+        baseline = baseline_record(repo, fp, Baseline(rel, a.command, at, a.setup, a.expect))
+    if baseline["outcome"] == "held":
+        return False, held_refusal(baseline)
     old = f.get("proof")
     if old and old.get("kind") != "regression":
         f.setdefault("superseded_proofs", []).append(old)
-    f["proof"] = {"kind": "regression", "test_path": rel, "command": a.command, "outcome": "held", **run}
+    run = write_log(repo, f"{slug(fp)}.regression", a.command, result)
+    f["proof"] = {"kind": "regression", "test_path": rel, "command": a.command, "outcome": "held", **run,
+                  "baseline": baseline}
     f["state"], f["found_at"] = "fixed", at
     save(path, findings)
-    return True, {"fingerprint": fp, "state": "fixed", "found_at": at, "log": run["log"]}
+    return True, {"fingerprint": fp, "state": "fixed", "found_at": at, "log": run["log"],
+                  "baseline": baseline}
+
+
+def adoption_refusal(repo: Path, f: dict | None, fp: str, a: Adoption) -> tuple[str, dict]:
+    """(the found_at commit, {}) when the finding can be adopted; else ('', the refusal)."""
+    if f is None:
+        return "", {"error": f"no finding `{fp}`"}
+    if f.get("state") not in ADOPTABLE:
+        return "", {"error": f"a {f.get('state')} finding cannot be adopted — its claim did not hold"}
+    at = commit_of(repo, a.found_at or str(f.get("found_at", "")))
+    if not at:
+        return "", {"error": "--found-at: the commit the trace was read at, which HEAD descends from"}
+    if at == head_of(repo):
+        return "", {"error": "--found-at is HEAD — adopt a fix after it is committed, not before"}
+    stale_steps = [w for w in (resolve_step(repo, s, at) for s in f.get("trace") or []) if w]
+    if stale_steps:
+        return "", {"error": f"the trace does not hold at {at[:12]} — the claim is not of that commit",
+                    "trace": stale_steps}
+    refusal = regression_refusal(repo, a.test_path, a.command)
+    return (at, {}) if not refusal else ("", {"error": refusal})
 
 
 # ------------------------------------------------------------------ emit
@@ -643,68 +571,101 @@ def emit(repo: Path) -> tuple[bool, dict]:
     for old in sorted(target_dir.glob(f"{PRODUCER}--*.evidence.yaml")):
         old.unlink()
         removed.append(old.relative_to(repo).as_posix())
+    findings = load(repo / HUNT / "findings.json", [])
     groups: dict[str, list[dict]] = {}
-    for f in load(repo / HUNT / "findings.json", []):
-        if f.get("state") == "confirmed":
-            groups.setdefault(f["check"], []).append(f)
+    for f in (f for f in findings if f.get("state") == "confirmed"):
+        groups.setdefault(f["check"], []).append(f)
     written = []
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     for chk, items in sorted(groups.items()):
-        items.sort(key=lambda x: SEVERITIES.index(x["severity"]))
-        top = items[0]
-        out = [f"check: {chk}", f"owner: {OWNER}", f"producer: {PRODUCER}", f"instrument: {INSTRUMENT}",
-               f"rule: {q(f'{RULE_VERSION} {CHECK_RULE[chk]}')}", f"rule-version: {q(RULE_VERSION)}",
-               "methods:", f"  - {INSTRUMENT}", "evidence:"]
-        for f in items:
-            sink = f["trace"][-1]
-            out += [f"  - path: {q(str(sink['path']) + ':' + str(sink['line']))}",
-                    f"    excerpt: {q(norm(sink['excerpt']))}", "    kind: source",
-                    f"  - path: {q(f['proof']['log'])}", "    kind: log", f"    hash: {f['proof']['log_sha256']}"]
-        out += ["result: FAIL", f"severity: {top['severity']}", "confidence: OBSERVED",
-                f"command: {q('hunt.py prove ' + top['fingerprint'])}", f"log: {top['proof']['log']}",
-                f"title: {q('; '.join(norm(x['claim']['result']) for x in items))}",
-                f"impact: {q(' | '.join(norm(x.get('impact') or x['claim']['affected']) for x in items))}",
-                f"fix: {q(' | '.join(norm(x['fix']) for x in items))}",
-                "context:", f"  head: {report['summary']['head'] or 'unknown'}", f"  captured-at: {now}",
-                f"  findings: {q(', '.join(x['fingerprint'] for x in items))}"]
         target = target_dir / f"{PRODUCER}--{chk}.evidence.yaml"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text("\n".join(out) + "\n", encoding="utf-8")
+        lines = evidence(chk, items, report["summary"]["head"])
+        target.write_text("\n".join(lines) + "\n", encoding="utf-8")
         written.append(target.relative_to(repo).as_posix())
-    return True, {"written": written, "removed": removed}
+    return True, {"written": written, "removed": removed, **unproven_fixes(findings)}
+
+
+def unproven_fixes(findings: list) -> dict:
+    """The fixed findings no test was seen failing on the unfixed code for: the report
+    says so, because their `fixed` rests on a test that may pass on both commits."""
+    weak = [f["fingerprint"] for f in findings if f.get("state") == "fixed" and baseline_outcome(f) != "red"]
+    if not weak:
+        return {"baselines": baseline_counts(findings)}
+    return {"baselines": baseline_counts(findings), "unproven_fixes": weak,
+            "note": f"{len(weak)} fixed finding(s) rest on a regression test never seen failing on the unfixed "
+                    "code (baseline unproven, skipped or missing) — say so in the report; "
+                    "`hunt.py rebaseline` runs it"}
+
+
+def evidence(chk: str, items: list, head: str) -> list[str]:
+    """The lines of one FAIL evidence file: the check's confirmed findings, worst first."""
+    items.sort(key=lambda x: SEVERITIES.index(x["severity"]))
+    top = items[0]
+    out = [f"check: {chk}", f"owner: {OWNER}", f"producer: {PRODUCER}", f"instrument: {INSTRUMENT}",
+           f"rule: {q(f'{RULE_VERSION} {CHECK_RULE[chk]}')}", f"rule-version: {q(RULE_VERSION)}",
+           "methods:", f"  - {INSTRUMENT}", "evidence:"]
+    for f in items:
+        sink = f["trace"][-1]
+        out += [f"  - path: {q(str(sink['path']) + ':' + str(sink['line']))}",
+                f"    excerpt: {q(norm(sink['excerpt']))}", "    kind: source",
+                f"  - path: {q(f['proof']['log'])}", "    kind: log", f"    hash: {f['proof']['log_sha256']}"]
+    return out + ["result: FAIL", f"severity: {top['severity']}", "confidence: OBSERVED",
+                  f"command: {q('hunt.py prove ' + top['fingerprint'])}", f"log: {top['proof']['log']}",
+                  f"title: {q('; '.join(norm(x['claim']['result']) for x in items))}",
+                  f"impact: {q(' | '.join(norm(x.get('impact') or x['claim']['affected']) for x in items))}",
+                  f"fix: {q(' | '.join(norm(x['fix']) for x in items))}",
+                  "context:", f"  head: {head or 'unknown'}", f"  captured-at: {now()}",
+                  f"  findings: {q(', '.join(x['fingerprint'] for x in items))}"]
 
 
 # ------------------------------------------------------------------ main
 
-def main(argv: list[str] | None = None) -> int:
+def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("action", choices=("check", "prove", "reprove", "adopt", "emit"))
-    ap.add_argument("fingerprint", nargs="?")
-    ap.add_argument("test_path", nargs="?", help="adopt: the project's regression test")
+    ap.add_argument("action", choices=("check", "record", "stale", "prove", "reprove", "adopt", "rebaseline", "emit"))
+    ap.add_argument("fingerprint", nargs="?", help="the finding; record: the agent id")
+    ap.add_argument("test_path", nargs="?", help="adopt: the project's regression test; record: the answer file")
     ap.add_argument("--command", default="", help="adopt: runs the regression test by name")
     ap.add_argument("--found-at", default="", help="adopt: the commit the trace was read at")
+    ap.add_argument("--baseline-setup", default="", help="adopt, rebaseline: prepares the found_at tree")
+    ap.add_argument("--expect", default="", help="adopt, rebaseline: the message the unfixed run prints")
+    ap.add_argument("--no-baseline", action="store_true", help="adopt: record the baseline as skipped")
+    ap.add_argument("--plan", action="store_true", help="record (critic): raise zones as planned, not deferred")
     ap.add_argument("--repo", default=".")
+    return ap
+
+
+NEEDS = {"prove": ("fingerprint",), "adopt": ("fingerprint", "test_path", "command"),
+         "record": ("fingerprint", "test_path")}
+
+
+def dispatch(a: argparse.Namespace, repo: Path) -> tuple[bool, dict]:
+    if a.action == "check":
+        out = check(repo)
+        return out["ok"], out
+    actions = {
+        "record": lambda: record(repo, Answer(a.fingerprint, a.test_path, a.plan)),
+        "stale": lambda: stale(repo),
+        "prove": lambda: prove(repo, a.fingerprint),
+        "reprove": lambda: reprove(repo),
+        "adopt": lambda: adopt(repo, a.fingerprint, Adoption(a.test_path, a.command, a.found_at,
+                                                             a.baseline_setup, a.expect, a.no_baseline)),
+        "rebaseline": lambda: rebaseline(repo, Rebaseline(a.fingerprint or "", a.baseline_setup, a.expect)),
+        "emit": lambda: emit(repo),
+    }
+    return actions[a.action]()
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = parser()
     a = ap.parse_args(argv)
+    missing = [n for n in NEEDS.get(a.action, ()) if not getattr(a, n)]
+    if missing:
+        ap.error(f"{a.action} needs {', '.join(missing)}")
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
-    repo = Path(a.repo).resolve()
-
-    if a.action == "check":
-        out = check(repo)
-        ok = out["ok"]
-    elif a.action == "prove":
-        if not a.fingerprint:
-            ap.error("prove needs a fingerprint")
-        ok, out = prove(repo, a.fingerprint)
-    elif a.action == "reprove":
-        ok, out = reprove(repo)
-    elif a.action == "adopt":
-        if not (a.fingerprint and a.test_path and a.command):
-            ap.error("adopt needs a fingerprint, a test path and --command")
-        ok, out = adopt(repo, a.fingerprint, Adoption(a.test_path, a.command, a.found_at))
-    else:
-        ok, out = emit(repo)
+    ok, out = dispatch(a, Path(a.repo).resolve())
     print(json.dumps(out, indent=2, ensure_ascii=False))
     errs = out.get("errors") or ([out["error"]] if "error" in out else [])
     print(f"  {'OK' if ok else 'REFUSED'} {a.action}" + (f" — {len(errs)} error(s); first: {errs[0]}" if errs else ""),
