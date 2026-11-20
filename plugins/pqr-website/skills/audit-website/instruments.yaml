@@ -22,3 +22,8 @@ accepts:
       - web.structured-data
       - web.geo-aeo
       - web.core-web-vitals
+  # The SEO ratchet: current findings vs a committed baseline (seo_baseline.py).
+  - producer: audit-website
+    instrument: seo-baseline
+    for-checks:
+      - web.seo-no-regression

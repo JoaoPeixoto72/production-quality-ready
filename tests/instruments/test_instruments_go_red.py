@@ -44,6 +44,7 @@ RED_CASE: dict[str, tuple[str, str]] = {
     "billing-harness": ("plugins/production-quality-ready/scripts/declared-command.py", "DeclaredCommandGoesRed"),
     "run_seo_audit.mjs": ("plugins/pqr-website/skills/audit-website/seo/run_seo_audit.mjs", "SeoEngineGoesRed"),
     "run_website_audit.mjs": ("plugins/pqr-website/skills/audit-website/scripts/run_website_audit.mjs", "WebsiteEngineGoesRed"),
+    "seo-baseline": ("plugins/pqr-website/skills/audit-website/scripts/seo_baseline.py", "SeoBaselineGoesRed"),
     "hunt-proof": ("plugins/pqr-security-hunt/skills/security-hunt/scripts/hunt.py", "HuntProofGoesRed"),
 }
 

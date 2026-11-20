@@ -48,3 +48,36 @@ Heuristic checks never emit a critical `FAIL` on their own. A heuristic pattern 
 - `llms.txt` is informational. Google publicly states it does not use it for ranking. Some LLM crawlers may. This skill treats it as `WARN` at most.
 - Do not recommend removing existing `FAQPage` schema. Do not recommend adding `FAQPage` for SERP benefit — Google retired FAQ rich results in May 2026.
 - Do not claim confirmed LLM citation benefit from any schema type.
+
+## 8. A critical needs `machine_verified`
+
+Severity and evidence are independent axes. A finding carries an
+`evidenceClass` (`machine_verified`, `heuristic`, `manual`, `not_verified`), and:
+
+- A **critical** `FAIL` requires `machine_verified` evidence (an HTTP status, a
+  DOM/XML/JSON-LD parse, a CrUX/PSI field number). A heuristic match is
+  downgraded to `WARN` — never a critical `FAIL`.
+- A **critical** `PASS` likewise requires `machine_verified` evidence. A lab CWV
+  number is `heuristic`; only field data (CrUX) or a declared measurement closes
+  a critical CWV pass.
+- `NOT_VERIFIED` is never rewritten to `PASS` by omission.
+
+This is the same rule the plugin enforces everywhere: `PASS` needs a trace
+(`CONTRACTS §4.6`), and a heuristic cannot carry a critical verdict.
+
+## 9. External SEO data
+
+The engines here are crawl-based. Live data (keyword research, backlinks,
+local/maps, field CWV, LLM citation tracking) only an external provider has, and
+this owner never reimplements it. Field Core Web Vitals reach the gate through
+the project's declared `core-web-vitals-command` (`adapter-hints`); without it
+`web.core-web-vitals` stays `NOT_VERIFIED`. Everything else a provider returns —
+including any 0-100 score — is read as a **finding**, never turned into a
+`PASS`. Providers and how to wire them: `references/seo-external-data.md`.
+
+## 10. Regression (baseline)
+
+`web.seo-no-regression` compares the current `seo-audit-report.json` against a
+committed baseline (`scripts/seo_baseline.py`). A finding that was `PASS` and is
+now `FAIL`, or a new `FAIL`, is a regression. Like the maintainability ratchet,
+existing debt may not grow.
