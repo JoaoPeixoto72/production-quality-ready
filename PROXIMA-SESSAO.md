@@ -7,8 +7,8 @@ não está no código.
 
 ## 1. Estado do plugin
 
-Todas as instalações estão em **5.4.0**: no Forma (`C:\a\GestaoProjectosArq`, plugins
-`production-quality-ready` e `pqr-security-hunt`) e no JustClip (`C:\a\JustClip`, plugins
+Todas as instalações estão em **5.4.0**: no Forma (`C:\a\forma\GestaoProjectosArq`, plugins
+`production-quality-ready` e `pqr-security-hunt`) e no JustClip (`C:\a\justclip\JustClip`, plugins
 `production-quality-ready`, `pqr-desktop`, `pqr-process` e `pqr-ui-system`). Este repositório
 tem só o `main`.
 
@@ -73,7 +73,7 @@ O `hunt.py` está dividido em `hunt.py` (CLI, `check`, `prove`, `reprove`, `adop
 
 ## 3. O Forma, do lado da caça
 
-O ledger está em `C:\a\GestaoProjectosArq\.audit\security-hunt\` (`plan.json`, `findings.json`,
+O ledger está em `C:\a\forma\GestaoProjectosArq\.audit\security-hunt\` (`plan.json`, `findings.json`,
 `proofs/`, e `run2/` com as respostas e os custos de cada agente da caça 2). Esta pasta não está
 no git.
 
